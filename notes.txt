@@ -1,0 +1,332 @@
+logger = logging.getLogger('discord')
+logger.setLevel(logging.DEBUG)
+logging.getLogger('discord.http').setLevel(logging.INFO)
+
+handler = logging.handlers.RotatingFileHandler(
+    filename='discord.log',
+    encoding='utf-8',
+    maxBytes=32 * 1024 * 1024,  # 32 MiB
+    backupCount=5,  # Rotate through 5 files
+)
+dt_fmt = '%Y-%m-%d %H:%M:%S'
+formatter = logging.Formatter('[{asctime}] [{levelname:<8}] {name}: {message}', dt_fmt, style='{')
+handler.setFormatter(formatter)
+logger.addHandler(handler)
+
+# Assume client refers to a discord.Client subclass...
+# Suppress the default configuration since we have our own
+
+except sqlite3.Error as e:
+                        print('SQLite error: %s' % (' '.join(e.args)))
+                        print("Exception class is: ", e.__class__)
+                        print('SQLite traceback: ')
+                        exc_type, exc_value, exc_tb = sys.exc_info()
+                        print(traceback.format_exception(exc_type, exc_value, exc_tb))
+
+
+#from asyncpg import Pool
+import sqlite3
+
+connector = sqlite3.connect('main.sqlite')
+cursor = connector.cursor()
+
+async def create_tables():
+    # await connection.execute("DROP TABLE IF EXISTS users") # Uncomment this line if you have the database already created and have old data
+
+    cursor.execute(
+
+    """
+    CREATE TABLE IF NOT EXISTS main(
+            user_id BIGINT NOT NULL,
+            guild_id BIGINT NOT NULL,
+            xp BIGINT NOT NULL DEFAULT 5,
+            level BIGINT NOT NULL DEFAULT 0,
+            messages BIGINT NOT NULL DEFAULT 0,
+            welcome_message STRING,
+            leave_message STRING, 
+            all_counter_channel_id TEXT, 
+            members_counter_channel_id TEXT, 
+            bots_counter_channel_id TEXT, 
+            welcome_channel_id TEXT, 
+            leave_channel_id TEXT, 
+            deny_clicked BOOL)
+    """
+    )
+
+    connector.commit()
+
+async def create_user(user_id, guild_id):
+    record = await cursor.fetchone(
+        "SELECT * FROM main WHERE user_id = ? AND guild_id = ?", user_id, guild_id
+    )
+    if record:
+        return
+
+    await cursor.execute(
+        "INSERT INTO main(user_id, guild_id) VALUES(?, ?)", user_id, guild_id
+    )
+    connector.commit()
+
+
+async def increase_xp(message, rate=5):
+    await create_user(message.author.id, message.guild.id)
+
+    record = await cursor.fetchone(
+        "SELECT * FROM main WHERE user_id = ? AND guild_id = ?", message.author.id, message.guild.id
+    )
+    xp = record["xp"]
+    level = record["level"]
+    new_level = int((xp + rate) / 100)
+
+    if new_level > level:
+        new_level = new_level
+    else:
+        new_level = level
+
+    await cursor.execute(
+        "UPDATE main SET xp = ?, level = ? WHERE user_id = ? AND guild_id = ?",
+        xp + rate,
+        new_level,
+        message.author.id,
+        message.guild.id,
+    )
+    connector.commit()
+
+
+async def get_user_data(user_id, guild_id):
+    await create_user(user_id, guild_id)
+
+    record = await cursor.fetchone(
+        "SELECT * FROM main WHERE user_id = ? AND guild_id = ?", user_id, guild_id
+    )
+    return dict(record)
+
+
+async def get_rank(user_id, guild_id):
+    await create_user(user_id, guild_id)
+
+    records = await cursor.fetchone(
+        "SELECT * FROM main WHERE guild_id = ? ORDER BY xp DESC", guild_id
+    )
+    rank = 0
+    for record in records:
+        rank += 1
+        if record["user_id"] == user_id:
+            break
+
+    return rank
+
+@commands.hybrid_command(name="hello",with_app_command=True)
+    async def hello(ctx):
+        await ctx.channel.send('Hello')
+
+
+
+              '''
+
+              background.rectangle((30, 220), width=650, height=40, fill="#545454", radius=20)
+              background.bar(
+                  (30, 220),
+                  max_width = 650,
+                  height=40,
+                  percentage=percentage,
+                  fill="#FF56B2",
+                  radius=20,
+              )
+
+              #background.rectangle((30, 220), width=650, height=40, fill="white", radius=20)
+
+              background.text((200, 40), str(member), poppins, color="white")
+
+              background.rectangle((200, 100), width=350, height=2, fill="#17F3F6")
+              background.text(
+                  (200, 130),
+                  f"Level : {level} |"
+                  + f" XP : {xp} / {xp_till_next_level}",
+                  font=poppins_small,
+                  color="white",
+              )
+
+              file1 = discord.File(fp=background.image_bytes, filename="avatar.png")
+              image.save("avatar.png")
+              #file.close()'''
+
+              #member_name_len.append((int(len(str(ctx.message.author))) - 1))
+              #member_name_len.sort(reverse = False)
+              #length = member_name_len[-1]
+
+              '''for i in val_list:
+                dis_list.append(str(i[-5::]))
+
+                string_1 = ""
+                new_length = length - len(i)
+                #length_list.append(new_length)
+
+                for x in range(new_length):
+                  string_1 += "  "
+                  #return string_1
+                space_list.append(string_1)
+
+                #print(new_length)
+
+              new_length = length - len((str(ctx.message.author)).upper())
+              string_2 = ""
+              #length_list.append(new_length)
+
+              for x in range(new_length):
+                string_2 += "  "
+                #return string_2
+              space_list.append(string_2)'''
+
+              #space_list.sort()
+
+{
+    // Use IntelliSense to learn about possible attributes.
+    // Hover to view descriptions of existing attributes.
+    // For more information, visit: https://go.microsoft.com/fwlink/?linkid=830387
+    "version": "0.2.0",
+    "configurations": [
+
+        {
+   
+            "name": "Python: Current File",
+            "type": "python",
+            "request": "launch",
+            "program": "${file}",
+            "console": "integratedTerminal",
+            "justMyCode": true
+        }
+        
+    ]
+}
+
+//{
+//    "name": "Python: Debug Console",
+//    "type": "python",
+//    "request": "launch",
+//    "program": "${file}",
+//    "console": "internalConsole"
+//  }
+
+//{
+//   "name": "Python: Current File",
+//  "type": "python",
+//   "request": "launch",
+//   "program": "${file}",
+//   "console": "integratedTerminal",
+//   "justMyCode": true
+//  }
+
+'''#if int(ranking_size[0] + 4 + nickname_width) > 503:
+                  if nickname_len < 16:
+                    background.text((x_coordinate, start_width - ranking_height), text = name_list[item_num], font = poppins_big, color = "#fabc74")
+
+                  elif nickname_len < 20:
+                    poppins = ImageFont.truetype(io.BytesIO(r.content), size=40)
+                    background.text((x_coordinate, start_width - ranking_height + 8), text = name_list[item_num], font = poppins, color = "#fabc74")
+
+                  elif nickname_len < 24:
+                    poppins = ImageFont.truetype(io.BytesIO(r.content), size=35)
+                    background.text((x_coordinate, start_width - ranking_height + 15), text = name_list[item_num], font = poppins, color = "#fabc74")
+
+                  elif nickname_len < 28:
+                    background.text((x_coordinate, start_width - ranking_height + 15), text = name_list[item_num], font = poppins_small, color = "#fabc74")
+
+                  elif nickname_len > 27:
+                    poppins = ImageFont.truetype(io.BytesIO(r.content), size=27)
+                    background.text((x_coordinate, start_width - ranking_height + 15), text = name_list[item_num], font = poppins, color = "#fabc74")'''
+
+                '''if rank == 1:
+                  member_1 = ctx.guild.get_member(record["user_id"])
+                  profile_pic_1 = await load_image_async(str(member_1.display_avatar))
+                  profile_pic_1 = Editor(profile_pic_1).resize((avatar_lenght, avatar_width)).circle_image()
+                  pic_list.append(profile_pic_1)
+                  member_1 = str(member_1)
+
+                  #member_name_len.append((int(len(value_1)) + 1))
+                  name_list.append(str(member_1[:-5]))
+                  val_list.append(member_1.upper())
+                  dis_list.append(str(member_1[-5::]))
+
+                  pass
+
+                elif rank == 2:
+                  member_2 = ctx.guild.get_member(record["user_id"])
+                  profile_pic_2 = await load_image_async(str(member_2.display_avatar))
+                  profile_pic_2 = Editor(profile_pic_2).resize((avatar_lenght, avatar_width)).circle_image()
+                  pic_list.append(profile_pic_2)
+                  member_2 = str(member_2)
+
+                  #member_name_len.append((int(len(value_2)) + 1))
+                  name_list.append(str(member_2[:-5]))
+                  val_list.append(member_2.upper())
+                  dis_list.append(str(member_2[-5::]))
+
+                  pass
+
+                elif rank == 3:
+                  member_3 = ctx.guild.get_member(record["user_id"])
+                  profile_pic_3 = await load_image_async(str(member_3.display_avatar))
+                  profile_pic_3 = Editor(profile_pic_3).resize((avatar_lenght, avatar_width)).circle_image()
+                  pic_list.append(profile_pic_3)
+                  member_3 = str(member_3)
+
+                  #member_name_len.append((int(len(value_3)) + 1))
+                  name_list.append(str(member_3[:-5]))
+                  val_list.append(member_3.upper())
+                  dis_list.append(str(member_3[-5::]))
+
+                  pass
+
+                elif rank == 4:
+                  member_4 = ctx.guild.get_member(record["user_id"])
+                  profile_pic_4 = await load_image_async(str(member_4.display_avatar))
+                  profile_pic_4 = Editor(profile_pic_4).resize((avatar_lenght, avatar_width)).circle_image()
+                  pic_list.append(profile_pic_4)
+                  member_4 = str(member_4)
+
+                  #member_name_len.append((int(len(value_4)) + 1))
+                  name_list.append(str(member_4[:-5]))
+                  val_list.append(member_4.upper())
+                  dis_list.append(str(member_4[-5::]))
+                  
+                  pass
+
+                elif rank == 5:
+                  member_5 = ctx.guild.get_member(record["user_id"])
+                  profile_pic_5 = await load_image_async(str(member_5.display_avatar))
+                  profile_pic_5 = Editor(profile_pic_5).resize((avatar_lenght, avatar_width)).circle_image()
+                  pic_list.append(profile_pic_5)
+                  member_5 = str(member_5)
+
+                  #member_name_len.append((int(len(value_5)) + 1))
+                  name_list.append(str(member_5[:-5]))
+                  val_list.append(member_5.upper())
+                  dis_list.append(str(member_5[-5::]))
+
+                  pass'''
+
+                  item = len(current)
+        choices = []
+
+        async for entry in interaction.guild.bans(limit=None):
+            if current:
+                pass
+
+            if current.startswith(str(entry.user.name).lower()[:int(item)]):
+                g = str(entry.user.name).lower()[:int(item)]
+                print("name:",g)
+                choices.append(Choice(name = str(entry.user.name), value = str(entry.user.id)))
+                pass
+                
+            elif current.startswith(str(entry.user.id)[:int(item)]):
+                g = str(entry.user.id)[:int(item)]
+                print("id:",g)
+                choices.append(Choice(name = str(entry.user.name), value = str(entry.user.id)))
+                pass
+
+        if len(choices) > 5:
+            return choices[:5]
+
+        print(choices)
+        return choices
