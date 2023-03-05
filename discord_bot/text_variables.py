@@ -1,7 +1,7 @@
 import discord
 
 # MAIN ASQLITE DATABASE DIRECTORY:
-sql_dir = "ULTIMATE_THANOS/databases/main.sqlite"
+sql_dir = "databases/main.sqlite"
 
 # __EMBED_ATTRIBUTES__
 # EMBED COLOR:

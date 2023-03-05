@@ -21,13 +21,13 @@ class StatsLoop(commands.Cog, name = "StatsLoop"):
 
                 member_counter = int(member.guild.member_count) - int(bot_counter)
 
-                await cursor.execute(f"SELECT all_counter_channel_id FROM main WHERE guild_id = {guild.id}")
+                await cursor.execute(f"SELECT channel_id FROM main WHERE guild_id = {guild.id}")
                 all_counter = await cursor.fetchone()
 
-                await cursor.execute(f"SELECT members_counter_channel_id FROM main WHERE guild_id = {guild.id}")
+                await cursor.execute(f"SELECT channel_id FROM main WHERE guild_id = {guild.id}")
                 members_counter = await cursor.fetchone()
 
-                await cursor.execute(f"SELECT bots_counter_channel_id FROM main WHERE guild_id = {guild.id}")
+                await cursor.execute(f"SELECT channel_id FROM main WHERE guild_id = {guild.id}")
                 bots_counter = await cursor.fetchone()
 
                 try:

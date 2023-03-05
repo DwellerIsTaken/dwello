@@ -1,13 +1,11 @@
-#from asyncpg import Pool
 import asqlite, discord, datetime, string
 import text_variables as tv
 
 async def create_tables() -> None:
     async with asqlite.connect(tv.sql_dir) as connector:
         async with connector.cursor() as cursor:
-        # await connection.execute("DROP TABLE IF EXISTS users") # Uncomment this line if you have the database already created and have old data
 
-            with open("ULTIMATE_THANOS/databases/schema.sql", "r") as f:
+            with open("databases/schema.sql", "r") as f:
                 tables = f.read()
 
             await cursor.executescript(tables)
@@ -35,22 +33,6 @@ async def create_user(user_id: int, guild_id: int) -> None:
             await cursor.execute("INSERT INTO users(user_id, guild_id, event_type) VALUES(?, ?, ?)", (user_id, guild_id, "server"))
             await cursor.execute("INSERT INTO users(user_id, guild_id, event_type) VALUES(?, ?, ?)", (user_id, guild_id, "bot"))
             await connector.commit()
-
-            '''
-            # Check if user already exists in the database
-            query = "SELECT * FROM users WHERE guild_id = ? AND user_id = ?"
-            await cursor.execute(query, (guild_id, user_id))
-            record = await cursor.fetchone()
-
-            if record is not None:
-                return
-
-            # Insert new user into the database
-            query = "INSERT INTO users(user_id, guild_id, event_type) VALUES(?, ?, ?)"
-            await cursor.execute(query, (user_id, guild_id, "server"))
-            await cursor.execute(query, (user_id, guild_id, "bot"))
-            await connector.commit()
-            '''
 
 async def increase_xp(message, rate=5) -> None:
     async with asqlite.connect(tv.sql_dir) as connector:

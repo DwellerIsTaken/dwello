@@ -4,31 +4,11 @@ import sys, typing, logging
 import asyncio, discord, jishaku
 from discord.ext import commands
 from utils.fetch_from_db import *
-
-sys.path.append('C:/Users/wobbl/OneDrive/Bureaublad/VS_CODE')
 import config
 
 intents = discord.Intents.all() # Creating a client and setting up its parameters
 bot = commands.Bot(command_prefix = '$', chunk_guilds_at_startup = False ,activity = discord.Activity(type = discord.ActivityType.playing , name = 'Visual Studio Code') , intents = intents, help=False)
 bot.remove_command("help")
-
-#dict[{"guild_id": data["guild_id"]}, dict[{"user_id": data["user_id"]}, dict[{"id": data["id"]}, {"name": data["name"]}]]]
-
-'''cogs = ['features.entertainment.weather',
-'features.required_permissions.add_comms',
-'features.required_permissions.clear_command',
-'proper_debugging.error_handler',
-'features.bot_events.events',
-'features.levelling.levelling_system', 
-'features.admin_functions.moder_commands',
-'features.admin_functions.warnings',
-'features.economy.server_eco_comms',
-'features.economy.bot_eco_comms',
-'proper_debugging.on_command_error_event',
-'features.economy.utils.economy_loop',
-'features.required_permissions.utils.server_statistics_loop',
-'features.required_permissions.join_leave_comms',
-'jishaku'] '''
 
 cogs = {
     'Required Permissions': ['features.required_permissions.add_comms', 'features.required_permissions.clear_command', 'features.required_permissions.join_leave_comms'],
@@ -37,10 +17,12 @@ cogs = {
     'Moderation': ['features.admin_functions.moder_commands', 'features.admin_functions.warnings'],
     'Debugging': ['proper_debugging.error_handler', 'proper_debugging.on_command_error_event'],
     'Levelling': ['features.levelling.levelling_system'],
-    'Economy': ['features.economy.server_eco_comms', 'features.economy.bot_eco_comms','features.economy.utils.economy_loop'],
+    'Economy': ['features.economy.server_eco_comms', 'features.economy.bot_eco_comms'],
     'Events': ['features.bot_events.events'],
     'Other': ['jishaku']
 }
+
+# features.economy.utils.economy_loop
 
 @bot.event
 async def on_ready():
