@@ -1,3 +1,4 @@
 *.pyc
+*.env
 config.py
 main.sqlite

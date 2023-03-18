@@ -1,10 +1,11 @@
+import asyncio, discord, sys, typing, logging, os
 from features.levelling.utils import levelling
 from text_variables import bot_reply_list
-import sys, typing, logging
-import asyncio, discord, jishaku
 from discord.ext import commands
 from utils.fetch_from_db import *
-import config
+from dotenv import load_dotenv
+
+load_dotenv()
 
 intents = discord.Intents.all() # Creating a client and setting up its parameters
 bot = commands.Bot(command_prefix = '$', chunk_guilds_at_startup = False ,activity = discord.Activity(type = discord.ActivityType.playing , name = 'Visual Studio Code') , intents = intents, help=False)
@@ -28,7 +29,6 @@ cogs = {
 async def on_ready():
 
     bot_reply_list.append(f"**Stop it!** - asked {bot.user.name} calmly.",)
-    await levelling.create_tables()
     await bot.tree.sync(guild=discord.Object(690995360411156531))
 
     bot.jobs_data = await fetch_job_data()
@@ -72,6 +72,8 @@ async def sync(
     await ctx.send(f"Synced the tree to {ret}/{len(guilds)}.")
 
 async def main():
+    await levelling.create_tables()
+
     async with bot:
         for category, cogs_ in cogs.items():
             for cog in cogs_:
@@ -79,7 +81,8 @@ async def main():
 
         logging.basicConfig(level=logging.INFO)
 
-        await bot.start(config.token) #log_handler=None
+        token = os.getenv('token')
+        await bot.start(token) #log_handler=None
 asyncio.run(main())
 
 # EMPTY SPACE: \u2800

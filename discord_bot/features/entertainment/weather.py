@@ -1,6 +1,9 @@
 from discord.ext import commands
-import discord, aiohttp, config
+import discord, aiohttp, os
 from utils.fetch_from_db import *
+from dotenv import load_dotenv
+
+load_dotenv()
 
 class weather_function(commands.Cog, name = "weather_function"):
   def __init__(self, bot):
@@ -14,7 +17,7 @@ class weather_function(commands.Cog, name = "weather_function"):
   @commands.hybrid_command(name='weather', help="Shows you the temparature in the city you've typed in.",with_app_command=True)
   async def weather(self,ctx, *, city: str):
     
-      key = config.weather_key
+      key = os.getenv('weather_key')
       args = city.lower()
 
       async with aiohttp.ClientSession() as session:
