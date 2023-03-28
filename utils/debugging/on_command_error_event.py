@@ -3,7 +3,7 @@ import traceback
 import text_variables
 from discord.ext import commands
 
-class on_command_error(commands.Cog, name = "on_command_error"):
+class on_command_error():
 
     def __init__(self, bot):
         self.bot = bot

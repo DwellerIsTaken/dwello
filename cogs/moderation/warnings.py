@@ -1,4 +1,4 @@
-import features.levelling.utils.levelling as levelling
+#import features.levelling.utils.levelling as levelling
 from discord.app_commands import Choice
 from discord.ext import commands
 import text_variables as tv
@@ -65,7 +65,7 @@ class Warnings(commands.Cog):
                     if reason is None:
                         reason = "Not specified"
 
-                    await levelling.create_user(member.id, ctx.guild.id)
+                    await self.bot.lvl.create_user(member.id, ctx.guild.id)
 
                     await conn.execute("INSERT INTO warnings(guild_id, user_id, warn_text, created_at, warned_by) VALUES($1,$2,$3,$4,$5)", ctx.guild.id, member.id, reason, discord.utils.utcnow(), ctx.author.id)
                     results = await conn.fetch("SELECT * FROM warnings WHERE guild_id = $1 AND user_id = $2", ctx.guild.id, member.id)

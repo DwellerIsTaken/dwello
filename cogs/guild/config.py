@@ -155,7 +155,7 @@ class Config(commands.Cog):
     @message.command(name="display", description = "Displays the current welcome message if there is one.")
     async def welcome_message_display(self, ctx: commands.Context):
         async with ctx.typing():
-            return await ConfigFunctions.msg_displ(ctx, "welcome")
+            return await ConfigFunctions.message_display(ctx, "welcome")
 
     @channel.command(name="display", description = "Displays the current welcome channel if there is one.")
     async def welcome_channel_display(self, ctx: commands.Context):
@@ -212,7 +212,7 @@ class Config(commands.Cog):
     @message.command(name="display", description = "Displays the current leave message if there is one.")
     async def leave_message_display(self, ctx: commands.Context):
         async with ctx.typing():
-            return await ConfigFunctions.msg_displ(ctx, "leave")
+            return await ConfigFunctions.message_display(ctx, "leave")
 
     @channel.command(name="display", description = "Displays the current leave channel if there is one.")
     async def leave_channel_display(self, ctx: commands.Context):

@@ -1,10 +1,12 @@
+from __future__ import annotations
+
 import asyncpg, discord, string, os
 from contextlib import suppress
 from discord.ext import commands
 from typing import List, Dict, Any, Optional
 import text_variables as tv
 
-class LevellingUtils(commands.Cog):
+class LevellingUtils():
     def __init__(self, bot: commands.Bot):
         super().__init__()
         self.bot = bot
@@ -17,7 +19,7 @@ class LevellingUtils(commands.Cog):
 
                 await conn.execute(tables)
 
-    async def create_user(self, user_id: Optional[discord.Member.id] = int, guild_id: Optional[discord.Guild.id] = int) -> None:
+    async def create_user(self, user_id: Optional[int], guild_id: Optional[int]) -> None:
         async with self.bot.pool.acquire() as conn:
             async with conn.transaction():
 

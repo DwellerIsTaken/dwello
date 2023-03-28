@@ -1,17 +1,29 @@
+from dotenv import load_dotenv
+load_dotenv()
+
 import asyncio, discord, sys, typing, logging, os
-from features.levelling.utils import levelling
+import utils
 from text_variables import bot_reply_list
 from discord.ext import commands
-from utils.db_operations import fetch_job_data, create_pool
-from dotenv import load_dotenv
-
-load_dotenv()
+from utils.db_operations import DB_Operations
+from utils.levelling import LevellingUtils
 
 intents = discord.Intents.all() # Creating a client and setting up its parameters
 bot = commands.Bot(command_prefix = '$', chunk_guilds_at_startup = False ,activity = discord.Activity(type = discord.ActivityType.playing , name = 'Visual Studio Code') , intents = intents, help=False)
 bot.remove_command("help")
 
 cogs = {
+    "cogs.entertainment",
+    "cogs.information",
+    "cogs.moderation", 
+    "cogs.guild", 
+    "utils.events", 
+    "utils.loops", 
+    "utils.debugging.error_handler",
+    "utils.debugging.on_command_error_event",
+    }
+
+'''cogs = {
     'Required Permissions': ['features.required_permissions.add_comms', 'features.required_permissions.clear_command', 'features.required_permissions.join_leave_comms'],
     'Server Statistics': ['features.required_permissions.utils.server_statistics_loop'],
     'Entertainment': ['features.entertainment.weather'],
@@ -21,7 +33,7 @@ cogs = {
     'Economy': ['features.economy.server_eco_comms', 'features.economy.bot_eco_comms'],
     'Events': ['features.bot_events.events'],
     'Other': ['jishaku']
-}
+}'''
 
 # features.economy.utils.economy_loop
 
@@ -31,7 +43,7 @@ async def on_ready():
     bot_reply_list.append(f"**Stop it!** - asked {bot.user.name} calmly.",)
     await bot.tree.sync(guild=discord.Object(690995360411156531))
     
-    bot.jobs_data = await fetch_job_data()
+    bot.jobs_data = await bot.db.fetch_job_data()
 
     print('Python version:', sys.version)
     print('{0} is online'.format(bot.user.name))
@@ -64,6 +76,7 @@ async def sync(
     for guild in guilds:
         try:
             await ctx.bot.tree.sync(guild=guild)
+            
         except discord.HTTPException:
             pass
         else:
@@ -72,14 +85,16 @@ async def sync(
     await ctx.send(f"Synced the tree to {ret}/{len(guilds)}.")
 
 async def main():
-    await levelling.create_tables()
+    bot.db = DB_Operations(bot)
+    bot.pool = await bot.db.create_pool()
 
-    bot.pool = await create_pool()
+    bot.lvl = LevellingUtils(bot)
+    await bot.lvl.create_tables()
 
     async with bot:
-        for category, cogs_ in cogs.items():
-            for cog in cogs_:
-                await bot.load_extension(cog)
+        #for category, cogs_ in cogs.items():
+        for cog in cogs:
+            await bot.load_extension(cog)
 
         logging.basicConfig(level=logging.INFO)
 
@@ -89,30 +104,17 @@ asyncio.run(main())
 
 # EMPTY SPACE: \u2800
 # This command doesn't exist: function (error handler)
-# temp_track = (i.split("/")[-1]).split('.')[0]
 # Make an info(help) command
-# Economy
-# Conversational AI ("I don't want to understand you")
-# Thanos` irritations
+# REDO Economy
+# Conversational AI ("I don't want to understand you") (wtf?)
+# Bot`s irritations
 # Global bot.check (error handler)
-# await self.bot.get_cog("Economy").start(ctx, member)
 # welcome/leave channel disable/remove
 # bot_eco & server_eco balance
 # twitch/tiktok notifs
 # global trading
 # global/local leaderboards
-
-'''
-bot.global_cd = commands.CooldownMapping.from_cooldown(2, 5, commands.BucketType.member)
-
-@bot.check
-async def cooldown_check(ctx):
-    
-    if str(ctx.invoked_with).lower() == "help":
-        return True
-    bucket = ctx.bot.global_cd.get_bucket(ctx.message)
-    retry_after = bucket.update_rate_limit()
-    if retry_after:
-        raise commands.CommandOnCooldown(bucket, retry_after, commands.BucketType.member)
-    return True
-    '''
+# make cooldowns
+# PUT ALL ERROR HANDLER IN ONE FILE | fucking organize it already
+# do subclassing (subcogging)
+# from easypil to PIL
