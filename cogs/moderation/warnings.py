@@ -2,7 +2,7 @@
 from discord.app_commands import Choice
 from discord.ext import commands
 import text_variables as tv
-import datetime, discord, asyncpg, os
+import datetime, discord, os
 from contextlib import suppress
 
 from utils import member_check, interaction_check

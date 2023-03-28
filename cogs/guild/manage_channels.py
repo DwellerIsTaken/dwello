@@ -1,6 +1,6 @@
 from discord.ext import commands
 import text_variables as tv
-import discord, asyncpg, os
+import discord, os
 
 from discord.ui import button, View, Button
 from typing import Optional, Union, Tuple, Literal
@@ -119,7 +119,7 @@ class Stats_View(View):
 
     @button(style = discord.ButtonStyle.red, label="Deny", disabled=False, custom_id="deny_button")
     async def deny(self, interaction: discord.interactions.Interaction, button: Button) -> None:
-        async with asyncpg.connect(database= tv.db_name, user= tv.db_username, password= os.getenv('pg_password')) as conn:
+        async with self.bot.pool.acquire() as conn:
             async with conn.transaction():
 
                 await conn.execute("UPDATE deny_clicked FROM server_data WHERE guild_id = $1", interaction.guild.id)

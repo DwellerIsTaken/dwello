@@ -3,15 +3,14 @@ import discord
 import os
 from discord.ext import commands
 import text_variables
-import asyncpg
 from colorthief import ColorThief
 import matplotlib.colors as clr
 from utils.levelling import LevellingUtils as levelling
 from PIL import Image, ImageFont
-from easy_pil import Editor, Canvas, load_image_async, Font
+#from easy_pil import Editor, Canvas, load_image_async, Font
 import requests
 import io
-from features.economy.utils.server_attributes import server_job_info
+from utils.economy import GuildEcoUtils as gu
 import text_variables as tv
 from typing import Optional, Union
 from utils import get_avatar_dominant_color
@@ -61,7 +60,7 @@ class UserInfo(commands.Cog):
                         else:
                             embed.set_author(name = f"{member.name}'s personal information", icon_url = member.display_avatar)
 
-                    name, salary, description = await server_job_info(ctx, member)
+                    name, salary, description = await gu.server_job_info(ctx, member)
 
                     embed.add_field(name=f"Your current level", value=f"`{level}`", inline=True)
                     embed.add_field(name="\u2800\u2800", value="\u2800", inline=True)
@@ -83,7 +82,7 @@ class UserInfo(commands.Cog):
             return await ctx.reply(embed=embed, mention_author = False)
 
     # OPTIMIZE | TO PIL
-    @commands.hybrid_command(name = 'rank', description="Shows your rank or another member's rank.",with_app_command=True) 
+    '''@commands.hybrid_command(name = 'rank', description="Shows your rank or another member's rank.",with_app_command=True) 
     async def rank(self, ctx: commands.Context, member: Optional[Union[discord.Member, discord.User]] = commands.Author):
         async with ctx.typing():
             async with self.bot.pool.acquire() as conn:
@@ -265,7 +264,7 @@ class UserInfo(commands.Cog):
                         image.save("avatar.png")
 
             await ctx.reply(file=file1,mention_author=False)
-        return os.remove("avatar.png")
+        return os.remove("avatar.png")'''
 
     '''@commands.hybrid_command(name = 'leaderboard', description="Shows the level leaderboard.",with_app_command=True) 
     async def leaderboard(self, ctx: commands.Context):
