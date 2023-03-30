@@ -9,8 +9,7 @@ from typing import Optional, Union
 
 class StandardModeration(commands.Cog):
 
-    def __init__(self, bot: commands.Bot):
-        super().__init__
+    def __init__(self, bot):
         self.bot = bot
 
     @commands.hybrid_command(name='ban', help="Bans users with bad behaviour. | Moderation", with_app_command = True)

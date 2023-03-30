@@ -8,10 +8,9 @@ import discord, os
 from typing import Optional, Literal
 from utils import event_subscription
 
-class ConfigFunctions(commands.Cog):
+class ConfigFunctions():
 
-    def __init__(self, bot: commands.Bot):
-        super().__init__()
+    def __init__(self, bot):
         self.bot = bot
 
     async def add_message(self, ctx: commands.Context, name: str, text: str) -> Optional[discord.Message]:
@@ -116,8 +115,8 @@ class ConfigFunctions(commands.Cog):
 class Config(commands.Cog):
 
     def __init__(self, bot: commands.Bot):
-        super().__init__()
         self.bot = bot
+        self.config = ConfigFunctions(bot)
 
     @commands.hybrid_group(invoke_without_command=True,with_app_command=True)
     @commands.bot_has_permissions(manage_channels=True,manage_messages=True)
@@ -145,27 +144,27 @@ class Config(commands.Cog):
     @w_channel.command(name="set", description = "Sets chosen channel as a welcome channel.")
     async def welcome_channel_set(self, ctx: commands.Context, channel: Optional[discord.TextChannel] = commands.CurrentChannel):
 
-        return await ConfigFunctions.add_channel(ctx, "welcome", channel)
+        return await self.config.add_channel(ctx, "welcome", channel)
 
     @w_message.command(name="set", description = "You can use this command to set a welcome message.")
     async def welcome_message_set(self, ctx: commands.Context, *, text: str): # ,* (?)
 
-        return await ConfigFunctions.add_message(ctx, "welcome", text)
+        return await self.config.add_message(ctx, "welcome", text)
 
     @w_message.command(name="display", description = "Displays the current welcome message if there is one.")
     async def welcome_message_display(self, ctx: commands.Context):
         async with ctx.typing():
-            return await ConfigFunctions.message_display(ctx, "welcome")
+            return await self.config.message_display(ctx, "welcome")
 
     @w_channel.command(name="display", description = "Displays the current welcome channel if there is one.")
     async def welcome_channel_display(self, ctx: commands.Context):
         async with ctx.typing():
-            return await ConfigFunctions.channel_display(ctx, "welcome")
+            return await self.config.channel_display(ctx, "welcome")
 
     @w_channel.command(name="remove", description = "Removes the welcome channel.")
     async def welcome_channel_remove(self, ctx: commands.Context):
 
-        return await ConfigFunctions.remove(ctx, "welcome")
+        return await self.config.remove(ctx, "welcome")
 
     @welcome.command(name="help", description = "Welcome help.")
     async def help(self, ctx: commands.Context):
@@ -202,27 +201,27 @@ class Config(commands.Cog):
     @l_channel.command(name="set", description = "Sets chosen channel as a leave channel.")
     async def leave_channel_set(self, ctx: commands.Context, channel: Optional[discord.TextChannel] = commands.CurrentChannel):
         
-        return await ConfigFunctions.add_channel(ctx, "leave", channel)
+        return await self.config.add_channel(ctx, "leave", channel)
 
     @l_message.command(name="set", description = "You can use this command to set a leave message.")
     async def leave_message_set(self, ctx: commands.Context, *, text: str):
 
-        return await ConfigFunctions.add_message(ctx, "leave", text)
+        return await self.config.add_message(ctx, "leave", text)
 
     @l_message.command(name="display", description = "Displays the current leave message if there is one.")
     async def leave_message_display(self, ctx: commands.Context):
         async with ctx.typing():
-            return await ConfigFunctions.message_display(ctx, "leave")
+            return await self.config.message_display(ctx, "leave")
 
     @l_channel.command(name="display", description = "Displays the current leave channel if there is one.")
     async def leave_channel_display(self, ctx: commands.Context):
         async with ctx.typing():
-            return await ConfigFunctions.channel_display(ctx, "leave")
+            return await self.config.channel_display(ctx, "leave")
 
     @l_channel.command(name="remove", description = "Removes the leave channel.")
     async def leave_channel_remove(self, ctx: commands.Context):
 
-        return await ConfigFunctions.remove(ctx, "leave")
+        return await self.config.remove(ctx, "leave")
 
     @leave.command(name="help", description = "Leave help.")
     async def l_help(self, ctx: commands.Context):
@@ -260,27 +259,27 @@ class Config(commands.Cog):
     @t_channel.command(name="set",help="Sets a channel where your twitch notifications will be posted.")
     async def twitch_channel_set(self, ctx: commands.Context, channel: Optional[discord.TextChannel] = commands.CurrentChannel):
 
-        return await ConfigFunctions.add_channel(ctx, "twitch", channel)
+        return await self.config.add_channel(ctx, "twitch", channel)
 
     @t_message.command(name="set", help="Sets a notification message.")
     async def twitch_message_set(self, ctx: commands.Context, *, text: str):
 
-        return await ConfigFunctions.add_message(ctx, "twitch", text)
+        return await self.config.add_message(ctx, "twitch", text)
     
     @t_message.command(name="display", description = "Displays the current twitch message if there is one.")
     async def twitch_message_display(self, ctx: commands.Context):
         async with ctx.typing():
-            return await ConfigFunctions.message_display(ctx, "twitch")
+            return await self.config.message_display(ctx, "twitch")
 
     @t_channel.command(name="display", description = "Displays the current twitch channel if there is one.")
     async def twitch_channel_display(self, ctx: commands.Context):
         async with ctx.typing():
-            return await ConfigFunctions.channel_display(ctx, "twitch")
+            return await self.config.channel_display(ctx, "twitch")
     
     @t_channel.command(name="remove", description = "Removes the twitch channel.")
     async def twitch_channel_remove(self, ctx: commands.Context):
 
-        return await ConfigFunctions.remove(ctx, "twitch") # MAYBE REMOVE CHANNEL_REMOVE COMMS
+        return await self.config.remove(ctx, "twitch") # MAYBE REMOVE CHANNEL_REMOVE COMMS
 
     @twitch.command(name="add", help="Sets a twitch streamer. The notification shall be posted when the streamer goes online.")
     async def add_twitch_streamer(self, ctx: commands.Context, twitch_streamer_name: str):

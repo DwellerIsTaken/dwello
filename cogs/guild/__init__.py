@@ -7,7 +7,7 @@ from .manage_channels import Channels
 from .manage_messages import Messages
 
 class Guild(Config, Channels, Messages):
-    pass
+    '''Guild Class'''
 
 async def setup(bot: commands.Bot):
     await bot.add_cog(Guild(bot))

@@ -6,8 +6,8 @@ from typing import Optional
 
 class Messages(commands.Cog):
 
-    def __init__(self):
-        super().__init__()
+    def __init__(self, bot):
+        self.bot = bot
     
     @commands.hybrid_command(name='clear', help="Purges messages.", with_app_command=True)
     @commands.bot_has_permissions(manage_messages=True)

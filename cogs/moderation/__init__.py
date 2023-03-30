@@ -8,7 +8,7 @@ from .timeout import Timeout
 from .warnings import Warnings
 
 class Moderation(StandardModeration, Timeout, Warnings):
-    pass
+    '''Moderation Class'''
 
 async def setup(bot: commands.Bot):
     await bot.add_cog(Moderation(bot))

@@ -6,6 +6,7 @@ from typing import Optional
 import text_variables as tv
 
 class Weather(commands.Cog):
+
   def __init__(self, bot):
     self.bot = bot
 

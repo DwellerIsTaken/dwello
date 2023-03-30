@@ -7,15 +7,17 @@ import discord
 
 from typing import Optional
 
-from utils.economy import BotEcoUtils as be
-from utils.economy import GuildEcoUtils as ge
-from utils.db_operations import DB_Operations as db
+from utils.economy import BotEcoUtils
+from utils.economy import GuildEcoUtils
+from utils.db_operations import DB_Operations
 
 class Guild_Economy(commands.Cog):
 
     def __init__(self, bot):
-        super().__init__(bot=bot)
         self.bot = bot
+        self.be = BotEcoUtils(bot)
+        self.ge = GuildEcoUtils(bot)
+        self.db = DB_Operations(bot)
 
     #jobs -- lots of available jobs
 
@@ -36,7 +38,7 @@ class Guild_Economy(commands.Cog):
     @jobs.command(name = "list", description = "Shows a list of available jobs on the server set by the server administrator.")
     async def job_list(self, ctx: commands.Context) -> Optional[discord.Message]:
         
-        embed = await ge.jobs_display(ctx)
+        embed = await self.ge.jobs_display(ctx)
         return await ctx.reply(embed = embed, mention_author = False) # if isinstance(embed, list) else embed
 
     @jobs.command(name = "create", description = "Creating jobs. Only for administrator!")
@@ -44,15 +46,15 @@ class Guild_Economy(commands.Cog):
     @commands.has_permissions(administrator = True)
     async def job_create(self, ctx: commands.Context, job_name: str, salary: commands.Range[int, 2000, 20000], job_description: Optional[str]):
         
-        await ge.server_job_create(ctx, job_name, salary, job_description)
-        self.bot.jobs_data = await db.fetch_job_data()
+        await self.ge.server_job_create(ctx, job_name, salary, job_description)
+        self.bot.jobs_data = await self.db.fetch_job_data()
 
     @jobs.command(name = "remove", description = "Removing jobs. Only for administrator!")
     @commands.has_permissions(administrator = True)
     async def job_remove(self, ctx: commands.Context, job_name: str):
         
-        await ge.server_job_remove(ctx, job_name)
-        self.bot.jobs_data = await db.fetch_job_data()
+        await self.ge.server_job_remove(ctx, job_name)
+        self.bot.jobs_data = await self.db.fetch_job_data()
 
     @job_remove.autocomplete('job_name')
     async def autocomplete_callback(self, interaction: discord.Interaction, current: str):
@@ -114,7 +116,7 @@ class Guild_Economy(commands.Cog):
                 if check == 0:
                     return await ctx.reply("The provided job doesn't exist.")
 
-                self.bot.jobs_data = await db.fetch_job_data()
+                self.bot.jobs_data = await self.db.fetch_job_data()
                 return await ctx.reply(embed=discord.Embed(description=f'The job is set to: **{name}**', color = tv.color), mention_author=False)
 
     @job_set.autocomplete('job_name')
@@ -155,7 +157,7 @@ class Guild_Economy(commands.Cog):
     @jobs.command(name = "display", description = "Displays member's current job!")
     async def server_user_job_display(self, ctx: commands.Context, member: discord.Member = None) -> Optional[discord.Message]:
 
-        name, salary, description =  await ge.server_job_info(ctx, member)
+        name, salary, description =  await self.ge.server_job_info(ctx, member)
         embed = discord.Embed(title="Your job", description=f"**{name}**\n*Salary:* {salary}\n*Description:* {description}", color=tv.color)
         failure_embed = discord.Embed(title="You have no job!", description="> Go on and get it!", color=tv.color)
         return await ctx.reply(embed if name else failure_embed ,mention_author=False) #*ID:* `{job[1]}`
@@ -163,4 +165,4 @@ class Guild_Economy(commands.Cog):
     @jobs.command(name = "work", description = "Your server work.")
     async def server_work(self, ctx):
         
-        return await be.work(ctx, "server")
+        return await self.be.work(ctx, "server")

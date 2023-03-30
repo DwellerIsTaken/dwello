@@ -5,37 +5,38 @@ from discord.ext import commands
 import text_variables
 from colorthief import ColorThief
 import matplotlib.colors as clr
-from utils.levelling import LevellingUtils as levelling
+from utils.levelling import LevellingUtils
 from PIL import Image, ImageFont
 #from easy_pil import Editor, Canvas, load_image_async, Font
 import requests
 import io
-from utils.economy import GuildEcoUtils as gu
+from utils.economy import GuildEcoUtils
 import text_variables as tv
 from typing import Optional, Union
 from utils import get_avatar_dominant_color
 
 class UserInfo(commands.Cog):
 
-    def __init__(self, bot: commands.Bot):
-        super().__init__()
+    def __init__(self, bot):
         self.bot = bot
+        self.levelling = LevellingUtils(bot)
+        self.ge = GuildEcoUtils(bot)
 
     @commands.hybrid_command(name = 'stats', description="Shows personal information and rank statistics",with_app_command=True) 
     async def stats(self, ctx: commands.Context, member: Optional[Union[discord.Member, discord.User]] = commands.Author) -> Optional[discord.Message]:
         async with ctx.typing():
             async with self.bot.pool.acquire() as conn:
                 async with conn.transaction():
-
-                    query = "SELECT xp, messages, level, money, total_xp FROM users WHERE user_id = $1 AND guild_id = $2"
-                    row = await conn.fetchrow(query, member.id, member.guild.id)
+                    
+                    query = "SELECT xp, messages, level, money, total_xp FROM users WHERE user_id = $1 AND guild_id = $2 AND event_type = 'bot'"            
+                    row = await conn.fetchrow(query, member.id, ctx.guild.id if ctx.guild else None)
 
                     xp, messages, level, money, total_xp = map(int, row)
 
-                    query = "SELECT warn_text FROM warnings WHERE guild_id = $1 AND user_id = $2"
-                    rows = await conn.fetch(query, ctx.guild.id, member.id)
+                    warn_query = "SELECT warn_text FROM warnings WHERE user_id = $1 AND guild_id = $2"
+                    warn_rows = await conn.fetch(warn_query, member.id, ctx.guild.id if ctx.guild else None)
 
-                    warnings = sum(1 for row in rows if row["warn_text"] is not None)
+                    warnings = sum(1 for row in warn_rows if row["warn_text"] is not None)
 
                     level_formula = int(level * (level * 10))
                     xp_till_next_level = int(level_formula - xp)
@@ -43,15 +44,13 @@ class UserInfo(commands.Cog):
                     most_used_color = await get_avatar_dominant_color(member)
 
                     #embed_hex_code = hex_code.replace('#', '0x')
-
-                    embed = discord.Embed(title="Statistics", color= most_used_color)
+                    
+                    embed = discord.Embed(title="Statistics", color= most_used_color) #discord.Colour.to_rgb(most_used_color)
 
                     if member == ctx.author:
-
                         embed.set_author(name = f"Your personal information", icon_url = member.display_avatar)
 
-                    elif member != ctx.author:
-
+                    else:
                         name_l = member.name[-1].lower()
 
                         if "s" == name_l: # GLOBAL 'S FUNCTION
@@ -60,20 +59,21 @@ class UserInfo(commands.Cog):
                         else:
                             embed.set_author(name = f"{member.name}'s personal information", icon_url = member.display_avatar)
 
-                    name, salary, description = await gu.server_job_info(ctx, member)
-
                     embed.add_field(name=f"Your current level", value=f"`{level}`", inline=True)
                     embed.add_field(name="\u2800\u2800", value="\u2800", inline=True)
                     embed.add_field(name=f"Money on your account", value=f"`{money}`", inline=True)
                     embed.add_field(name=f"Total messages sent", value=f"`{messages}`", inline=True)
                     embed.add_field(name="\u2800\u2800", value="\u2800", inline=True)
-                    embed.add_field(name=f"Your total xp count", value=f"`{total_xp}`", inline=True)
-                    embed.add_field(name=f"Your warnings count", value=f"`{warnings}`", inline=True)
+                    embed.add_field(name=f"Total xp count", value=f"`{total_xp}`", inline=True)
+                    embed.add_field(name=f"Total warnings", value=f"`{warnings}`", inline=True)
                     embed.add_field(name="\u2800\u2800", value="\u2800", inline=True)
                     embed.add_field(name=f"Xp until the next level", value=f"`{xp_till_next_level}`", inline=True)
-                    embed.add_field(name=f"Your server job", value=f"`{name}`", inline=True)
-                    embed.add_field(name="\u2800\u2800", value="\u2800", inline=True)
-                    embed.add_field(name=f"Your server job salary", value=f"`{salary}`", inline=True)
+
+                    if ctx.guild:
+                        name, salary, description = await self.ge.server_job_info(ctx, member)
+                        embed.add_field(name=f"Your server job", value=f"`{name}`", inline=True)
+                        embed.add_field(name="\u2800\u2800", value="\u2800", inline=True)
+                        embed.add_field(name=f"Your server job salary", value=f"`{salary}`", inline=True)
 
                     embed.set_thumbnail(url = member.display_avatar)
 

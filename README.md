@@ -1,1 +1,2 @@
 # discordbot
+DON'T USE THIS YET - IT IS CURSED

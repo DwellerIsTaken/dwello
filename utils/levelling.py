@@ -7,8 +7,7 @@ from typing import List, Dict, Any, Optional
 import text_variables as tv
 
 class LevellingUtils():
-    def __init__(self, bot: commands.Bot):
-        super().__init__()
+    def __init__(self, bot):
         self.bot = bot
 
     async def create_tables(self) -> None:
@@ -59,7 +58,13 @@ class LevellingUtils():
                     level_embed.set_footer(text = f"{message.guild.name}")
                     level_embed.timestamp = discord.utils.utcnow()
 
-                    async with suppress(discord.HTTPException): await message.author.send(embed=level_embed)
+                    #async with suppress(discord.HTTPException): await message.author.send(embed=level_embed)
+
+                    try:
+                        await message.author.send(embed=level_embed)
+
+                    except discord.HTTPException:
+                        pass
 
                     await conn.execute(
                         "UPDATE users SET xp = $1, total_xp = $2, level = $3, messages = $4 WHERE user_id = $5 AND guild_id = $6",

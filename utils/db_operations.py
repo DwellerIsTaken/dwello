@@ -4,8 +4,7 @@ from discord.ext import commands
 
 class DB_Operations():
 
-    def __init__(self, bot: commands.Bot):
-        super().__init__()
+    def __init__(self, bot):
         self.bot = bot
 
     async def create_pool(self) -> None: # ADD SSH KEY CONNECTION

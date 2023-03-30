@@ -37,8 +37,7 @@ class TimeoutSuggestion(discord.ui.View):
 
 class Warnings(commands.Cog):
 
-    def __init__(self, bot: commands.Bot):
-        super().__init__
+    def __init__(self, bot):
         self.bot = bot
 
     @commands.hybrid_group(invoke_without_command=True, with_app_command=True)

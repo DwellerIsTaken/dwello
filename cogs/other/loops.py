@@ -7,8 +7,7 @@ from pytz import timezone
 
 class Loops(commands.Cog):
 
-    def __init__(self, bot: commands.Bot):
-        super().__init__()
+    def __init__(self, bot):
         self.bot = bot
         self.stats_loop.start()
         self.eco_loop.start()
@@ -17,7 +16,7 @@ class Loops(commands.Cog):
         async with self.bot.pool.acquire() as conn:
             async with conn.transaction(): 
 
-                channels = await conn.fetch("SELECT channel_id, event_type FROM main WHERE guild_id = $1 AND channel_id NOT NULL AND event_type NOT NULL AND event_type NOT counter_category", guild.id)
+                channels = await conn.fetch("SELECT channel_id, event_type FROM main WHERE guild_id = $1 AND channel_id IS NOT NULL AND event_type IS NOT NULL AND event_type != 'counter_category'", guild.id)
 
                 bot_counter_ = sum(member.bot for member in guild.members)
                 member_counter_ = guild.member_count - bot_counter_
@@ -65,6 +64,3 @@ class Loops(commands.Cog):
     @eco_loop.before_loop
     async def before_curr(self):
         await self.bot.wait_until_ready()
-
-async def setup(bot: commands.Bot): # MAKE IT A SUBCOG -> IMPORT IN UTILS (?)
-    await bot.add_cog(Loops(bot))

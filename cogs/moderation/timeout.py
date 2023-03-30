@@ -12,7 +12,6 @@ from typing import Optional
 class Timeout(commands.Cog):
 
     def __init__(self, bot):
-        super().__init__
         self.bot = bot
 
     async def tempmute(self, ctx: commands.Context, member: discord.Member, duration: int, period: Optional[str] = None, reason: Optional[str] = None) -> Optional[discord.Embed]:

@@ -8,10 +8,9 @@ from typing import Optional, Union, Literal, Tuple
 
 # COMPLETELY REMAKE THIS PIECE OF SHIT
 
-class BotEcoUtils(commands.Cog):
+class BotEcoUtils():
 
-    def __init__(self, bot: commands.Bot):
-        super().__init__()
+    def __init__(self, bot):
         self.bot = bot
 
     async def add_currency(self, member: discord.Member, amount: int, name: str) -> Optional[int]:
@@ -78,10 +77,9 @@ class BotEcoUtils(commands.Cog):
 
         return await ctx.reply(embed=embed, mention_author=False)
 
-class GuildEcoUtils(commands.Cog):
+class GuildEcoUtils():
 
     def __init__(self, bot: commands.Bot):
-        super().__init__()
         self.bot = bot
 
     async def server_job_create(self, ctx: commands.Context, name: str, salary: int, description: str) -> Optional[discord.Message]:

@@ -6,7 +6,7 @@ from .weather import Weather
 from .user_info import UserInfo
 
 class Information(Weather, UserInfo):
-    pass
+    '''Information Class'''
 
 async def setup(bot: commands.Bot):
     await bot.add_cog(Information(bot))

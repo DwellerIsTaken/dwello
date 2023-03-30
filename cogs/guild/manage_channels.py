@@ -6,10 +6,9 @@ from discord.ui import button, View, Button
 from typing import Optional, Union, Tuple, Literal
 from utils import HandleHTTPException
 
-class ChannelsFunctions(commands.Cog):
+class ChannelsFunctions():
 
-    def __init__(self, bot: commands.Bot):
-        super().__init__()
+    def __init__(self, bot):
         self.bot = bot
 
     async def counter_func(self, ctx: Union[commands.Context, discord.interactions.Interaction], name: Literal["all_counter","member_counter","bot_counter","counter_category"]) -> Optional[Tuple[discord.Message, Union[discord.VoiceChannel, discord.CategoryChannel]]]:
@@ -128,8 +127,9 @@ class Stats_View(View):
 
 class Channels(commands.Cog):
 
-    def __init__(self):
-        super().__init__()
+    def __init__(self, bot):
+        self.bot = bot
+        self.cf = ChannelsFunctions(bot)
 
     @commands.hybrid_group(name="counter", description="Counter group.", invoke_without_command = True, with_app_command=True)
     @commands.bot_has_permissions(manage_channels=True)
@@ -142,23 +142,23 @@ class Channels(commands.Cog):
     @counter.command(name='all', help="Creates a [voice] channel with all-user (bots included) count on this server.")
     async def all(self, ctx: commands.Context):
 
-        return await ChannelsFunctions.counter_func(ctx, "all_counter")
+        return await self.cf.counter_func(ctx, "all_counter")
 
     @counter.command(name='members', help="Creating a [voice] channel with all-member count on this specific server.")
     async def members(self, ctx: commands.Context):
         
-        return await ChannelsFunctions.counter_func(ctx, "member_counter")
+        return await self.cf.counter_func(ctx, "member_counter")
 
     @counter.command(name='bots', help="Creating a [voice] channel with all-bot count on this specific server.")
     async def bots(self, ctx: commands.Context):
         
-        return await ChannelsFunctions.counter_func(ctx, "bot_counter")
+        return await self.cf.counter_func(ctx, "bot_counter")
 
     @counter.command(name='category', help="Creates a category where your counter(s) will be stored.")
     async def category(self, ctx: commands.Context):
 
-        category = await ChannelsFunctions.counter_func(ctx, "counter_category")
-        return await ChannelsFunctions.move_channel(ctx, category[1], "all_counter", "member_counter", "bot_counter")
+        category = await self.cf.counter_func(ctx, "counter_category")
+        return await self.cf.move_channel(ctx, category[1], "all_counter", "member_counter", "bot_counter")
 
     @counter.command(name='list', help="Shows a list of counters you can create.")
     async def list(self, ctx: commands.Context):

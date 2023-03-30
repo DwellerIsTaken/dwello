@@ -17,8 +17,7 @@ cogs = {
     "cogs.information",
     "cogs.moderation", 
     "cogs.guild", 
-    "utils.events", 
-    "utils.loops", 
+    "cogs.other",
     "utils.debugging.error_handler",
 }
 
@@ -85,10 +84,10 @@ async def sync(
 
 async def main():
     bot.db = DB_Operations(bot)
-    bot.pool = await bot.db.create_pool()
+    bot.pool = await DB_Operations(bot).create_pool()
 
-    bot.lvl = LevellingUtils(bot)
-    await bot.lvl.create_tables()
+    #bot.lvl = LevellingUtils(bot)
+    await LevellingUtils(bot).create_tables()
 
     async with bot:
         #for category, cogs_ in cogs.items():
