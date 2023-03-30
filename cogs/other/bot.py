@@ -10,6 +10,6 @@ class Bot(commands.Cog):
 
     #MAKE 
     @commands.hybrid_command(name = 'source', description="Shows bot's source", with_app_command=True) 
-    async def stats(self, ctx: commands.Context) -> Optional[discord.Message]:
+    async def source(self, ctx: commands.Context) -> Optional[discord.Message]:
         async with ctx.typing():
             return await ctx.reply("https://github.com/DwellerIsTaken/discordbot/")
