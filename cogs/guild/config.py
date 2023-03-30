@@ -8,7 +8,7 @@ import discord, os
 from typing import Optional, Literal
 from utils import event_subscription
 
-class ConfigFunctions():
+class ConfigFunctions(commands.Cog):
 
     def __init__(self, bot: commands.Bot):
         super().__init__()

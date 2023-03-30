@@ -1,4 +1,4 @@
-import discord
+'''import discord
 import traceback
 import text_variables
 from discord.ext import commands
@@ -32,7 +32,4 @@ class on_command_error():
             trace = ''.join(traceback.format_exception(error.__class__, error, error.__traceback__))
             embed = discord.Embed(title='Error Occurred', description=f'```py\n{trace}\n{error}```', color=discord.Color.red())
             await ctx.send(embed=embed)
-            raise error
-
-async def setup(bot):
-  await bot.add_cog(on_command_error(bot))
+            raise error'''

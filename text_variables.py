@@ -1,10 +1,5 @@
 import discord
 
-# MAIN ASQLITE DATABASE DIRECTORY:
-sql_dir = "databases/main.sqlite"
-db_name = "postgres"
-db_username = "postgres"
-
 # __EMBED_ATTRIBUTES__
 # EMBED COLOR:
 

@@ -6,7 +6,7 @@ from discord.ui import button, View, Button
 from typing import Optional, Union, Tuple, Literal
 from utils import HandleHTTPException
 
-class ChannelsFunctions():
+class ChannelsFunctions(commands.Cog):
 
     def __init__(self, bot: commands.Bot):
         super().__init__()

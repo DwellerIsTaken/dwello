@@ -20,8 +20,7 @@ cogs = {
     "utils.events", 
     "utils.loops", 
     "utils.debugging.error_handler",
-    "utils.debugging.on_command_error_event",
-    }
+}
 
 '''cogs = {
     'Required Permissions': ['features.required_permissions.add_comms', 'features.required_permissions.clear_command', 'features.required_permissions.join_leave_comms'],

@@ -8,8 +8,9 @@ class DB_Operations():
         super().__init__()
         self.bot = bot
 
-    async def create_pool(self) -> None:
-        pool = await asyncpg.create_pool(database= tv.db_name, user= tv.db_username, password= os.getenv('pg_password'))
+    async def create_pool(self) -> None: # ADD SSH KEY CONNECTION
+        pool = await asyncpg.create_pool(database= os.getenv('pg_name'), user= os.getenv('pg_username'), password= os.getenv('pg_password'))
+        #pool = await asyncpg.create_pool(database= "postgres", user= "postgres", password= "")
         return pool
 
     async def fetch_job_data(self) -> dict:

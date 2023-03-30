@@ -11,11 +11,11 @@ from utils.economy import BotEcoUtils as be
 from utils.economy import GuildEcoUtils as ge
 from utils.db_operations import DB_Operations as db
 
-class Guild_Economy():
+class Guild_Economy(commands.Cog):
 
     def __init__(self, bot):
-        self.bot = bot
         super().__init__()
+        self.bot = bot
 
     #jobs -- lots of available jobs
 
