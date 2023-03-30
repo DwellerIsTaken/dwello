@@ -14,7 +14,7 @@ from utils.db_operations import DB_Operations as db
 class Guild_Economy(commands.Cog):
 
     def __init__(self, bot):
-        super().__init__()
+        super().__init__(bot=bot)
         self.bot = bot
 
     #jobs -- lots of available jobs
