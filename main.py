@@ -9,7 +9,7 @@ from utils.db_operations import DB_Operations
 from utils.levelling import LevellingUtils
 
 intents = discord.Intents.all() # Creating a client and setting up its parameters
-bot = commands.Bot(command_prefix = '$', chunk_guilds_at_startup = False ,activity = discord.Activity(type = discord.ActivityType.playing , name = 'Visual Studio Code') , intents = intents, help=False)
+bot = commands.Bot(command_prefix = '$', chunk_guilds_at_startup = False, activity = discord.Activity(type = discord.ActivityType.playing , name = 'Visual Studio Code') , intents = intents, help=False, status = discord.Status.do_not_disturb)
 bot.remove_command("help")
 
 cogs = {

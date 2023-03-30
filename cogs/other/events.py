@@ -53,11 +53,11 @@ class Events(commands.Cog):
     async def on_member_join(self, member: discord.Member):
 
         await self.levelling.create_user(member.id, member.guild.id)
-        await self.listeners.join_leave_event(self.bot, member, "welcome")
+        await self.listeners.join_leave_event(self, member, "welcome")
 
     @commands.Cog.listener()
     async def on_member_remove(self, member: discord.Member):
-        await self.listeners.join_leave_event(self.bot, member, "leave")
+        await self.listeners.join_leave_event(self, member, "leave")
 
     @commands.Cog.listener()
     async def on_member_update(self, before, after):
