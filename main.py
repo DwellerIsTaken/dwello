@@ -19,19 +19,8 @@ cogs = {
     "cogs.guild", 
     "cogs.other",
     "utils.debugging.error_handler",
+    "jishaku"
 }
-
-'''cogs = {
-    'Required Permissions': ['features.required_permissions.add_comms', 'features.required_permissions.clear_command', 'features.required_permissions.join_leave_comms'],
-    'Server Statistics': ['features.required_permissions.utils.server_statistics_loop'],
-    'Entertainment': ['features.entertainment.weather'],
-    'Moderation': ['features.admin_functions.moder_commands', 'features.admin_functions.warnings'],
-    'Debugging': ['proper_debugging.error_handler', 'proper_debugging.on_command_error_event'],
-    'Levelling': ['features.levelling.levelling_system'],
-    'Economy': ['features.economy.server_eco_comms', 'features.economy.bot_eco_comms'],
-    'Events': ['features.bot_events.events'],
-    'Other': ['jishaku']
-}'''
 
 # features.economy.utils.economy_loop
 

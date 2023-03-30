@@ -29,13 +29,27 @@ class UserInfo(commands.Cog):
             async with self.bot.pool.acquire() as conn:
                 async with conn.transaction():
                     
-                    query = "SELECT xp, messages, level, money, total_xp FROM users WHERE user_id = $1 AND guild_id = $2 AND event_type = $3"            
-                    row = await conn.fetchrow(query, member.id, ctx.guild.id if ctx.guild else "NOT NULL", "bot")
+                    if ctx.guild:
+                        query = "SELECT xp, messages, level, money, total_xp FROM users WHERE user_id = $1 AND guild_id = $2 AND event_type = $3"
+                        warn_query = "SELECT warn_text FROM warnings WHERE user_id = $1 AND guild_id = $2"
+                        query_params = [member.id, ctx.guild.id, "bot"]
+                        warn_params = [member.id, ctx.guild.id]
+                    else:
+                        query = "SELECT xp, messages, level, money, total_xp FROM users WHERE user_id = $1 AND guild_id IS NOT NULL AND event_type = $2"
+                        warn_query = "SELECT warn_text FROM warnings WHERE user_id = $1 AND guild_id IS NOT NULL"
+                        query_params = [member.id, "bot"]
+                        warn_params = [member.id]
 
-                    xp, messages, level, money, total_xp = map(int, row)
+                    try:
+                        row = await conn.fetchrow(query, *query_params)
+                        xp, messages, level, money, total_xp = map(int, row)
+                        warn_rows = await conn.fetch(warn_query, *warn_params)
 
-                    warn_query = "SELECT warn_text FROM warnings WHERE user_id = $1 AND guild_id = $2"
-                    warn_rows = await conn.fetch(warn_query, member.id, ctx.guild.id if ctx.guild else "NOT NULL")
+                    except TypeError:
+                        await self.levelling.create_user(member.id, member.guild.id)
+                        row = await conn.fetchrow(query, *query_params)
+                        xp, messages, level, money, total_xp = map(int, row)
+                        warn_rows = await conn.fetch(warn_query, *warn_params)
 
                     warnings = sum(1 for row in warn_rows if row["warn_text"])
 
@@ -60,9 +74,9 @@ class UserInfo(commands.Cog):
                         else:
                             embed.set_author(name = f"{member.name}'s personal information", icon_url = member.display_avatar)
 
-                    embed.add_field(name=f"Your current level", value=f"`{level}`", inline=True)
+                    embed.add_field(name=f"Current level", value=f"`{level}`", inline=True)
                     embed.add_field(name="\u2800\u2800", value="\u2800", inline=True)
-                    embed.add_field(name=f"Money on your account", value=f"`{money}`", inline=True)
+                    embed.add_field(name=f"Money", value=f"`{money}`", inline=True)
                     embed.add_field(name=f"Total messages sent", value=f"`{messages}`", inline=True)
                     embed.add_field(name="\u2800\u2800", value="\u2800", inline=True)
                     embed.add_field(name=f"Total xp count", value=f"`{total_xp}`", inline=True)
@@ -72,13 +86,13 @@ class UserInfo(commands.Cog):
 
                     if ctx.guild:
                         name, salary, description = await self.ge.server_job_info(ctx, member)
-                        embed.add_field(name=f"Your server job", value=f"`{name}`", inline=True)
+                        embed.add_field(name=f"Server job", value=f"`{name}`", inline=True)
                         embed.add_field(name="\u2800\u2800", value="\u2800", inline=True)
-                        embed.add_field(name=f"Your server job salary", value=f"`{salary}`", inline=True)
+                        embed.add_field(name=f"Server job salary", value=f"`{salary}`", inline=True)
 
                     embed.set_thumbnail(url = member.display_avatar)
 
-                    embed.set_footer(text=text_variables.footer)
+                    embed.set_footer(text=tv.footer)
 
             return await ctx.reply(embed=embed, mention_author = False)
 

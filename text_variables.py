@@ -21,7 +21,7 @@ on_member_join_help_welcome_help_embed_description = "This embed will precisely 
 on_member_leave_help_welcome_embed_description = "Below you can see *the accurate description* of how you should be using the leave subcommands. \n \n**Setting up** the leave channel is pretty easy, like: ```optional: channel | channel #mention-channel```\n**Leave message** is customizable, but if you don't set it up __*the default*__ leave message will be used to farewell the leaving. You can set up the leave message by using: ```message [args]```\n**The command** being: ```$leave```\nIf you need more information about the kind of options you have when using `$leave message` please proceed to use `$leave help`. Cheers!"
 
 # ___FOOTERS___
-footer = "This bot was programmed by Dweller_Igor©"
+footer = "https://hitoshi.org"
 
 # ___LISTS___
 bot_reply_list = [

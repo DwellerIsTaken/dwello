@@ -5,8 +5,9 @@ from discord.ext import commands
 
 from .events import Events
 from .loops import Loops
+from .bot import Bot
 
-class Other(Events, Loops):
+class Other(Events, Loops, Bot):
     '''Other Class'''
 
 async def setup(bot: commands.Bot):

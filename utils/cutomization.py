@@ -5,7 +5,7 @@ from io import BytesIO
 import discord
 import PIL
 
-# MAYBE
+# DEFAULT IMAGES DONT WORK
 async def get_avatar_dominant_color(member: Optional[discord.Member]) -> Optional[discord.Colour]:
     image = PIL.Image.open(BytesIO(await member.display_avatar.read()))
     colours = [
@@ -19,7 +19,7 @@ async def get_avatar_dominant_color(member: Optional[discord.Member]) -> Optiona
     ]
 
     most_used_colour = colours[0][1]  # This will be a tuple of the format (RRR, GGG, BBB, AAA)
-    r, g, b = most_used_colour
+    r, g, b = most_used_colour[0], most_used_colour[1], most_used_colour[2]
     return discord.Colour.from_rgb(r, g, b)
     #hex_ = clr.to_hex(most_used_colour)
     #return hex_
