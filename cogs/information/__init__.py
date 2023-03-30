@@ -5,7 +5,7 @@ from discord.ext import commands
 from .weather import Weather
 from .user_info import UserInfo
 
-class Information(Weather, UserInfo):
+class Information(UserInfo, Weather):
     '''Information Class'''
 
 async def setup(bot: commands.Bot):

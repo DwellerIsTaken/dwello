@@ -9,6 +9,7 @@ class Weather(commands.Cog):
 
   def __init__(self, bot):
     self.bot = bot
+    #super().__init__()
 
   # THINK OF A NEW FOLDER WHERE TO ADD ALL THIS
   @commands.hybrid_command(name="hello",with_app_command=True)

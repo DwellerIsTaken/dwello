@@ -27,7 +27,7 @@ class LevellingUtils():
     async def increase_xp(self, message: discord.Message, rate: int = 5) -> None:
         async with self.bot.pool.acquire() as conn:
             async with conn.transaction():
-                if message.author.bot:
+                if message.author.bot or not message.guild:
                     return
 
                 await self.create_user(message.author.id, message.guild.id)

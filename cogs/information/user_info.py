@@ -21,6 +21,7 @@ class UserInfo(commands.Cog):
         self.bot = bot
         self.levelling = LevellingUtils(bot)
         self.ge = GuildEcoUtils(bot)
+        #super().__init__()
 
     @commands.hybrid_command(name = 'stats', description="Shows personal information and rank statistics",with_app_command=True) 
     async def stats(self, ctx: commands.Context, member: Optional[Union[discord.Member, discord.User]] = commands.Author) -> Optional[discord.Message]:
@@ -28,15 +29,15 @@ class UserInfo(commands.Cog):
             async with self.bot.pool.acquire() as conn:
                 async with conn.transaction():
                     
-                    query = "SELECT xp, messages, level, money, total_xp FROM users WHERE user_id = $1 AND guild_id = $2 AND event_type = 'bot'"            
-                    row = await conn.fetchrow(query, member.id, ctx.guild.id if ctx.guild else None)
+                    query = "SELECT xp, messages, level, money, total_xp FROM users WHERE user_id = $1 AND guild_id = $2 AND event_type = $3"            
+                    row = await conn.fetchrow(query, member.id, ctx.guild.id if ctx.guild else "NOT NULL", "bot")
 
                     xp, messages, level, money, total_xp = map(int, row)
 
                     warn_query = "SELECT warn_text FROM warnings WHERE user_id = $1 AND guild_id = $2"
-                    warn_rows = await conn.fetch(warn_query, member.id, ctx.guild.id if ctx.guild else None)
+                    warn_rows = await conn.fetch(warn_query, member.id, ctx.guild.id if ctx.guild else "NOT NULL")
 
-                    warnings = sum(1 for row in warn_rows if row["warn_text"] is not None)
+                    warnings = sum(1 for row in warn_rows if row["warn_text"])
 
                     level_formula = int(level * (level * 10))
                     xp_till_next_level = int(level_formula - xp)
