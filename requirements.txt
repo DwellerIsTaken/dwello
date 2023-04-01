@@ -1,6 +1,6 @@
 asyncio==3.4.3
 discord==2.2.2
-PIL==9.4.0
+pillow==9.5.0
 matplotlib==3.7.1
 requests==2.28.2
 colorthief==0.2.1
