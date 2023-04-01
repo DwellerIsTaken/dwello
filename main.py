@@ -74,8 +74,7 @@ async def sync(
 
 async def main():
     package_list = [asyncio, 
-                    discord, 
-                    logging, 
+                    discord,
                     PIL, 
                     matplotlib, 
                     requests, 
