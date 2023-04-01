@@ -2,7 +2,7 @@ from dotenv import load_dotenv
 load_dotenv()
 
 import sys, typing, os
-import asyncio, discord, logging, matplotlib, requests, colorthief, aiohttp, asyncpg, setuptools, re
+import asyncio, discord, logging, matplotlib, requests, colorthief, aiohttp, asyncpg, setuptools
 from utils import add_requirements
 from text_variables import bot_reply_list
 from discord.ext import commands
@@ -80,8 +80,7 @@ async def main():
                     colorthief, 
                     aiohttp,
                     asyncpg, 
-                    setuptools,
-                    re
+                    setuptools
                     ]
     add_requirements(*package_list)
 
