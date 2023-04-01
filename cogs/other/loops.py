@@ -1,5 +1,5 @@
 from discord.ext import commands, tasks
-import discord, asyncpg, asyncio, os
+import discord, asyncio, os
 import text_variables as tv
 
 from datetime import datetime

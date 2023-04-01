@@ -3,6 +3,7 @@ from .errorhandlers import *
 from .cutomization import *
 from .levelling import *
 from .listeners import *
+from .botfuncs import *
 from .twitch import *
 
 from utils.debugging.error_handler import *

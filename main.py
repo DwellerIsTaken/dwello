@@ -1,8 +1,9 @@
 from dotenv import load_dotenv
 load_dotenv()
 
-import asyncio, discord, sys, typing, logging, os
-import utils
+import sys, typing, os
+import asyncio, discord, logging, PIL, matplotlib, requests, colorthief, aiohttp, contextlib, asyncpg, setuptools, re, pkg_resources
+from utils import add_requirements
 from text_variables import bot_reply_list
 from discord.ext import commands
 from utils.db_operations import DB_Operations
@@ -72,6 +73,20 @@ async def sync(
     await ctx.send(f"Synced the tree to {ret}/{len(guilds)}.")
 
 async def main():
+    package_list = [asyncio, 
+                    discord, 
+                    logging, 
+                    PIL, 
+                    matplotlib, 
+                    requests, 
+                    colorthief, 
+                    aiohttp,
+                    asyncpg, 
+                    setuptools,
+                    re
+                    ]
+    add_requirements(*package_list)
+
     bot.db = DB_Operations(bot)
     bot.pool = await DB_Operations(bot).create_pool()
 

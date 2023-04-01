@@ -1,6 +1,6 @@
 #from features.required_permissions.utils.join_leave_func import *
 from discord.ext import commands
-from contextlib import suppress
+#from contextlib import suppress
 from string import Template
 import text_variables as tv
 import discord, os
