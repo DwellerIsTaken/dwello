@@ -9,6 +9,8 @@ color = discord.Colour.random()
 # |when being warned|
 warn_color = discord.Colour.red()
 
+twitch_color = discord.Colour.random() # get color of streamer later & add customize option
+
 
 
 

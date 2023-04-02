@@ -6,7 +6,7 @@ import text_variables as tv
 import discord, os
 
 from typing import Optional, Literal
-from utils import event_subscription
+from utils import Twitch
 
 class ConfigFunctions():
 
@@ -117,6 +117,7 @@ class Config(commands.Cog):
     def __init__(self, bot: commands.Bot):
         self.bot = bot
         self.config = ConfigFunctions(bot)
+        self.twitchutils = Twitch(bot) 
 
     @commands.hybrid_group(invoke_without_command=True,with_app_command=True)
     @commands.bot_has_permissions(manage_channels=True,manage_messages=True)
@@ -284,7 +285,7 @@ class Config(commands.Cog):
     @twitch.command(name="add", help="Sets a twitch streamer. The notification shall be posted when the streamer goes online.")
     async def add_twitch_streamer(self, ctx: commands.Context, twitch_streamer_name: str):
 
-        return await event_subscription(ctx, "stream.online", twitch_streamer_name)
+        return await self.twitchutils.event_subscription(ctx, "stream.online", twitch_streamer_name)
 
 # RESTRUCTURE GROUP-SUBGROUP CONNECTIONS LIKE: welcome set channel/message | welcome display channel/message (?)
 # GLOBAL CHANNEL/MESSAGE DISPLAY THAT WILL SHOW MESSAGE/CHANNEL FOR EACH EVENT_TYPE (?)

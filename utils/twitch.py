@@ -1,8 +1,10 @@
-import requests, discord, os
+import requests, discord, os, asyncpg
 
 from typing import Optional, Union, Tuple
 
 from discord.ext import commands
+
+import text_variables as tv
 
 # Set your app's client ID and secret
 CLIENT_ID = os.getenv('TWITCH_CLIENT_ID')
@@ -25,95 +27,141 @@ headers = {
 
 helix_url = 'https://api.twitch.tv/helix/eventsub/subscriptions'
 
-async def username_to_id(username: str) -> Optional[int]:
-        
-        username = username.lower()
+class Twitch():
+    def __init__(self, bot: commands.Bot):
+        self.bot = bot
 
-        url = f'https://api.twitch.tv/helix/users?login={username}'
+    async def username_to_id(self, username: str) -> Optional[int]:
+            
+            username = username.lower()
+
+            url = f'https://api.twitch.tv/helix/users?login={username}'
+            response = requests.get(url, headers=headers).json()
+
+            # The Twitch user ID to subscribe to
+            if "data" in response and len(response["data"]) > 0:
+                user_id_ = response["data"][0]["id"]
+                print(f"The user ID for {username} is {user_id_}")
+
+            else:
+                raise Exception(f"Could not find user {username}")
+            
+            return user_id_
+    
+    async def id_to_username(self, user_id: int) -> Optional[str]:
+
+        url = f'https://api.twitch.tv/helix/users?id={user_id}'
         response = requests.get(url, headers=headers).json()
 
-        # The Twitch user ID to subscribe to
+        # The Twitch username to subscribe to
         if "data" in response and len(response["data"]) > 0:
-            user_id_ = response["data"][0]["id"]
-            print(f"The user ID for {username} is {user_id_}")
+            username = response["data"][0]["login"]
+            print(f"The username for user ID {user_id} is {username}")
 
         else:
-            raise Exception(f"Could not find user {username}")
+            raise Exception(f"Could not find user with ID {user_id}")
         
-        return user_id_
+        return username
 
-async def event_subscription(ctx: commands.Context, type_: str, username: str) -> Optional[Tuple[discord.Message, dict]]:
+    async def event_subscription(self, ctx: commands.Context, type_: str, username: str) -> Optional[Tuple[discord.Message, dict]]:
+        async with self.bot.pool.acquire() as conn:
+            async with conn.transaction():
 
-    user_id = await username_to_id(username)
+                user_id = await self.username_to_id(username)
 
-    broadcaster_check_dict = {}
+                broadcaster_check_dict = {}
 
-    # List of subscriptions
-    response_ = requests.get(helix_url, headers=headers).json()
-    
-    for i in response_['data']:
-        broadcaster_id = int(i['condition']['broadcaster_user_id'])
-        if broadcaster_id not in broadcaster_check_dict:
-            broadcaster_check_dict[broadcaster_id] = {'types': []}
-        if str(i['type']) not in broadcaster_check_dict[broadcaster_id]['types']:
-            broadcaster_check_dict[broadcaster_id]['types'].append(str(i['type']))
+                # List of subscriptions
+                response_ = requests.get(helix_url, headers=headers).json()
+                
+                for i in response_['data']:
+                    broadcaster_id = int(i['condition']['broadcaster_user_id'])
+                    if broadcaster_id not in broadcaster_check_dict:
+                        broadcaster_check_dict[broadcaster_id] = {'types': []}
+                    if str(i['type']) not in broadcaster_check_dict[broadcaster_id]['types']:
+                        broadcaster_check_dict[broadcaster_id]['types'].append(str(i['type']))
 
-    if user_id in broadcaster_check_dict and type_ in broadcaster_check_dict[user_id]['types']:
-        return await ctx.reply(f"Guild is already subscribed to user **{username}**.", ephemeral=True)
-    
-    # Set up the request body for creating a subscription
-    callback_url = 'https://hitoshi.org/eventsub/callback'
-    body = {
-        'type': type_,
-        'version': '1',
-        'condition': {'broadcaster_user_id': user_id},
-        'transport': {
-            'method': 'webhook',
-            'callback': callback_url,
-            'secret': CLIENT_SECRET
-        }
-    }
+                if user_id in broadcaster_check_dict and type_ in broadcaster_check_dict[user_id]['types']:
+                    return await ctx.reply(f"Guild is already subscribed to user **{username}**.", ephemeral=True)
+                
+                # Set up the request body for creating a subscription
+                callback_url = 'https://hitoshi.org/eventsub/callback'
+                body = {
+                    'type': type_,
+                    'version': '1',
+                    'condition': {'broadcaster_user_id': user_id},
+                    'transport': {
+                        'method': 'webhook',
+                        'callback': callback_url,
+                        'secret': CLIENT_SECRET
+                    }
+                }
 
-    # Send the API request to create the subscription
+                # Send the API request to create the subscription
 
-    headers = {
-        "Client-ID": CLIENT_ID, 
-        "Authorization": f"Bearer {access_token}", 
-        "Content-Type": "application/json"
-    }
+                headers = {
+                    "Client-ID": CLIENT_ID, 
+                    "Authorization": f"Bearer {access_token}", 
+                    "Content-Type": "application/json"
+                }
 
-    response = requests.post(helix_url, headers=headers, json=body)
+                response = requests.post(helix_url, headers=headers, json=body)
 
-    # Print the response to confirm whether the subscription was created successfully or not
-    return await ctx.reply(f"Added **{username}** to twitch notifications list.",ephemeral=True), response.json()
+                # add some extra checks here
+                # one user now; update later
+                #await conn.execute("INSERT INTO server_data(guild_id, twitch_id, event_type) VALUES($1, $2, 'twitch')", ctx.guild.id, str(user_id))
+                await conn.execute("UPDATE server_data SET twitch_id = $1 WHERE guild_id = $2 AND event_type = 'twitch'", user_id, ctx.guild.id)
+                # Print the response to confirm whether the subscription was created successfully or not
+                return await ctx.reply(f"Added **{username}** to twitch notifications list.",ephemeral=True), response.json()
 
-    # type_ = stream.online
+                # type_ = stream.online
 
-async def event_subscription_list(): # RETURNS ALL SUBSCRIPTIONS FOR A CERTAIN CLIENT_ID
-    response = requests.get(helix_url, headers=headers).json()
+    async def event_subscription_list(self): # RETURNS ALL SUBSCRIPTIONS FOR A CERTAIN CLIENT_ID
+        response = requests.get(helix_url, headers=headers).json()
 
-    # Print the response to show the list of subscriptions
-    for i in response['data']:
-        print(i['condition']['broadcaster_user_id'])
-        print(i['type'])
-    print(response['data'])
+        # Print the response to show the list of subscriptions
+        for i in response['data']:
+            print(i['condition']['broadcaster_user_id'])
+            print(i['type'])
+        print(response['data'])
 
-async def unsubscribe(username: str): # IF ALL: GET ALL TWITCH USERS THAT GUILD IS SUBSCRIBED TO AND UNSUB (what if the same user for multiple guilds)
+    async def unsubscribe(self, username: str): # IF ALL: GET ALL TWITCH USERS THAT GUILD IS SUBSCRIBED TO AND UNSUB (what if the same user for multiple guilds)
 
-    user_id = await username_to_id(username)
-    response = requests.get(helix_url, headers=headers).json()
+        user_id = await self.username_to_id(username)
+        response = requests.get(helix_url, headers=headers).json()
 
-    # FINISH
+        # FINISH
 
-    count = 0
-    if not response['data']:
-        print("No events to unsubscribe from.")
-        return
+        count = 0
+        if not response['data']:
+            print("No events to unsubscribe from.")
+            return
 
-    for subscription in response['data']:
-        subscription_id = subscription['id']
-        url = f'https://api.twitch.tv/helix/eventsub/subscriptions?id={subscription_id}'
-        response = requests.delete(url, headers=headers)
-        count += 1
+        for subscription in response['data']:
+            subscription_id = subscription['id']
+            url = f'https://api.twitch.tv/helix/eventsub/subscriptions?id={subscription_id}'
+            response = requests.delete(url, headers=headers)
+            count += 1
 
-    print(f"Unsubscribed from {count} event(s).")
+        print(f"Unsubscribed from {count} event(s).")
+
+# OUTSIDE OF CLASS CAUSE WILL INTERACT WITH FLASK
+#data = {'subscription': {'id': '71944cff-b137-44d8-9d4e-6db4e8a93d70', 'status': 'enabled', 'type': 'stream.online', 'version': '1', 'condition': {'broadcaster_user_id': '228048404'}, 'transport': {'method': 'webhook', 'callback': 'https://hitoshi.org/eventsub/callback'}, 'created_at': '2023-03-10T19:44:41.201679617Z', 'cost': 1}, 'event': {'id': '40553442776', 'broadcaster_user_id': '228048404', 'broadcaster_user_login': 'turb4ik', 'broadcaster_user_name': 'Turb4ik', 'type': 'live', 'started_at': '2023-03-10T20:31:14Z'}}
+async def twitch_to_discord(self, data) -> None:
+    async with await asyncpg.connect(database= os.getenv('pg_name'), user= os.getenv('pg_username'), password= os.getenv('pg_password')) as conn:
+        async with conn.transaction():
+            twitch_id = data['subscription']['condition']['broadcaster_user_id']
+
+            results = await conn.fetch("SELECT message_text, channel_id FROM server_data WHERE twitch_id = $1", twitch_id)
+
+            username = await self.id_to_username(twitch_id)
+
+            for row in results:
+                message_text = row['message_text']
+                channel_id = row['channel_id']
+
+                twitch_embed = discord.Embed(title= f"{username} started streaming", description= f"{message_text}\n\nhttps://www.twitch.tv/{username}", color= tv.twitch_color)
+
+                channel = await self.bot.get_channel(int(channel_id)) if channel_id else None
+                if channel:
+                    await channel.send(embed = twitch_embed)

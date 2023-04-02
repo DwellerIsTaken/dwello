@@ -27,6 +27,7 @@ CREATE TABLE IF NOT EXISTS server_data(
     guild_id BIGINT,
     message_text TEXT,
     channel_id BIGINT,
+    twitch_id TEXT,
     event_type TEXT,
     deny_clicked INTEGER,
     PRIMARY KEY (guild_id, event_type)
