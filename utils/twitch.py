@@ -146,7 +146,6 @@ class Twitch():
         print(f"Unsubscribed from {count} event(s).")
 
 # OUTSIDE OF CLASS CAUSE WILL INTERACT WITH FLASK
-#data = {'subscription': {'id': '71944cff-b137-44d8-9d4e-6db4e8a93d70', 'status': 'enabled', 'type': 'stream.online', 'version': '1', 'condition': {'broadcaster_user_id': '228048404'}, 'transport': {'method': 'webhook', 'callback': 'https://hitoshi.org/eventsub/callback'}, 'created_at': '2023-03-10T19:44:41.201679617Z', 'cost': 1}, 'event': {'id': '40553442776', 'broadcaster_user_id': '228048404', 'broadcaster_user_login': 'turb4ik', 'broadcaster_user_name': 'Turb4ik', 'type': 'live', 'started_at': '2023-03-10T20:31:14Z'}}
 async def twitch_to_discord(self, data) -> None:
     async with await asyncpg.connect(database= os.getenv('pg_name'), user= os.getenv('pg_username'), password= os.getenv('pg_password')) as conn:
         async with conn.transaction():
