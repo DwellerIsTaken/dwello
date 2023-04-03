@@ -12,6 +12,11 @@ class Events(commands.Cog):
         self.listeners = ListenersFunctions(bot)
 
     @commands.Cog.listener()
+    async def on_guild_join(self, guild: discord.Guild):
+
+        await self.listeners.bot_join(guild)
+
+    @commands.Cog.listener()
     async def on_message(self, message: discord.Message) -> None:
         await self.levelling.increase_xp(message)
 

@@ -84,6 +84,10 @@ class Twitch():
                 if user_id in broadcaster_check_dict and type_ in broadcaster_check_dict[user_id]['types']:
                     return await ctx.reply(f"Guild is already subscribed to user **{username}**.", ephemeral=True)
                 
+                channel_id = await conn.fetchrow("SELECT channel_id FROM server_data WHERE guild_id = $1 AND event_type = $2", ctx.guild.id, "twitch")
+                if not channel_id or not self.bot.get_channel(int(channel_id)):
+                    return await ctx.reply("You must set the channel for twitch notifications first. ```/twitch channel set [#channel]```")
+                
                 # Set up the request body for creating a subscription
                 callback_url = 'https://hitoshi.org/eventsub/callback'
                 body = {
@@ -109,8 +113,8 @@ class Twitch():
 
                 # add some extra checks here
                 # one user now; update later
-                #await conn.execute("INSERT INTO server_data(guild_id, twitch_id, event_type) VALUES($1, $2, 'twitch')", ctx.guild.id, str(user_id))
-                await conn.execute("UPDATE server_data SET twitch_id = $1 WHERE guild_id = $2 AND event_type = 'twitch'", user_id, ctx.guild.id)
+                await conn.execute("INSERT INTO server_data(guild_id, twitch_id, event_type) VALUES($1, $2, 'twitch')", ctx.guild.id, str(user_id))
+                #await conn.execute("UPDATE server_data SET twitch_id = $1 WHERE guild_id = $2 AND event_type = 'twitch'", user_id, ctx.guild.id)
                 # Print the response to confirm whether the subscription was created successfully or not
                 return await ctx.reply(f"Added **{username}** to twitch notifications list.",ephemeral=True), response.json()
 
@@ -145,22 +149,24 @@ class Twitch():
 
         print(f"Unsubscribed from {count} event(s).")
 
-# OUTSIDE OF CLASS CAUSE WILL INTERACT WITH FLASK
-async def twitch_to_discord(self, data) -> None:
-    async with await asyncpg.connect(database= os.getenv('pg_name'), user= os.getenv('pg_username'), password= os.getenv('pg_password')) as conn:
-        async with conn.transaction():
-            twitch_id = data['subscription']['condition']['broadcaster_user_id']
+    # OUTSIDE OF CLASS CAUSE WILL INTERACT WITH FLASK (?)
+    async def twitch_to_discord(self, data) -> None:
+        async with await asyncpg.connect(database= os.getenv('pg_name'), user= os.getenv('pg_username'), password= os.getenv('pg_password')) as conn:
+            async with conn.transaction():
+                twitch_id = data['subscription']['condition']['broadcaster_user_id']
+                username = await self.id_to_username(twitch_id)
 
-            results = await conn.fetch("SELECT message_text, channel_id FROM server_data WHERE twitch_id = $1", twitch_id)
+                guilds = await conn.fetch("SELECT guild_id FROM server_data WHERE twitch_id = $1", twitch_id)
+                for guild in guilds:
+                    result = await conn.fetchrow("SELECT message_text, channel_id FROM server_data WHERE guild_id = $1", guild['guild_id'])
+                    message_text, channel_id = result[0], result[1]
 
-            username = await self.id_to_username(twitch_id)
+                    twitch_embed = discord.Embed(title= f"{username} started streaming", description= f"{message_text}\n\nhttps://www.twitch.tv/{username}", color= tv.twitch_color)
 
-            for row in results:
-                message_text = row['message_text']
-                channel_id = row['channel_id']
+                    channel = await self.bot.get_channel(int(channel_id)) if channel_id else None
+                    if channel:
+                        await channel.send(embed = twitch_embed)
 
-                twitch_embed = discord.Embed(title= f"{username} started streaming", description= f"{message_text}\n\nhttps://www.twitch.tv/{username}", color= tv.twitch_color)
-
-                channel = await self.bot.get_channel(int(channel_id)) if channel_id else None
-                if channel:
-                    await channel.send(embed = twitch_embed)
+                    #for row in results:
+                    #message_text = row['message_text']
+                    #channel_id = row['channel_id']

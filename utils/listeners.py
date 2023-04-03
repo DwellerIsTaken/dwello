@@ -13,6 +13,13 @@ class ListenersFunctions():
     def __init__(self, bot: commands.Bot):
         self.bot = bot
 
+    async def bot_join(self, guild: discord.Guild) -> None:
+        async with self.bot.pool.acquire() as conn:
+            async with conn.transaction():
+
+                return await conn.executemany("INSERT INTO server_data(guild_id, event_type) VALUES($1, $2)", [(guild.id, 'welcome'), (guild.id, 'leave'), (guild.id, 'twitch')])
+                # ADD SOME WELCOME MESSAGE FROM BOT OR SMTH
+
     async def join_leave_event(self, member: discord.Member, name: Literal["welcome", "leave"]) -> Optional[discord.Message]:
         async with self.bot.pool.acquire() as conn:
             async with conn.transaction():

@@ -68,26 +68,26 @@ class ConfigFunctions():
 
                 result = await conn.fetchrow("SELECT channel_id FROM server_data WHERE guild_id = $1 AND event_type = $2", ctx.guild.id, name)
 
-                string = f"The channel has been {'set' if not result[0] else 'updated'} to {channel.mention}"
+                string = f"The channel has been {'set' if not result else 'updated'} to {channel.mention}"
 
                 if (result[0] if result else None) == channel.id:
-                    return await ctx.reply("The twitch channel has already been set to this channel!", mention_author = True, ephemeral = True)
+                    return await ctx.reply(f"The {name} channel has already been set to this channel!", mention_author = True, ephemeral = True)
 
-                await conn.execute("UPDATE server_data SET channel_id = $1, event_type = COALESCE(event_type, $2) WHERE guild_id = $3 AND COALESCE(event_type, $2) = $2", channel.id, name, ctx.guild.id)
+                #await conn.execute("UPDATE server_data SET channel_id = $1, event_type = COALESCE(event_type, $2) WHERE guild_id = $3 AND COALESCE(event_type, $2) = $2", channel.id, name, ctx.guild.id)
 
-        return await ctx.reply(embed = discord.Embed(description=string, color = tv.color), mention_author = False, ephemeral=True)
+                await conn.execute("UPDATE server_data SET channel_id = $1 WHERE guild_id = $2 AND event_type = $3", channel.id, ctx.guild.id, name) # DB DOESNT WORK ?
+
+        await channel.send(embed = discord.Embed(description=f"This channel has been set as a *{name}* channel.", color = tv.color))
+        return await ctx.reply(embed = discord.Embed(description=string, color = tv.color), mention_author = True, ephemeral=True)
 
     async def message_display(self, ctx: commands.Context, name: str) -> Optional[discord.Message]:
         async with self.bot.pool.acquire() as conn:
             async with conn.transaction():
 
-                if name != "welcome" and name != "leave": # ?
-                    raise TypeError
-
                 result = await conn.fetchrow("SELECT message_text FROM server_data WHERE guild_id = $1 AND event_type = $2", ctx.guild.id, name)
 
                 if (result[0] if result else None) is None:
-                    return await ctx.reply(f"The {name} message isn't yet set. Consider using `${name} message`.")
+                    return await ctx.reply(f"The {name} message isn't yet set. ```/{name} message set```")
 
         return await ctx.reply(f"The {name} message is:```{result[0]}```", mention_author=False, ephemeral=True)
 
@@ -98,7 +98,7 @@ class ConfigFunctions():
                 result = await conn.fetchrow("SELECT channel_id FROM server_data WHERE guild_id = $1 AND event_type = $2", ctx.guild.id, name)
 
                 if (result[0] if result else None) is None:
-                    return await ctx.reply(f"The {name} channel isn't yet set. Consider using `${name} channel`.")
+                    return await ctx.reply(f"The {name} channel isn't yet set. ```/{name} channel set```")
 
                 #channel = discord.Object(int(result[0]))
                 channel = ctx.guild.get_channel(result[0])
