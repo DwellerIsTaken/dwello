@@ -8,7 +8,7 @@ class DB_Operations():
         self.bot = bot
 
     async def create_pool(self) -> None: # ADD SSH KEY CONNECTION
-        pool = await asyncpg.create_pool(database= os.getenv('pg_name'), user= os.getenv('pg_username'), password= os.getenv('pg_password'))
+        pool = await asyncpg.create_pool(database= os.getenv('pg_name'), user= os.getenv('pg_username'), password= os.getenv('pg_password'), host= tv.host, port= tv.port)
         #pool = await asyncpg.create_pool(database= "postgres", user= "postgres", password= "")
         return pool
 

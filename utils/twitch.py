@@ -10,22 +10,28 @@ import text_variables as tv
 CLIENT_ID = os.getenv('TWITCH_CLIENT_ID')
 CLIENT_SECRET = os.getenv('TWITCH_CLIENT_SECRET')
 
-body = {
-            "client_id": CLIENT_ID,
-            "client_secret": CLIENT_SECRET,
-            "grant_type": 'client_credentials'
-}
+def get_access_token():
 
-r = requests.post('https://id.twitch.tv/oauth2/token', body)
-keys = r.json()
-access_token = keys['access_token']
+    body = {
+                "client_id": CLIENT_ID,
+                "client_secret": CLIENT_SECRET,
+                "grant_type": 'client_credentials'
+    }
 
-headers = {
-    "Client-ID": CLIENT_ID,
-    "Authorization": f"Bearer {access_token}"
-}
+    r = requests.post('https://id.twitch.tv/oauth2/token', body)
+    keys = r.json()
+    access_token = keys['access_token']
+
+    headers = {
+        "Client-ID": CLIENT_ID,
+        "Authorization": f"Bearer {access_token}"
+    }
+
+    return access_token, headers
 
 helix_url = 'https://api.twitch.tv/helix/eventsub/subscriptions'
+
+access_token, headers = None, None # get_access_token()
 
 class Twitch():
     def __init__(self, bot: commands.Bot):

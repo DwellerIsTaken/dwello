@@ -11,6 +11,10 @@ warn_color = discord.Colour.red()
 
 twitch_color = discord.Colour.random() # get color of streamer later & add customize option
 
+# CREDENTIALS
+host = 'localhost' #'5.75.188.146'
+port = 5432
+
 
 
 

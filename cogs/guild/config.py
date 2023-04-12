@@ -63,8 +63,11 @@ class ConfigFunctions():
         return await ctx.reply(f"The {name} channel has been {w} to {channel.mention}.", mention_author=False, ephemeral=True)'''
     
     async def add_channel(self, ctx: commands.Context, name: str, channel: Optional[discord.TextChannel] = commands.CurrentChannel) -> Optional[discord.Message]:
+        print(self.bot)
         async with self.bot.pool.acquire() as conn:
             async with conn.transaction():
+
+                print(conn)
 
                 result = await conn.fetchrow("SELECT channel_id FROM server_data WHERE guild_id = $1 AND event_type = $2", ctx.guild.id, name)
 
