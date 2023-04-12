@@ -84,7 +84,7 @@ async def main():
                     ]
     add_requirements(*package_list)
 
-    bot.db = DB_Operations(bot)
+    #bot.db = DB_Operations(bot)
     bot.pool = await DB_Operations(bot).create_pool()
 
     #bot.lvl = LevellingUtils(bot)
