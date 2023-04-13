@@ -86,9 +86,11 @@ async def main():
 
     bot.db = DB_Operations(bot)
     bot.pool = await bot.db.create_pool()
+    
+    await bot.db.create_tables()
+    bot.db_data = await bot.db.fetch_data()
 
     #bot.lvl = LevellingUtils(bot)
-    await LevellingUtils(bot).create_tables()
 
     async with bot:
         #for category, cogs_ in cogs.items():

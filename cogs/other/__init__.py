@@ -4,10 +4,10 @@ from __future__ import annotations
 from discord.ext import commands
 
 from .events import Events
-from .loops import Loops
+from .tasks import Tasks
 from .bot import BotConfig
 
-class Other(Events, Loops, BotConfig):
+class Other(Events, Tasks, BotConfig):
     '''Other Class'''
 
 async def setup(bot: commands.Bot):

@@ -7,7 +7,7 @@ import text_variables as tv
 import discord, os
 
 from typing import Optional, Literal, Any
-from utils import Twitch, BaseCog
+from utils import Twitch, BaseCog, AutoComplete
 
 class ConfigFunctions():
 
@@ -89,6 +89,7 @@ class Config(BaseCog):
         super().__init__(bot, *args, **kwargs)
         self.config = ConfigFunctions(self.bot)
         self.twitchutils = Twitch(self.bot) 
+        self.ac = AutoComplete(self.bot)
 
     @commands.hybrid_group(invoke_without_command=True,with_app_command=True)
     @commands.bot_has_permissions(manage_channels=True,manage_messages=True)
@@ -270,44 +271,8 @@ class Config(BaseCog):
     
     @twitch_streamer_remove.autocomplete('username')
     async def autocomplete_callback_(self, interaction: discord.Interaction, current: str): # MAKE IT A GLOBAL FUNC
-        async with self.bot.pool.acquire() as conn:
-            async with conn.transaction():
-
-                # USE FETCH DATA BOT FUNCTION | REDO
-
-                records = await conn.fetch("SELECT user_id, username FROM twitch_users WHERE guild_id = $1", interaction.guild.id)
-                print(records)
-
-                choices = []
-                item = len(current)
-
-                choices.append(Choice(name = "all", value = "all"))
-
-                for record in records:
-                    id = record["user_id"]
-                    name = record["username"]
-                    print(id, name)
-
-                    if id is None:
-                        if name is None:
-                            continue
-
-                    if current:
-                        pass
-
-                    if current.startswith(str(name).lower()[:int(item)]):
-                        choices.append(Choice(name = str(name), value = int(id)))
-                        pass
-                        
-                    elif current.startswith(str(id)[:int(item)]):
-                        choices.append(Choice(name = str(name), value = int(id)))
-                        pass
-
-                if len(choices) > 5:
-                    return choices[:5]
-
-                print(choices)
-                return choices
+        
+        return await self.ac.choice_autocomplete(interaction, current, "twitch_users", "username", "user_id", True)
 
 # RESTRUCTURE GROUP-SUBGROUP CONNECTIONS LIKE: welcome set channel/message | welcome display channel/message (?)
 # GLOBAL CHANNEL/MESSAGE DISPLAY THAT WILL SHOW MESSAGE/CHANNEL FOR EACH EVENT_TYPE (?)

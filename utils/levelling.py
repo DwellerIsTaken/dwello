@@ -6,17 +6,9 @@ from discord.ext import commands
 from typing import List, Dict, Any, Optional
 import text_variables as tv
 
-class LevellingUtils():
+class LevellingUtils:
     def __init__(self, bot):
         self.bot = bot
-
-    async def create_tables(self) -> None:
-        async with self.bot.pool.acquire() as conn:
-            async with conn.transaction():
-                with open("schema.sql", "r") as f:
-                    tables = f.read()
-
-                await conn.execute(tables)
 
     async def create_user(self, user_id: Optional[int], guild_id: Optional[int]) -> None:
         async with self.bot.pool.acquire() as conn:

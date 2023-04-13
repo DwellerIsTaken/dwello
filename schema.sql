@@ -35,9 +35,9 @@ CREATE TABLE IF NOT EXISTS server_data(
     message_text TEXT,
     channel_id BIGINT,
     event_type TEXT,
-    counter INTEGER,
+    counter_name TEXT,
     deny_clicked INTEGER,
-    PRIMARY KEY (guild_id, event_type)
+    PRIMARY KEY (guild_id, event_type, counter_name)
 );
 
 CREATE TABLE IF NOT EXISTS jobs(

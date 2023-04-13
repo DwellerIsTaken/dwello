@@ -1,10 +1,11 @@
 import requests, discord, os, asyncpg
 
-from typing import Optional, Union, Tuple
+from typing import Optional, Union, Tuple, List
 
 from discord.ext import commands
 
 import text_variables as tv
+from utils import DB_Operations
 
 # Set your app's client ID and secret
 CLIENT_ID = os.getenv('TWITCH_CLIENT_ID')
@@ -31,10 +32,11 @@ def get_access_token():
 
 helix_url = 'https://api.twitch.tv/helix/eventsub/subscriptions'
 
-class Twitch():
+class Twitch:
     def __init__(self, bot: commands.Bot):
         self.bot = bot
         self.access_token, self.headers = get_access_token()
+        self.db = DB_Operations(self.bot)
 
     async def username_to_id(self, username: str) -> Optional[str]:
             
@@ -83,6 +85,7 @@ class Twitch():
                 # List of subscriptions
                 response_ = requests.get(helix_url, headers=self.headers).json()
                 
+                # FIX THE CHECK
                 for i in response_['data']:
                     broadcaster_id = int(i['condition']['broadcaster_user_id'])
                     if broadcaster_id not in broadcaster_check_dict:
@@ -125,7 +128,9 @@ class Twitch():
                 await conn.execute("INSERT INTO twitch_users(username, user_id, guild_id) VALUES($1, $2, $3)", username, int(user_id), ctx.guild.id)
                 #await conn.execute("UPDATE server_data SET twitch_id = $1 WHERE guild_id = $2 AND event_type = 'twitch'", user_id, ctx.guild.id)
                 # Print the response to confirm whether the subscription was created successfully or not
-                return await ctx.reply(f"Added **{username}** to twitch notifications list.",ephemeral=True), response.json()
+                
+        await self.db.fetch_table_data("twitch_users")
+        return await ctx.reply(f"Added **{username}** to twitch notifications list.",ephemeral=True), response.json()
 
                 # type_ = stream.online
 
@@ -160,25 +165,39 @@ class Twitch():
             print(i['type'])
         print(response['data'])
 
-    async def twitch_unsubscribe_from_streamer(self, ctx: commands.Context, username: Optional[str]) -> Optional[discord.Message]: # IF ALL: GET ALL TWITCH USERS THAT GUILD IS SUBSCRIBED TO AND UNSUB (what if the same user for multiple guilds)
-        async with self.bot.pool.acquire() as conn:
+    async def twitch_unsubscribe_from_streamer(self, ctx: commands.Context, username: Union[str, bool]) -> Optional[discord.Message]: # IF ALL: GET ALL TWITCH USERS THAT GUILD IS SUBSCRIBED TO AND UNSUB (what if the same user for multiple guilds)
+        async with self.bot.pool.acquire() as conn: # LOOKS SHITTY - SHOULD REWRITE
             async with conn.transaction():
-
-                user_id = await conn.fetchrow("SELECT user_id FROM twitch_users WHERE username = $1 AND guild_id = $2", username, ctx.guild.id)
-                user_id = user_id[0]
 
                 response = requests.get(helix_url, headers=self.headers).json()
 
+                if not response['data']:
+                    return await ctx.reply(embed=discord.Embed(description="No events to unsubscribe from.", color=tv.color), ephemeral=True)
+                
+                done = 0
+                count = 0
                 for i in response['data']:
                     subscription_id = i['id']
-                    broadcaster_id = i['condition']['broadcaster_user_id']
+                    broadcaster_id = int(i['condition']['broadcaster_user_id'])
+                    url = f'https://api.twitch.tv/helix/eventsub/subscriptions?id={subscription_id}'
 
-                    if broadcaster_id == user_id:
-                        url = f'https://api.twitch.tv/helix/eventsub/subscriptions?id={subscription_id}'
+                    if isinstance(username, str):
+                        user_id = int(await conn.fetchval("SELECT user_id FROM twitch_users WHERE username = $1 AND guild_id = $2", username, ctx.guild.id))
+
+                        if user_id and broadcaster_id == user_id:
+                            response = requests.delete(url, headers=self.headers)
+                            await conn.execute("DELETE FROM twitch_users WHERE user_id = $1 AND guild_id = $2", user_id, ctx.guild.id)
+                            break
+
+                    elif isinstance(username, bool) and username:
                         response = requests.delete(url, headers=self.headers)
+                        if not done:
+                            await conn.execute("DELETE FROM twitch_users WHERE guild_id = $1", ctx.guild.id)
+                            done = 1
+                        count += 1
 
-        #return await ctx.reply(response['data'])
-
+        await self.db.fetch_table_data("twitch_users")
+        return await ctx.reply(f"Unsubscribed from {f'{count} streamer(s)' if count != 0 else username}.", ephemeral=True)
 
     # OUTSIDE OF CLASS CAUSE WILL INTERACT WITH FLASK (?)
     async def twitch_to_discord(self, data) -> None:

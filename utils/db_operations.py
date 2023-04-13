@@ -2,7 +2,9 @@ import asyncpg, os
 import text_variables as tv
 from discord.ext import commands
 
-class DB_Operations():
+from typing import Literal, List, Dict
+
+class DB_Operations:
 
     def __init__(self, bot):
         self.bot = bot
@@ -11,8 +13,55 @@ class DB_Operations():
         pool = await asyncpg.create_pool(database= os.getenv('pg_name'), user= os.getenv('pg_username'), password= os.getenv('pg_password'), host= tv.host, port= tv.port)
         #pool = await asyncpg.create_pool(database= "postgres", user= "postgres", password= "")
         return pool
+    
+    async def create_tables(self) -> None:
+        async with self.bot.pool.acquire() as conn:
+            async with conn.transaction():
+                with open("schema.sql", "r") as f:
+                    tables = f.read()
 
-    async def fetch_job_data(self) -> dict:
+                return await conn.execute(tables)
+    
+    async def fetch_data(self) -> dict:
+        async with self.bot.pool.acquire() as conn:
+            async with conn.transaction():
+                
+                # Fetch data from users table
+                data_users = await conn.fetch("SELECT * FROM users")
+
+                # Fetch data from twitch_users table
+                data_twitch_users = await conn.fetch("SELECT * FROM twitch_users")
+
+                # Fetch data from warnings table
+                data_warnings = await conn.fetch("SELECT * FROM warnings")
+
+                # Fetch data from server_data table
+                data_server_data = await conn.fetch("SELECT * FROM server_data")
+
+                # Fetch data from jobs table
+                data_jobs = await conn.fetch("SELECT * FROM jobs")
+
+                all_data = {
+                'users': data_users,
+                'twitch_users': data_twitch_users,
+                'warnings': data_warnings,
+                'server_data': data_server_data,
+                'jobs': data_jobs
+                }
+
+        return all_data
+    
+    async def fetch_table_data(self, table: Literal["jobs", "users", "warnings", "server_data", "twitch_users"]) -> List:
+        async with self.bot.pool.acquire() as conn:
+            async with conn.transaction():
+
+                query = "SELECT * FROM " + table
+                data = await conn.fetch(query)
+                self.bot.db_data[table] = data
+        
+        return data
+
+    async def fetch_job_data(self) -> dict: # remove later
         async with self.bot.pool.acquire() as conn:
             async with conn.transaction():
 
@@ -36,44 +85,3 @@ class DB_Operations():
                     guild_check_list.append(int(guild_id))
 
                 return job_dict
-
-'''async def job_transform_data() -> dict:
-
-    count = 0
-    jobs_dict = {}
-    total_list = []
-    column_name_list = []
-
-    data = fetch_job_data()[0]
-
-    for record in data:
-        print(record)
-        print('########################')
-        print(type(record))
-        print('########################')
-        print(record[0])
-
-    async for data, names in fetch_job_data():
-        for name in names:
-            column_name_list.append(str(name))
-
-        for record in data:
-            print(record)
-            print('########################')
-            print(type(record))
-            print('########################')
-            print(record[0])
-            jobs_dict[column_name_list[count]] = record
-
-    return jobs_dict'''
-
-'''count = 0
-jobs_dict = {}
-column_name_list = []
-data, names = fetch_job_data() 
-
-for name in names:
-    column_name_list.append(str(name))
-
-for record in data:
-    jobs_dict[column_name_list[count]] = record'''

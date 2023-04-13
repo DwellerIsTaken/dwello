@@ -8,7 +8,7 @@ from typing import Optional, Union, Literal, Tuple
 
 # COMPLETELY REMAKE THIS PIECE OF SHIT
 
-class BotEcoUtils():
+class BotEcoUtils:
 
     def __init__(self, bot):
         self.bot = bot
@@ -77,7 +77,7 @@ class BotEcoUtils():
 
         return await ctx.reply(embed=embed, mention_author=False)
 
-class GuildEcoUtils():
+class GuildEcoUtils:
 
     def __init__(self, bot: commands.Bot):
         self.bot = bot

@@ -13,6 +13,10 @@ class Events(BaseCog):
         self.levelling = LevellingUtils(self.bot)
         self.listeners = ListenersFunctions(self.bot)
 
+    @commands.hybrid_command(name="table",with_app_command=False)
+    async def test(self, ctx):
+        await self.listeners.bot_join(ctx.guild)
+
     @commands.Cog.listener()
     async def on_guild_join(self, guild: discord.Guild):
 

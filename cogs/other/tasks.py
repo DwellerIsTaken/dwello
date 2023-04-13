@@ -10,7 +10,7 @@ import text_variables as tv
 from typing import Any
 from utils import BaseCog
 
-class Loops(BaseCog):
+class Tasks(BaseCog):
 
     def __init__(self, bot: commands.Bot, *args: Any, **kwargs: Any):
         super().__init__(bot, *args, **kwargs)

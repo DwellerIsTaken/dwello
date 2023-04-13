@@ -9,7 +9,7 @@ from typing import Optional, Literal
 from contextlib import suppress
 from string import Template
 
-class ListenersFunctions():
+class ListenersFunctions:
     def __init__(self, bot: commands.Bot):
         self.bot = bot
 
@@ -17,7 +17,11 @@ class ListenersFunctions():
         async with self.bot.pool.acquire() as conn:
             async with conn.transaction():
 
-                return await conn.executemany("INSERT INTO server_data(guild_id, event_type) VALUES($1, $2)", [(guild.id, 'welcome'), (guild.id, 'leave'), (guild.id, 'twitch')])
+                counter_names = ['all', 'member', 'bot', 'category']
+                event_types = ['welcome', 'leave', 'twitch']
+                #counter_names = [counter if counter is not None else 'Not Specified' for counter in counter_names]
+                await conn.executemany("INSERT INTO server_data(guild_id, counter_name, event_type) VALUES($1, $2, $3)", [(guild.id, 'Disabled', event) for event in event_types])
+                return await conn.executemany("INSERT INTO server_data(guild_id, counter_name, event_type) VALUES($1, $2, $3)", [(guild.id, counter, 'counter') for counter in counter_names])
                 # ADD SOME WELCOME MESSAGE FROM BOT OR SMTH
 
     async def join_leave_event(self, member: discord.Member, name: Literal["welcome", "leave"]) -> Optional[discord.Message]:
