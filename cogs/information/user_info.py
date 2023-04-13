@@ -12,16 +12,15 @@ import requests
 import io
 from utils.economy import GuildEcoUtils
 import text_variables as tv
-from typing import Optional, Union
-from utils import get_avatar_dominant_color
+from typing import Optional, Union, Any
+from utils import get_avatar_dominant_color, BaseCog
 
-class UserInfo(commands.Cog):
+class UserInfo(BaseCog):
 
-    def __init__(self, bot):
-        self.bot = bot
-        self.levelling = LevellingUtils(bot)
-        self.ge = GuildEcoUtils(bot)
-        #super().__init__()
+    def __init__(self, bot: commands.Bot, *args: Any, **kwargs: Any):
+        super().__init__(bot, *args, **kwargs)
+        self.levelling = LevellingUtils(self.bot)
+        self.ge = GuildEcoUtils(self.bot)
 
     @commands.hybrid_command(name = 'stats', description="Shows personal information and rank statistics",with_app_command=True) 
     async def stats(self, ctx: commands.Context, member: Optional[Union[discord.Member, discord.User]] = commands.Author) -> Optional[discord.Message]:

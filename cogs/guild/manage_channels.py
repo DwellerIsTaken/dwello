@@ -3,8 +3,8 @@ import text_variables as tv
 import discord, os
 
 from discord.ui import button, View, Button
-from typing import Optional, Union, Tuple, Literal
-from utils import HandleHTTPException
+from typing import Optional, Union, Tuple, Literal, Any
+from utils import HandleHTTPException, BaseCog
 
 class ChannelsFunctions():
 
@@ -64,7 +64,7 @@ class ChannelsFunctions():
                     return await ctx.reply("This counter already exists! Please provide another type of counter if you need to, otherwise __**please don`t create a counter that already exists**__.", mention_author=True, ephemeral=True)
 
                 if deny_result is None and counter_category is None:
-                    return await ctx.reply(embed = discord.Embed(title="Do you want to create a category for your counters?", description="If your answer is yes pick the `approve` button, otherwise choose the button called `deny`.", color = tv.color).set_footer(text=tv.footer), view = Stats_View(ctx, name), ephemeral = True)
+                    return await ctx.reply(embed = discord.Embed(description="**Do you want to create a category for your counters?**", color = tv.color).set_footer(text=tv.footer), view = Stats_View(self.bot, ctx, name), ephemeral = True)
 
 
                 #elif deny_result is None and counter_category is not None: # ?
@@ -92,13 +92,15 @@ class ChannelsFunctions():
 
 class Stats_View(View):
 
-    def __init__(self, ctx: commands.Context, name: str, *, timeout: int = None):
+    def __init__(self, bot: commands.Bot, ctx: commands.Context, name: str, *, timeout: int = None):
         super().__init__(timeout=timeout)
+        self.bot = bot
         self.ctx = ctx
         self.name = name
+        self.cf_ = ChannelsFunctions(self.bot)
     
-    async def interaction_check(interaction: discord.Interaction, author: discord.User) -> bool:
-        if interaction.user.id == author.id:
+    async def interaction_check(self, interaction: discord.Interaction) -> Optional[discord.Message]:
+        if interaction.user.id == self.ctx.author.id:
             return True
 
         else:
@@ -109,8 +111,8 @@ class Stats_View(View):
     @button(style = discord.ButtonStyle.green, label="Approve", disabled=False, custom_id="approve_button")
     async def approve(self, interaction: discord.interactions.Interaction, button: Button) -> Optional[discord.Message]:
 
-        counter_category = await ChannelsFunctions.counter_func(self.ctx, "counter_category")
-        await ChannelsFunctions.counter_func(self.ctx, self.name)
+        counter_category = await self.cf_.counter_func(self.ctx, "counter_category")
+        await self.cf_.counter_func(self.ctx, self.name)
         #await move_channel(interaction, counter_category)
         #await interaction.message.edit(embed=again_embed,view = None)
 
@@ -122,14 +124,14 @@ class Stats_View(View):
             async with conn.transaction():
 
                 await conn.execute("UPDATE deny_clicked FROM server_data WHERE guild_id = $1", interaction.guild.id)
-                await ChannelsFunctions.counter_func(self.ctx, self.name)
+                await self.cf_.counter_func(self.ctx, self.name)
                 return await interaction.response.edit_message(content=None,view = None)
 
-class Channels(commands.Cog):
+class Channels(BaseCog):
 
-    def __init__(self, bot):
-        self.bot = bot
-        self.cf = ChannelsFunctions(bot)
+    def __init__(self, bot: commands.Bot, *args: Any, **kwargs: Any):
+        super().__init__(bot, *args, **kwargs)
+        self.cf = ChannelsFunctions(self.bot)
 
     @commands.hybrid_group(name="counter", description="Counter group.", invoke_without_command = True, with_app_command=True)
     @commands.bot_has_permissions(manage_channels=True)

@@ -2,14 +2,15 @@ from __future__ import annotations
 
 from discord.ext import commands
 import discord, aiohttp, os
-from typing import Optional
+from typing import Optional, Any
 import text_variables as tv
 
-class Weather(commands.Cog):
+from utils import BaseCog
 
-  def __init__(self, bot):
-    self.bot = bot
-    #super().__init__()
+class Weather(BaseCog):
+
+  def __init__(self, bot: commands.Bot, *args: Any, **kwargs: Any):
+        super().__init__(bot, *args, **kwargs)
 
   # THINK OF A NEW FOLDER WHERE TO ADD ALL THIS
   @commands.hybrid_command(name="hello",with_app_command=True)

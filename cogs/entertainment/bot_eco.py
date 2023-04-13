@@ -1,12 +1,15 @@
+from __future__ import annotations
+
 from discord.ext import commands
 
-from utils.economy import BotEcoUtils
+from typing import Any
+from utils import BotEcoUtils, BaseCog
 
-class Bot_Economy(commands.Cog):
+class Bot_Economy(BaseCog):
 
-    def __init__(self, bot):
-        self.bot = bot
-        self.be = BotEcoUtils(bot)
+    def __init__(self, bot: commands.Bot, *args: Any, **kwargs: Any):
+        super().__init__(bot, *args, **kwargs)
+        self.be = BotEcoUtils(self.bot)
 
     @commands.hybrid_command(name = "work", description = "A boring job with a basic income. Gives some of the bot's currency in return.")
     async def work_bot(self, ctx):

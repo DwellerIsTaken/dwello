@@ -2,6 +2,7 @@ import subprocess
 import pkg_resources, sys
 
 # MODIFY | FIX
+# DO WE NEED THIS?
 
 def add_requirements(*packages) -> None:
     try:

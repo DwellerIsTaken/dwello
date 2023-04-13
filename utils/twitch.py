@@ -38,20 +38,20 @@ class Twitch():
 
     async def username_to_id(self, username: str) -> Optional[str]:
             
-            username = username.lower()
+        username = username.lower()
 
-            url = f'https://api.twitch.tv/helix/users?login={username}'
-            response = requests.get(url, headers=self.headers).json()
+        url = f'https://api.twitch.tv/helix/users?login={username}'
+        response = requests.get(url, headers=self.headers).json()
 
-            # The Twitch user ID to subscribe to
-            if "data" in response and len(response["data"]) > 0:
-                user_id_ = response["data"][0]["id"]
-                #print(f"The user ID for {username} is {user_id_}")
+        # The Twitch user ID to subscribe to
+        if "data" in response and len(response["data"]) > 0:
+            user_id_ = response["data"][0]["id"]
+            #print(f"The user ID for {username} is {user_id_}")
 
-            else:
-                raise Exception(f"Could not find user {username}")
-            
-            return user_id_
+        else:
+            raise Exception(f"Could not find user {username}")
+        
+        return user_id_
     
     async def id_to_username(self, user_id: int) -> Optional[str]:
 
@@ -72,7 +72,11 @@ class Twitch():
         async with self.bot.pool.acquire() as conn:
             async with conn.transaction():
 
-                user_id = await self.username_to_id(username)
+                try:
+                    user_id = await self.username_to_id(username)
+
+                except:
+                    return await ctx.reply(embed=discord.Embed(description= f"Could not find user **{username}**.", color = tv.color), ephemeral=True)
 
                 broadcaster_check_dict = {}
 
@@ -118,14 +122,36 @@ class Twitch():
 
                 # add some extra checks here
                 # one user now; update later
-                await conn.execute("INSERT INTO twitch_users(user_id, guild_id) VALUES($1, $2)", int(user_id), ctx.guild.id)
+                await conn.execute("INSERT INTO twitch_users(username, user_id, guild_id) VALUES($1, $2, $3)", username, int(user_id), ctx.guild.id)
                 #await conn.execute("UPDATE server_data SET twitch_id = $1 WHERE guild_id = $2 AND event_type = 'twitch'", user_id, ctx.guild.id)
                 # Print the response to confirm whether the subscription was created successfully or not
                 return await ctx.reply(f"Added **{username}** to twitch notifications list.",ephemeral=True), response.json()
 
                 # type_ = stream.online
 
-    async def event_subscription_list(self): # RETURNS ALL SUBSCRIPTIONS FOR A CERTAIN CLIENT_ID
+    # return a list of users the guild is subscribed to
+    async def guild_twitch_subscriptions(self, ctx: commands.Context) -> Optional[discord.Message]:
+        async with self.bot.pool.acquire() as conn:
+            async with conn.transaction():
+
+                data = await conn.fetch("SELECT username, user_id FROM twitch_users WHERE guild_id = $1", ctx.guild.id)
+                twitch_embed = discord.Embed(title="Twitch subscriptions", color = tv.color)
+                twitch_embed.set_thumbnail(url="https://mlpnk72yciwc.i.optimole.com/cqhiHA-5_fN-hee/w:350/h:350/q:90/rt:fill/g:ce/https://bleedingcool.com/wp-content/uploads/2019/09/twitch-logo-icon-2019.jpg")
+
+                if data:
+                    for record in data:
+                        twitch_id = record['user_id']
+                        twitch_name = record['username']
+                        #name = await self.id_to_username(twitch_id)
+                        twitch_embed.add_field(name=twitch_name, value=twitch_id, inline=False)
+
+                elif not (data[0] if data else None):
+                    return await ctx.reply(embed=discord.Embed(description="The guild isn't subscribed to any twitch streamers.", color = tv.color))
+                
+        return await ctx.reply(embed=twitch_embed)
+
+
+    async def event_subscription_list(self): # RETURNS ALL SUBSCRIPTIONS FOR A CERTAIN CLIENT_ID (?)
         response = requests.get(helix_url, headers=self.headers).json()
 
         # Print the response to show the list of subscriptions
@@ -134,25 +160,25 @@ class Twitch():
             print(i['type'])
         print(response['data'])
 
-    async def unsubscribe(self, username: str): # IF ALL: GET ALL TWITCH USERS THAT GUILD IS SUBSCRIBED TO AND UNSUB (what if the same user for multiple guilds)
+    async def twitch_unsubscribe_from_streamer(self, ctx: commands.Context, username: Optional[str]) -> Optional[discord.Message]: # IF ALL: GET ALL TWITCH USERS THAT GUILD IS SUBSCRIBED TO AND UNSUB (what if the same user for multiple guilds)
+        async with self.bot.pool.acquire() as conn:
+            async with conn.transaction():
 
-        #user_id = await self.username_to_id(username)
-        response = requests.get(helix_url, headers=self.headers).json()
+                user_id = await conn.fetchrow("SELECT user_id FROM twitch_users WHERE username = $1 AND guild_id = $2", username, ctx.guild.id)
+                user_id = user_id[0]
 
-        # FINISH
+                response = requests.get(helix_url, headers=self.headers).json()
 
-        count = 0
-        if not response['data']:
-            print("No events to unsubscribe from.")
-            return
+                for i in response['data']:
+                    subscription_id = i['id']
+                    broadcaster_id = i['condition']['broadcaster_user_id']
 
-        for subscription in response['data']:
-            subscription_id = subscription['id']
-            url = f'https://api.twitch.tv/helix/eventsub/subscriptions?id={subscription_id}'
-            response = requests.delete(url, headers=self.headers)
-            count += 1
+                    if broadcaster_id == user_id:
+                        url = f'https://api.twitch.tv/helix/eventsub/subscriptions?id={subscription_id}'
+                        response = requests.delete(url, headers=self.headers)
 
-        print(f"Unsubscribed from {count} event(s).")
+        #return await ctx.reply(response['data'])
+
 
     # OUTSIDE OF CLASS CAUSE WILL INTERACT WITH FLASK (?)
     async def twitch_to_discord(self, data) -> None:
@@ -168,7 +194,7 @@ class Twitch():
 
                     twitch_embed = discord.Embed(title= f"{username} started streaming", description= f"{message_text}\n\nhttps://www.twitch.tv/{username}", color= tv.twitch_color)
 
-                    channel = await self.bot.get_channel(int(channel_id)) if channel_id else None
+                    channel: discord.TextChannel = await self.bot.get_channel(int(channel_id)) if channel_id else None
                     if channel:
                         await channel.send(embed = twitch_embed)
 

@@ -5,19 +5,16 @@ from discord.ext import commands
 import text_variables as tv
 import discord
 
-from typing import Optional
+from typing import Optional, Any
+from utils import BaseCog, BotEcoUtils, DB_Operations, GuildEcoUtils
 
-from utils.economy import BotEcoUtils
-from utils.economy import GuildEcoUtils
-from utils.db_operations import DB_Operations
+class Guild_Economy(BaseCog):
 
-class Guild_Economy(commands.Cog):
-
-    def __init__(self, bot):
-        self.bot = bot
-        self.be = BotEcoUtils(bot)
-        self.ge = GuildEcoUtils(bot)
-        self.db = DB_Operations(bot)
+    def __init__(self, bot: commands.Bot, *args: Any, **kwargs: Any):
+        super().__init__(bot, *args, **kwargs)
+        self.be = BotEcoUtils(self.bot)
+        self.ge = GuildEcoUtils(self.bot)
+        self.db = DB_Operations(self.bot)
 
     #jobs -- lots of available jobs
 

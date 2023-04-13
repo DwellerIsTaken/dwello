@@ -1,14 +1,19 @@
-from discord.ext import commands, tasks
-import discord, asyncio, os
-import text_variables as tv
+from __future__ import annotations
 
+from discord.ext import commands, tasks
 from datetime import datetime
 from pytz import timezone
+import discord, asyncio
 
-class Loops(commands.Cog):
+import text_variables as tv
 
-    def __init__(self, bot):
-        self.bot = bot
+from typing import Any
+from utils import BaseCog
+
+class Loops(BaseCog):
+
+    def __init__(self, bot: commands.Bot, *args: Any, **kwargs: Any):
+        super().__init__(bot, *args, **kwargs)
         self.stats_loop.start()
         self.eco_loop.start()
 
@@ -16,7 +21,7 @@ class Loops(commands.Cog):
         async with self.bot.pool.acquire() as conn:
             async with conn.transaction(): 
 
-                channels = await conn.fetch("SELECT channel_id, event_type FROM main WHERE guild_id = $1 AND channel_id IS NOT NULL AND event_type IS NOT NULL AND event_type != 'counter_category'", guild.id)
+                channels = await conn.fetch("SELECT channel_id, event_type FROM server_data WHERE guild_id = $1 AND channel_id IS NOT NULL AND event_type IS NOT NULL AND event_type != 'counter_category'", guild.id)
 
                 bot_counter_ = sum(member.bot for member in guild.members)
                 member_counter_ = guild.member_count - bot_counter_

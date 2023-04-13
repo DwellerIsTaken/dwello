@@ -1,15 +1,17 @@
+from __future__ import annotations
+
 import discord
 from discord.ext import commands
 
-from utils.levelling import LevellingUtils 
-from utils.listeners import ListenersFunctions
+from typing import Any
+from utils import BaseCog, ListenersFunctions, LevellingUtils
 
-class Events(commands.Cog):
+class Events(BaseCog):
 
-    def __init__(self, bot: commands.Bot):
-        self.bot = bot
-        self.levelling = LevellingUtils(bot)
-        self.listeners = ListenersFunctions(bot)
+    def __init__(self, bot: commands.Bot, *args: Any, **kwargs: Any):
+        super().__init__(bot, *args, **kwargs)
+        self.levelling = LevellingUtils(self.bot)
+        self.listeners = ListenersFunctions(self.bot)
 
     @commands.Cog.listener()
     async def on_guild_join(self, guild: discord.Guild):

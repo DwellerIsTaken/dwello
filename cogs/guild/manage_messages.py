@@ -2,12 +2,13 @@ from discord.ext import commands
 import text_variables as tv
 import discord
 
-from typing import Optional
+from typing import Optional, Any
+from utils import BaseCog
 
-class Messages(commands.Cog):
+class Messages(BaseCog):
 
-    def __init__(self, bot):
-        self.bot = bot
+    def __init__(self, bot: commands.Bot, *args: Any, **kwargs: Any):
+        super().__init__(bot, *args, **kwargs)
     
     @commands.hybrid_command(name='clear', help="Purges messages.", with_app_command=True)
     @commands.bot_has_permissions(manage_messages=True)

@@ -10,7 +10,7 @@ from utils.db_operations import DB_Operations
 from utils.levelling import LevellingUtils
 
 intents = discord.Intents.all() # Creating a client and setting up its parameters
-bot = commands.Bot(command_prefix = '$', chunk_guilds_at_startup = False, activity = discord.Activity(type = discord.ActivityType.playing , name = 'Visual Studio Code') , intents = intents, help=False, status = discord.Status.do_not_disturb)
+bot = commands.Bot(command_prefix = '$', chunk_guilds_at_startup = False, activity = discord.Streaming(name = 'Visual Studio Code', url="https://youtu.be/dQw4w9WgXcQ") , intents = intents, help=False, status = discord.Status.do_not_disturb, allowed_mentions=discord.AllowedMentions.none()) #Activity
 bot.remove_command("help")
 
 cogs = {

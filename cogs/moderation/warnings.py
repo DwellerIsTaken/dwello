@@ -1,15 +1,17 @@
-#import features.levelling.utils.levelling as levelling
+from __future__ import annotations
+
+from discord.ui import View, Button, button
 from discord.app_commands import Choice
 from discord.ext import commands
 import text_variables as tv
-import datetime, discord, os
-from contextlib import suppress
+import datetime, discord
 
-from utils import member_check, interaction_check
 from .timeout import Timeout
-from typing import Optional, List
 
-class TimeoutSuggestion(discord.ui.View):
+from typing import Optional, List, Any
+from utils import BaseCog, member_check, interaction_check
+
+class TimeoutSuggestion(View):
 
     def __init__(self, bot: commands.Bot, ctx: commands.Context, member: discord.Member, reason: str ,timeout: int = None):
         super().__init__(timeout = timeout)
@@ -18,8 +20,8 @@ class TimeoutSuggestion(discord.ui.View):
         self.member = member
         self.reason = reason
 
-    @discord.ui.button(label = 'Yes', style = discord.ButtonStyle.green)
-    async def yes(self, interaction: discord.Interaction, button: discord.ui.Button):
+    @button(label = 'Yes', style = discord.ButtonStyle.green)
+    async def yes(self, interaction: discord.Interaction, button: Button):
         await interaction_check(interaction, self.ctx.author)
 
         #await self.ctx.interaction.response.defer()
@@ -28,17 +30,17 @@ class TimeoutSuggestion(discord.ui.View):
         await interaction.message.edit(view = None)
         return await interaction.message.delete()
 
-    @discord.ui.button(label = 'No', style = discord.ButtonStyle.red)
-    async def no(self, interaction: discord.Interaction, button: discord.ui.Button):
+    @button(label = 'No', style = discord.ButtonStyle.red)
+    async def no(self, interaction: discord.Interaction, button: Button):
         await interaction_check(interaction, self.ctx.author)
         
         await interaction.message.edit(view = None)
         return await interaction.message.delete()
 
-class Warnings(commands.Cog):
+class Warnings(BaseCog):
 
-    def __init__(self, bot):
-        self.bot = bot
+    def __init__(self, bot: commands.Bot, *args: Any, **kwargs: Any):
+        super().__init__(bot, *args, **kwargs)
 
     @commands.hybrid_group(invoke_without_command=True, with_app_command=True)
     async def warning(self, ctx: commands.Context):
@@ -81,7 +83,12 @@ class Warnings(commands.Cog):
                     ban_embed.set_image(url = "https://c.tenor.com/GDm0wZykMA4AAAAd/thanos-vs-vision-thanos.gif")
                     ban_embed.set_footer(text= tv.footer) #  • 
 
-                    async with suppress(discord.HTTPException): await member.send(embed=ban_embed)
+                    try:
+                        await member.send(embed=ban_embed)
+
+                    except discord.HTTPException as e:
+                        print(e)
+                        pass
 
             return await ctx.send(embed=public_embed)
 
@@ -202,7 +209,7 @@ class Warnings(commands.Cog):
     @remove_warn.autocomplete('warning')
     async def autocomplete_callback(self, interaction: discord.Interaction, current: str) -> List[Choice]:
         async with self.bot.pool.acquire() as conn:
-            async with conn.transaction():
+            async with conn.transaction(): # REDO: DONT FETCH ON AUTOCOMPLETE
 
                 member = interaction.namespace["member"]
                 #member = interaction.guild.get_member(int(member.id))
@@ -245,4 +252,4 @@ class Warnings(commands.Cog):
                 if len(choices) > 5:
                     return choices[:5]
 
-                return choices
+        return choices

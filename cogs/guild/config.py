@@ -1,12 +1,13 @@
-#from features.required_permissions.utils.join_leave_func import *
+from __future__ import annotations
+
+from discord.app_commands import Choice
 from discord.ext import commands
-#from contextlib import suppress
 from string import Template
 import text_variables as tv
 import discord, os
 
-from typing import Optional, Literal
-from utils import Twitch
+from typing import Optional, Literal, Any
+from utils import Twitch, BaseCog
 
 class ConfigFunctions():
 
@@ -27,40 +28,10 @@ class ConfigFunctions():
 
                 result = await conn.fetchrow("SELECT message_text FROM server_data WHERE guild_id = $1 AND event_type = $2", ctx.guild.id, name)
 
-                '''if result:
-                    await conn.execute("UPDATE server_data SET message_text = $1 WHERE guild_id = $2 AND event_type = $3", text, ctx.guild.id, name)
-                    w = 'updated'
-
-                else:
-                    await conn.execute("INSERT INTO server_data (guild_id, message_text, event_type) VALUES($1,$2,$3)", ctx.guild.id, text, name)
-                    w = 'set' # create all the event_types when bot enters the guild'''
-
                 await conn.execute("UPDATE server_data SET message_text = $1, event_type = COALESCE(event_type, $2) WHERE guild_id = $3 AND COALESCE(event_type, $2) = $2", text, name, ctx.guild.id)
                 string = f"The {name} message has been {'set' if not result[0] else 'updated'} to: ```{text}```"
 
         return await ctx.reply(embed = discord.Embed(description=string, color = tv.color), mention_author = False, ephemeral=True)
-
-    '''async def chnl(self, ctx: commands.Context, name: Optional[str], channel: Optional[discord.TextChannel] = commands.CurrentChannel) -> Optional[discord.Message]:
-        async with self.bot.pool.acquire() as conn:
-            async with conn.transaction():
-
-                result = await conn.fetchrow("SELECT channel_id FROM server_data WHERE guild_id = $1 AND event_type = $2", ctx.guild.id, name)
-                
-                w = '*'
-
-                if result:
-                    if str(result[0]) == str(channel.id): # ?
-                        return await ctx.reply(f"The leave channel has already been set to this channel!")
-                    
-                    else:
-                        await conn.execute("UPDATE server_data SET channel_id = $1 WHERE guild_id = $2 AND event_type = $3", channel.id, ctx.guild.id, name)
-                        w = 'updated'
-                    
-                else: # probably remove
-                    await conn.execute("INSERT INTO server_data (guild_id, channel_id, event_type) VALUES($1,$2,$3)", ctx.guild.id, channel.id, name)
-                    w = 'set'
-        
-        return await ctx.reply(f"The {name} channel has been {w} to {channel.mention}.", mention_author=False, ephemeral=True)'''
     
     async def add_channel(self, ctx: commands.Context, name: str, channel: Optional[discord.TextChannel] = commands.CurrentChannel) -> Optional[discord.Message]:
         async with self.bot.pool.acquire() as conn:
@@ -112,12 +83,12 @@ class ConfigFunctions():
                 await conn.execute("UPDATE server_data SET channel_id = NULL WHERE guild_id = $1 AND event_type = $2", ctx.guild.id, name)
         return await ctx.reply(f"The {name} channel has been removed.", mention_author=False, ephemeral=True)
 
-class Config(commands.Cog):
+class Config(BaseCog):
 
-    def __init__(self, bot: commands.Bot):
-        self.bot = bot
-        self.config = ConfigFunctions(bot)
-        self.twitchutils = Twitch(bot) 
+    def __init__(self, bot: commands.Bot, *args: Any, **kwargs: Any):
+        super().__init__(bot, *args, **kwargs)
+        self.config = ConfigFunctions(self.bot)
+        self.twitchutils = Twitch(self.bot) 
 
     @commands.hybrid_group(invoke_without_command=True,with_app_command=True)
     @commands.bot_has_permissions(manage_channels=True,manage_messages=True)
@@ -286,6 +257,57 @@ class Config(commands.Cog):
     async def add_twitch_streamer(self, ctx: commands.Context, twitch_streamer_name: str):
 
         return await self.twitchutils.event_subscription(ctx, "stream.online", twitch_streamer_name)
+    
+    @twitch.command(name="list", help="Shows the list of streamers guild is subscribed to.")
+    async def twitch_streamer_list(self, ctx: commands.Context):
+
+        return await self.twitchutils.guild_twitch_subscriptions(ctx)
+    
+    @twitch.command(name="remove", help="Removes a twitch subscription.")
+    async def twitch_streamer_remove(self, ctx: commands.Context, username: str): # add choice to delete all
+
+        return await self.twitchutils.twitch_unsubscribe_from_streamer(ctx, username)
+    
+    @twitch_streamer_remove.autocomplete('username')
+    async def autocomplete_callback_(self, interaction: discord.Interaction, current: str): # MAKE IT A GLOBAL FUNC
+        async with self.bot.pool.acquire() as conn:
+            async with conn.transaction():
+
+                # USE FETCH DATA BOT FUNCTION | REDO
+
+                records = await conn.fetch("SELECT user_id, username FROM twitch_users WHERE guild_id = $1", interaction.guild.id)
+                print(records)
+
+                choices = []
+                item = len(current)
+
+                choices.append(Choice(name = "all", value = "all"))
+
+                for record in records:
+                    id = record["user_id"]
+                    name = record["username"]
+                    print(id, name)
+
+                    if id is None:
+                        if name is None:
+                            continue
+
+                    if current:
+                        pass
+
+                    if current.startswith(str(name).lower()[:int(item)]):
+                        choices.append(Choice(name = str(name), value = int(id)))
+                        pass
+                        
+                    elif current.startswith(str(id)[:int(item)]):
+                        choices.append(Choice(name = str(name), value = int(id)))
+                        pass
+
+                if len(choices) > 5:
+                    return choices[:5]
+
+                print(choices)
+                return choices
 
 # RESTRUCTURE GROUP-SUBGROUP CONNECTIONS LIKE: welcome set channel/message | welcome display channel/message (?)
 # GLOBAL CHANNEL/MESSAGE DISPLAY THAT WILL SHOW MESSAGE/CHANNEL FOR EACH EVENT_TYPE (?)

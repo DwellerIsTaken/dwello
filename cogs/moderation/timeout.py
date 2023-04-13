@@ -2,17 +2,16 @@ from __future__ import annotations
 
 from discord.app_commands import Choice
 from discord.ext import commands
-from contextlib import suppress
 import text_variables as tv
 import discord, datetime
 
-from utils import member_check, HandleHTTPException
-from typing import Optional
+from utils import BaseCog, member_check, HandleHTTPException
+from typing import Optional, Any
 
-class Timeout(commands.Cog):
+class Timeout(BaseCog):
 
-    def __init__(self, bot):
-        self.bot = bot
+    def __init__(self, bot: commands.Bot, *args: Any, **kwargs: Any):
+        super().__init__(bot, *args, **kwargs)
 
     async def tempmute(self, ctx: commands.Context, member: discord.Member, duration: int, period: Optional[str] = None, reason: Optional[str] = None) -> Optional[discord.Embed]:
         time_period_dict = {
@@ -41,7 +40,12 @@ class Timeout(commands.Cog):
         ban_embed.set_image(url="https://c.tenor.com/vZiLS-HKM90AAAAC/thanos-balance.gif")
         ban_embed.set_footer(text=tv.footer)
 
-        async with suppress(discord.HTTPException): await member.send(embed=ban_embed)
+        try:
+            await member.send(embed=ban_embed)
+
+        except discord.HTTPException as e:
+            print(e)
+            pass
 
         embed = discord.Embed(
             title="User is timed out!",

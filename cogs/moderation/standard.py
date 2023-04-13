@@ -1,16 +1,15 @@
 from discord.app_commands import Choice
 from discord.ext import commands
-from contextlib import suppress
 import text_variables as tv
 import discord
 
-from utils import member_check, HandleHTTPException
-from typing import Optional, Union
+from utils import BaseCog, member_check, HandleHTTPException
+from typing import Optional, Union, Any
 
-class StandardModeration(commands.Cog):
+class StandardModeration(BaseCog):
 
-    def __init__(self, bot):
-        self.bot = bot
+    def __init__(self, bot: commands.Bot, *args: Any, **kwargs: Any):
+        super().__init__(bot, *args, **kwargs)
 
     @commands.hybrid_command(name='ban', help="Bans users with bad behaviour. | Moderation", with_app_command = True)
     @commands.bot_has_guild_permissions(ban_members=True)
@@ -33,7 +32,12 @@ class StandardModeration(commands.Cog):
             async with HandleHTTPException(ctx, title=f'Failed to ban {member}'):
                 await member.ban(reason=reason)
 
-            async with suppress(discord.HTTPException): await member.send(embed=member_embed)
+            try:
+                await member.send(embed=member_embed)
+
+            except discord.HTTPException as e:
+                print(e)
+                pass
 
             guild_embed = discord.Embed(title="User banned!", description=f'*Banned by:* {ctx.author.mention} \n \n**{member}** has been succesfully banned from this server! \nReason: `{reason}`',color=tv.warn_color)
 
@@ -103,6 +107,7 @@ class StandardModeration(commands.Cog):
 
             async with HandleHTTPException(ctx, title=f'Failed to kick {member}'):
                 await member.kick(reason=reason)
+
             return await ctx.send(embed=embed)
 
     @commands.hybrid_command(name='nick', help="Changes the nickname of a provided member. | Moderation", with_app_command = True)
@@ -123,6 +128,7 @@ class StandardModeration(commands.Cog):
             
             async with HandleHTTPException(ctx, title=f'Failed to set nickname for {member}.'):
                 await member.edit(nick=nickname)
+
             return await ctx.send(embed=embed)
 
         #async with HandleHTTPException(ctx, title=f'Failed to set nickname for {member}.'):

@@ -15,9 +15,10 @@ CREATE TABLE IF NOT EXISTS users(
 );
 
 CREATE TABLE IF NOT EXISTS twitch_users(
+    username TEXT,
     user_id BIGINT,
     guild_id BIGINT,
-    PRIMARY KEY (user_id, guild_id)
+    PRIMARY KEY (username, user_id, guild_id)
 );
 
 CREATE TABLE IF NOT EXISTS warnings(
@@ -34,6 +35,7 @@ CREATE TABLE IF NOT EXISTS server_data(
     message_text TEXT,
     channel_id BIGINT,
     event_type TEXT,
+    counter INTEGER,
     deny_clicked INTEGER,
     PRIMARY KEY (guild_id, event_type)
 );
