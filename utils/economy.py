@@ -6,6 +6,8 @@ import datetime, re, discord
 from discord.ext import commands
 from typing import Optional, Union, Literal, Tuple
 
+from utils import DB_Operations
+
 # COMPLETELY REMAKE THIS PIECE OF SHIT
 
 class BotEcoUtils:
@@ -81,12 +83,13 @@ class GuildEcoUtils:
 
     def __init__(self, bot: commands.Bot):
         self.bot = bot
+        self.db = DB_Operations(self.bot)
 
     async def server_job_create(self, ctx: commands.Context, name: str, salary: int, description: str) -> Optional[discord.Message]:
         async with self.bot.pool.acquire() as conn:
             async with conn.transaction():
 
-                if salary >= 2000 and salary <= 20000:
+                if salary >= 2000 and salary <= 20000: # DIFFERENT PAYMENT SYSTEM
                     pass
 
                 else:
@@ -99,14 +102,15 @@ class GuildEcoUtils:
                     if str(record) == str(name):
                         return await ctx.reply("The job with this name already exists!")
 
-                    if record is not None:
+                    if record:
                         job_count += 1
 
                 if job_count == 10:
-                    return await ctx.reply("You *cannot* have more than 10 jobs on your server, not yet!") # UNLOCK WITH PAYMENT
+                    return await ctx.reply("You *cannot* have more than 10 jobs on your server, not yet!") # UNLOCK WITH PAYMENT (?)
 
-                await conn.execute("UPDATE jobs SET name = $1, salary = $2, description = $3 WHERE guild_id = $4", name, salary, description, ctx.guild.id)
+                await conn.execute("INSERT INTO jobs(guild_id, name, salary, description) VALUES($1, $2, $3, $4)", ctx.guild.id, name, salary, description)
 
+        await self.db.fetch_table_data("jobs")
         return await ctx.reply(embed=discord.Embed(title="Job added",description=f"You have successfully created a job on your server.\n\n*Job name:* {name}\n*Job salary:* {salary}\n*Job description:* ```{description}```",color=tv.color),mention_author=False)
 
                 #existing_id_list = []
@@ -122,32 +126,32 @@ class GuildEcoUtils:
                 #while new_job_id in existing_id_list is True:
                 #new_job_id_list.append(str(''.join(["{}".format(random.randint(0, 9)) for num in range(0, limit)])))
 
-    async def jobs_display(self, ctx: commands.Context) -> Optional[discord.Embed]:
+    async def jobs_display(self, ctx: commands.Context) -> Optional[discord.Message]:
         async with self.bot.pool.acquire() as conn:
             async with conn.transaction():
 
                 data = await conn.fetch("SELECT name, salary, description FROM jobs WHERE guild_id = $1", ctx.guild.id)
 
-                embed = discord.Embed(title="Joblist", description="Jobs currently available on this server", color = tv.color)
-                failure_embed = discord.Embed(description="b",color=tv.warn_color)
+                job_embed = discord.Embed(title="Joblist", description="Jobs currently available on this server", color = tv.color)
+                failure_embed = discord.Embed(description="No jobs currently available on this server",color=tv.warn_color)
 
                 embed_value_list = []
                 for record in data:
                     name, salary, description = record['name'], record['salary'], record['description']
 
-                    if name is None:
+                    if not name:
                         continue
                     
-                    value = f"*Salary:* {salary}\n{description if description else None}"
-                    embed.add_field(name = name, value = value, inline = False)
+                    value = f"*Salary:* {salary}\n*Description:*{description if description else None}"
+                    job_embed.add_field(name = name, value = value, inline = False)
                     embed_value_list.append(f"\n**{name}**\n{value}")
 
                 if not embed_value_list:
-                    return failure_embed
+                    job_embed = failure_embed
 
-        return embed # MAYBE SEND IMMEDIATELY | WTF IS THIS SHIT
+        return await ctx.reply(embed = job_embed, mention_author = False)
 
-    async def server_job_remove(self, ctx: commands.Context, name: Union[int, Literal['all']]) -> Optional[discord.Message]:
+    async def server_job_remove(self, ctx: commands.Context, name: Union[int, str, Literal['all']]) -> Optional[discord.Message]:
         async with self.bot.pool.acquire() as conn:
             async with conn.transaction():
 
@@ -155,28 +159,39 @@ class GuildEcoUtils:
 
                 job_count = 0
                 for record in data:
-                    if record is not None:
+                    if record:
                         job_count += 1
                 
                 if job_count == 0:
                     return await ctx.reply("There are no jobs to remove yet...")
 
-                display = await self.jobs_display(ctx)
+                #display = await self.jobs_display(ctx)
 
                 if name == "all":
                     await conn.execute("DELETE FROM jobs WHERE id IS NOT NULL AND guild_id = $1", ctx.guild.id)
 
                 else:
-                    await conn.execute("DELETE FROM jobs WHERE id = $1 AND guild_id = $2", name, ctx.guild.id)
-                
-                string = "" #"\n.join(list)"
-                for j in range(job_count):
-                    string += f"\n{display[-1][j]}"
+                    if isinstance(name, int):
+                        query = "DELETE FROM jobs WHERE id = $1 AND guild_id = $2"
+                        data = await conn.fetchrow("SELECT name, salary, description FROM jobs WHERE guild_id = $1 AND id = $2", ctx.guild.id, name)
 
-                public_embed = discord.Embed(title="Removed!", description=f'*Removed by:* {ctx.author.mention} \nSuccessfully removed *{job_count}* job(s).{string}',color=tv.color)
+                    else:
+                        query = "DELETE FROM jobs WHERE name = $1 AND guild_id = $2"
+                        data = await conn.fetchrow("SELECT id, salary, description FROM jobs WHERE guild_id = $1 AND name = $2", ctx.guild.id, name)
+                    
+                    await conn.execute(query, name, ctx.guild.id)
+                
+                '''string = "" #"\n.join(list)"
+                for j in range(job_count):
+                    string += f"\n{display[-1][j]}"'''
+                
+                embed_string = f"Successfully removed " + ((f'*{job_count}* job(s).') if name == 'all' else f'the job.\n\n**Details**\nJob name: {data[0] if isinstance(name, int) else name}\nSalary: {data[1]}\nDescription: {data[2]}')
+
+                public_embed = discord.Embed(title="Removed!", description=f"*Removed by:* {ctx.author.mention} \n{embed_string}", color=tv.color)
                 public_embed.timestamp = discord.utils.utcnow()
 
-        return await ctx.reply(embed = public_embed, mention_author=False)
+        await self.db.fetch_table_data("jobs")
+        return await ctx.reply(embed = public_embed, mention_author=False) # KEEP IT PUBLIC? ADMIN COULD REMOVE IT AND NO ONE WILL KNOW WHO DID IT. MAYBE MAKE BOT/JOB LOGS TO ADD SIMILAIR ACTIONS TO THEM
 
     '''async def user_job_display(ctx, member = None) -> None:
         async with asqlite.connect(tv.sql_dir) as connector:

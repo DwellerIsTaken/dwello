@@ -40,7 +40,7 @@ class Events(BaseCog):
     async def on_interaction(self, interaction: discord.interactions.Interaction):
         await levelling.create_user(interaction.user.id, interaction.guild.id)'''
 
-    channel_type_list = ['counter_category', 'all_counter', 'members_counter', 'bots_counter']
+    channel_type_list = ['category', 'all', 'member', 'bot']
 
     @commands.Cog.listener()
     async def on_guild_channel_delete(self, channel: discord.abc.GuildChannel) -> None:
@@ -49,13 +49,13 @@ class Events(BaseCog):
                 record_list = []
 
                 for i in self.channel_type_list:
-                    record = await conn.fetchrow("SELECT channel_id FROM server_data WHERE guild_id = $1 AND event_type = $2", channel.guild.id, str(i))
-                    record_list.append((i, record[0]))
+                    record = await conn.fetchrow("SELECT channel_id FROM server_data WHERE guild_id = $1 AND event_type = 'counter' AND counter_name = $2", channel.guild.id, str(i))
+                    record_list.append((i, record[0] if record else None))
 
                 for j in record_list:
                     try:
                         if channel.id == int(j[1]):
-                            await conn.execute("UPDATE server_data SET channel_id = NULL WHERE channel_id IS NOT NULL AND guild_id = $1 AND event_type = $2", channel.guild.id, str(j[0]))
+                            await conn.execute("UPDATE server_data SET channel_id = NULL WHERE channel_id IS NOT NULL AND guild_id = $1 AND event_type = 'counter' AND counter_name = $2", channel.guild.id, str(j[0]))
 
                     except TypeError as e:
                         raise e

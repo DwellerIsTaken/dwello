@@ -6,7 +6,7 @@ import text_variables as tv
 import discord
 
 from typing import Optional, Any
-from utils import BaseCog, BotEcoUtils, DB_Operations, GuildEcoUtils
+from utils import BaseCog, BotEcoUtils, DB_Operations, GuildEcoUtils, AutoComplete
 
 class Guild_Economy(BaseCog):
 
@@ -15,82 +15,48 @@ class Guild_Economy(BaseCog):
         self.be = BotEcoUtils(self.bot)
         self.ge = GuildEcoUtils(self.bot)
         self.db = DB_Operations(self.bot)
+        self.ac = AutoComplete(self.bot)
 
     #jobs -- lots of available jobs
 
     @commands.hybrid_group(name="server", invoke_without_command=True, with_app_command=True)
     async def server(self, ctx: commands.Context) -> Optional[discord.Message]:
 
-        embed = discord.Embed(title="Denied", description="Use `$server [subgroup name]` instead.",color=tv.color)
+        embed = discord.Embed(title="Denied", description="```$server [subgroup name]```",color=tv.color) # TURN THESE DESCRIPTIONS INTO POINTERS TO HELP COMMAND
 
         return await ctx.reply(embed=embed)
 
     @server.group(name="job", invoke_without_command=True, with_app_command=True)
     async def jobs(self, ctx: commands.Context) -> Optional[discord.Message]:
 
-        embed = discord.Embed(title="Denied", description="Use `$job list` instead.",color=tv.color)
+        embed = discord.Embed(title="Denied", description="```$job list```",color=tv.color)
 
         return await ctx.reply(embed=embed)
 
     @jobs.command(name = "list", description = "Shows a list of available jobs on the server set by the server administrator.")
     async def job_list(self, ctx: commands.Context) -> Optional[discord.Message]:
-        
-        embed = await self.ge.jobs_display(ctx)
-        return await ctx.reply(embed = embed, mention_author = False) # if isinstance(embed, list) else embed
 
-    @jobs.command(name = "create", description = "Creating jobs. Only for administrator!")
+        return await self.ge.jobs_display(ctx)
+
+    @jobs.command(name = "create", description = "Creating jobs. | Administration")
     #@discord.app_commands.rename(name='job_name') #\U00000020
     @commands.has_permissions(administrator = True)
     async def job_create(self, ctx: commands.Context, job_name: str, salary: commands.Range[int, 2000, 20000], job_description: Optional[str]):
         
-        await self.ge.server_job_create(ctx, job_name, salary, job_description)
-        self.bot.jobs_data = await self.db.fetch_job_data()
+        return await self.ge.server_job_create(ctx, job_name, salary, job_description)
 
-    @jobs.command(name = "remove", description = "Removing jobs. Only for administrator!")
+    @jobs.command(name = "remove", description = "Removing jobs. | Administration")
     @commands.has_permissions(administrator = True)
     async def job_remove(self, ctx: commands.Context, job_name: str):
         
-        await self.ge.server_job_remove(ctx, job_name)
-        self.bot.jobs_data = await self.db.fetch_job_data()
+        return await self.ge.server_job_remove(ctx, job_name)
+        #self.bot.jobs_data = await self.db.fetch_job_data()
 
     @job_remove.autocomplete('job_name')
     async def autocomplete_callback(self, interaction: discord.Interaction, current: str):
-        async with self.bot.pool.acquire() as conn:
-            async with conn.transaction():
-
-                # USE FETCH DATA BOT FUNCTION | REDO
-
-                fetch = await conn.fetch("SELECT id, name FROM jobs WHERE guild_id = $1", interaction.guild.id)
-
-                choices = []
-                item = len(current)
-
-                choices.append(Choice(name = "all", value = "all"))
-
-                async for id, name in fetch:
-                    #job_id = record["job_id"]
-                    #job_name = record["jobs"]
-
-                    if id is None:
-                        if name is None:
-                            continue
-
-                    if current:
-                        pass
-
-                    if current.startswith(str(name).lower()[:int(item)]):
-                        choices.append(Choice(name = str(name), value = int(id)))
-                        pass
-                        
-                    elif current.startswith(str(id)[:int(item)]):
-                        choices.append(Choice(name = str(name), value = int(id)))
-                        pass
-
-                if len(choices) > 5:
-                    return choices[:5]
-
-        return choices
-
+        
+        return await self.ac.choice_autocomplete(interaction, current, "jobs", "name", "id", True)
+    
     @jobs.command(name = "set", description = "You can set your server job here!")
     async def job_set(self, ctx: commands.Context, job_name: str) -> Optional[discord.Message]:
         async with self.bot.pool.acquire() as conn:
@@ -118,7 +84,10 @@ class Guild_Economy(BaseCog):
 
     @job_set.autocomplete('job_name')
     async def autocomplete_callback(self, interaction: discord.Interaction, current: str):
-        async with self.bot.pool.acquire() as conn:
+
+        return await self.ac.choice_autocomplete(interaction, current, "jobs", "name", "id", False)
+    
+        '''async with self.bot.pool.acquire() as conn:
             async with conn.transaction():
 
                 #DICT STRUCTURE: {guild_id: {'name': [], 'id': [], 'salary': [], 'description': []}}
@@ -149,7 +118,7 @@ class Guild_Economy(BaseCog):
                 if len(choices) > 5:
                     return choices[:5]
 
-        return choices
+        return choices'''
 
     @jobs.command(name = "display", description = "Displays member's current job!")
     async def server_user_job_display(self, ctx: commands.Context, member: discord.Member = None) -> Optional[discord.Message]:
