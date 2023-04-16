@@ -11,7 +11,13 @@ class AutoComplete:
     def __init__(self, bot: commands.Bot):
         self.bot = bot
 
-    async def choice_autocomplete(self, interaction: discord.Interaction, current: str, table: str, name: str, value: str, all: Optional[bool]) -> List[Choice]:
+    async def choice_autocomplete(self, interaction: discord.Interaction, current: str, table: str, name: str, value: str, all: Optional[bool]): # add annotation
+
+        '''
+            :Actually yea. The data type of the value needs to match the annotation
+            :Forgot about that
+            :job_name: str, value (s) must be strings.
+        '''
 
         records = self.bot.db_data
         table_ = records[table]
@@ -21,7 +27,7 @@ class AutoComplete:
         item = len(current)
 
         if all is True:
-            choices.append(Choice(name = "all", value = True))
+            choices.append(Choice(name = "all", value = "all"))
 
         for record in table_:
             name_ = record[name]
@@ -36,11 +42,11 @@ class AutoComplete:
                 pass
 
             if current.startswith(str(name_).lower()[:int(item)]):
-                choices.append(Choice(name = str(name_), value = int(value_)))
+                choices.append(Choice(name = str(name_), value = str(value_)))
                 pass
                 
             elif current.startswith(str(value_)[:int(item)]):
-                choices.append(Choice(name = str(name_), value = int(value_)))
+                choices.append(Choice(name = str(name_), value = str(value_)))
                 pass
 
         if len(choices) > 5:

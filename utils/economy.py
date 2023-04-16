@@ -151,7 +151,7 @@ class GuildEcoUtils:
 
         return await ctx.reply(embed = job_embed, mention_author = False)
 
-    async def server_job_remove(self, ctx: commands.Context, name: Union[int, str, Literal['all']]) -> Optional[discord.Message]:
+    async def server_job_remove(self, ctx: commands.Context, name: Union[str, Literal['all']]) -> Optional[discord.Message]:
         async with self.bot.pool.acquire() as conn:
             async with conn.transaction():
 
@@ -171,15 +171,13 @@ class GuildEcoUtils:
                     await conn.execute("DELETE FROM jobs WHERE id IS NOT NULL AND guild_id = $1", ctx.guild.id)
 
                 else:
-                    if isinstance(name, int):
-                        query = "DELETE FROM jobs WHERE id = $1 AND guild_id = $2"
-                        data = await conn.fetchrow("SELECT name, salary, description FROM jobs WHERE guild_id = $1 AND id = $2", ctx.guild.id, name)
+                    try:
+                        await conn.execute("DELETE FROM jobs WHERE id = $1 AND guild_id = $2", int(name), ctx.guild.id)
+                        data = await conn.fetchrow("SELECT name, salary, description FROM jobs WHERE guild_id = $1 AND id = $2", ctx.guild.id, int(name))
 
-                    else:
-                        query = "DELETE FROM jobs WHERE name = $1 AND guild_id = $2"
+                    except:
+                        await conn.execute("DELETE FROM jobs WHERE name = $1 AND guild_id = $2", name, ctx.guild.id)
                         data = await conn.fetchrow("SELECT id, salary, description FROM jobs WHERE guild_id = $1 AND name = $2", ctx.guild.id, name)
-                    
-                    await conn.execute(query, name, ctx.guild.id)
                 
                 '''string = "" #"\n.join(list)"
                 for j in range(job_count):

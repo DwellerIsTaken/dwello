@@ -1,6 +1,6 @@
 import requests, discord, os, asyncpg
 
-from typing import Optional, Union, Tuple, List
+from typing import Optional, Union, Tuple, Literal
 
 from discord.ext import commands
 
@@ -165,7 +165,7 @@ class Twitch:
             print(i['type'])
         print(response['data'])
 
-    async def twitch_unsubscribe_from_streamer(self, ctx: commands.Context, username: Union[str, bool]) -> Optional[discord.Message]: # IF ALL: GET ALL TWITCH USERS THAT GUILD IS SUBSCRIBED TO AND UNSUB (what if the same user for multiple guilds)
+    async def twitch_unsubscribe_from_streamer(self, ctx: commands.Context, username: Union[str, Literal['all']]) -> Optional[discord.Message]: # IF ALL: GET ALL TWITCH USERS THAT GUILD IS SUBSCRIBED TO AND UNSUB (what if the same user for multiple guilds)
         async with self.bot.pool.acquire() as conn: # LOOKS SHITTY - SHOULD REWRITE
             async with conn.transaction():
 
@@ -181,20 +181,20 @@ class Twitch:
                     broadcaster_id = int(i['condition']['broadcaster_user_id'])
                     url = f'https://api.twitch.tv/helix/eventsub/subscriptions?id={subscription_id}'
 
-                    if isinstance(username, str):
+                    if username == "all":
+                        response = requests.delete(url, headers=self.headers)
+                        if not done:
+                            await conn.execute("DELETE FROM twitch_users WHERE guild_id = $1", ctx.guild.id)
+                            done = 1
+                        count += 1
+
+                    elif isinstance(username, str):
                         user_id = int(await conn.fetchval("SELECT user_id FROM twitch_users WHERE username = $1 AND guild_id = $2", username, ctx.guild.id))
 
                         if user_id and broadcaster_id == user_id:
                             response = requests.delete(url, headers=self.headers)
                             await conn.execute("DELETE FROM twitch_users WHERE user_id = $1 AND guild_id = $2", user_id, ctx.guild.id)
                             break
-
-                    elif isinstance(username, bool) and username:
-                        response = requests.delete(url, headers=self.headers)
-                        if not done:
-                            await conn.execute("DELETE FROM twitch_users WHERE guild_id = $1", ctx.guild.id)
-                            done = 1
-                        count += 1
 
         await self.db.fetch_table_data("twitch_users")
         return await ctx.reply(f"Unsubscribed from {f'{count} streamer(s)' if count != 0 else username}.", ephemeral=True)
