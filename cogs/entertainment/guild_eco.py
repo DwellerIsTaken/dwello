@@ -55,37 +55,37 @@ class Guild_Economy(BaseCog):
     @job_remove.autocomplete('job_name')
     async def autocomplete_callback(self, interaction: discord.Interaction, current: str):
         
-        return await self.ac.choice_autocomplete(interaction, current, "jobs", "name", "id", True)
+        return await self.ac.choice_autocomplete(interaction, current, "jobs", "name", None, True)
     
     @jobs.command(name = "set", description = "You can set your server job here!")
     async def job_set(self, ctx: commands.Context, job_name: str) -> Optional[discord.Message]:
         async with self.bot.pool.acquire() as conn:
             async with conn.transaction():
 
-                data = await conn.fetch("SELECT id, name FROM jobs WHERE guild_id = $1", ctx.guild.id)
-                check = 0
+                # IF SLASH: FORCE TO CHOOSE FROM AUTOCOMPLETE MENU
+                # ELSE: FETCH ALL AND DO CHECKS
+                if ctx.prefix:
+                    data = await conn.fetch("SELECT id, name FROM jobs WHERE guild_id = $1", ctx.guild.id)
 
-                for record in data:
-                    name, id = record['name'], record['id']
-                    if job_name == str(name) or int(job_name if job_name.isdigit() else False) == int(id):
-                        await conn.execute("UPDATE users SET job_id = ? WHERE user_id = ? AND guild_id = ? AND event_type = ?",(id, ctx.message.author.id, ctx.guild.id,"server"))
-                        check += 1
+                    check = 0
+                    for record in data:
+                        name, id = record['name'], record['id']
+                        if job_name == str(name) or int(job_name if job_name.isdigit() else False) == int(id):
 
-                        break
+                            await conn.execute("UPDATE users SET job_id = ? WHERE user_id = ? AND guild_id = ? AND event_type = ?",(id, ctx.message.author.id, ctx.guild.id,"server"))
+                            check += 1
+                            break
+                    
+                    if check == 0:
+                        return await ctx.reply("The provided job doesn't exist.")
 
-                    else:
-                        continue
-                
-                if check == 0:
-                    return await ctx.reply("The provided job doesn't exist.")
-
-                self.bot.jobs_data = await self.db.fetch_job_data()
-                return await ctx.reply(embed=discord.Embed(description=f'The job is set to: **{name}**', color = tv.color), mention_author=False)
+                    self.bot.jobs_data = await self.db.fetch_job_data()
+                    return await ctx.reply(embed=discord.Embed(description=f'The job is set to: **{name}**', color = tv.color), mention_author=False)
 
     @job_set.autocomplete('job_name')
     async def autocomplete_callback(self, interaction: discord.Interaction, current: str):
 
-        return await self.ac.choice_autocomplete(interaction, current, "jobs", "name", "id", False)
+        return await self.ac.choice_autocomplete(interaction, current, "jobs", "name", None, False)
     
         '''async with self.bot.pool.acquire() as conn:
             async with conn.transaction():

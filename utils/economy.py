@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import text_variables as tv
 import datetime, re, discord
+from contextlib import suppress
 
 from discord.ext import commands
 from typing import Optional, Union, Literal, Tuple
@@ -99,7 +100,7 @@ class GuildEcoUtils:
 
                 job_count = 0
                 for record in data if data else []:
-                    if str(record) == str(name):
+                    if record['name'] == name:
                         return await ctx.reply("The job with this name already exists!")
 
                     if record:
@@ -135,7 +136,6 @@ class GuildEcoUtils:
                 job_embed = discord.Embed(title="Joblist", description="Jobs currently available on this server", color = tv.color)
                 failure_embed = discord.Embed(description="No jobs currently available on this server",color=tv.warn_color)
 
-                embed_value_list = []
                 for record in data:
                     name, salary, description = record['name'], record['salary'], record['description']
 
@@ -144,9 +144,8 @@ class GuildEcoUtils:
                     
                     value = f"*Salary:* {salary}\n*Description:*{description if description else None}"
                     job_embed.add_field(name = name, value = value, inline = False)
-                    embed_value_list.append(f"\n**{name}**\n{value}")
 
-                if not embed_value_list:
+                if not job_embed.fields:
                     job_embed = failure_embed
 
         return await ctx.reply(embed = job_embed, mention_author = False)
@@ -155,35 +154,24 @@ class GuildEcoUtils:
         async with self.bot.pool.acquire() as conn:
             async with conn.transaction():
 
-                data = await conn.fetchrow("SELECT id FROM jobs WHERE guild_id = $1", ctx.guild.id)
+                data = await conn.fetch("SELECT id FROM jobs WHERE guild_id = $1", ctx.guild.id)
 
                 job_count = 0
-                for record in data:
-                    if record:
-                        job_count += 1
-                
-                if job_count == 0:
+                if not data:
                     return await ctx.reply("There are no jobs to remove yet...")
 
-                #display = await self.jobs_display(ctx)
-
                 if name == "all":
+                    for record in data:
+                        if record:
+                            job_count += 1
                     await conn.execute("DELETE FROM jobs WHERE id IS NOT NULL AND guild_id = $1", ctx.guild.id)
 
                 else:
-                    try:
-                        await conn.execute("DELETE FROM jobs WHERE id = $1 AND guild_id = $2", int(name), ctx.guild.id)
-                        data = await conn.fetchrow("SELECT name, salary, description FROM jobs WHERE guild_id = $1 AND id = $2", ctx.guild.id, int(name))
-
-                    except:
-                        await conn.execute("DELETE FROM jobs WHERE name = $1 AND guild_id = $2", name, ctx.guild.id)
-                        data = await conn.fetchrow("SELECT id, salary, description FROM jobs WHERE guild_id = $1 AND name = $2", ctx.guild.id, name)
+                    data_ = await conn.fetchrow("SELECT salary, description FROM jobs WHERE guild_id = $1 AND name = $2", ctx.guild.id, name)
+                    await conn.execute("DELETE FROM jobs WHERE name = $1 AND guild_id = $2", name, ctx.guild.id)
+                    print(data_)
                 
-                '''string = "" #"\n.join(list)"
-                for j in range(job_count):
-                    string += f"\n{display[-1][j]}"'''
-                
-                embed_string = f"Successfully removed " + ((f'*{job_count}* job(s).') if name == 'all' else f'the job.\n\n**Details**\nJob name: {data[0] if isinstance(name, int) else name}\nSalary: {data[1]}\nDescription: {data[2]}')
+                embed_string = f"Successfully removed " + ((f'*{job_count}* job(s).') if name == 'all' else f'the job.\n\n**Details**\nJob name: {name}\nSalary: {data_[0]}\nDescription: {data_[1]}')
 
                 public_embed = discord.Embed(title="Removed!", description=f"*Removed by:* {ctx.author.mention} \n{embed_string}", color=tv.color)
                 public_embed.timestamp = discord.utils.utcnow()

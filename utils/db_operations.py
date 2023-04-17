@@ -11,7 +11,6 @@ class DB_Operations:
 
     async def create_pool(self) -> None: # ADD SSH KEY CONNECTION
         pool = await asyncpg.create_pool(database= os.getenv('pg_name'), user= os.getenv('pg_username'), password= os.getenv('pg_password'), host= tv.host, port= tv.port)
-        #pool = await asyncpg.create_pool(database= "postgres", user= "postgres", password= "")
         return pool
     
     async def create_tables(self) -> None:
