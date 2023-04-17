@@ -6,6 +6,8 @@ from discord.ext import commands
 import text_variables as tv
 import datetime, discord
 
+from contextlib import suppress
+
 from .timeout import Timeout
 
 from typing import Optional, List, Any
@@ -88,7 +90,6 @@ class Warnings(BaseCog):
 
                     except discord.HTTPException as e:
                         print(e)
-                        pass
 
             return await ctx.send(embed=public_embed)
 

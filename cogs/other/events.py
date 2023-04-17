@@ -76,4 +76,4 @@ class Events(BaseCog):
 
     @commands.Cog.listener()
     async def on_disconnect(self) -> None:
-        return await self.bot.pool.close()
+        '''return await self.bot.pool.close()''' # THIS WAS CAUSING CLOSED POOL ISSUE

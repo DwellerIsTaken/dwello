@@ -3,6 +3,8 @@ from discord.ext import commands
 import text_variables as tv
 import discord
 
+from contextlib import suppress
+
 from utils import BaseCog, member_check, HandleHTTPException
 from typing import Optional, Union, Any
 
@@ -32,12 +34,11 @@ class StandardModeration(BaseCog):
             async with HandleHTTPException(ctx, title=f'Failed to ban {member}'):
                 await member.ban(reason=reason)
 
-            try:
+            try:        
                 await member.send(embed=member_embed)
 
             except discord.HTTPException as e:
                 print(e)
-                pass
 
             guild_embed = discord.Embed(title="User banned!", description=f'*Banned by:* {ctx.author.mention} \n \n**{member}** has been succesfully banned from this server! \nReason: `{reason}`',color=tv.warn_color)
 

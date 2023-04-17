@@ -11,10 +11,16 @@ from utils import DB_Operations
 
 # COMPLETELY REMAKE THIS PIECE OF SHIT
 
+class SharedEconomyUtils:
+
+    def __init__(self, bot):
+        self.bot = bot
+
 class BotEcoUtils:
 
     def __init__(self, bot):
         self.bot = bot
+        self.seu = SharedEconomyUtils(self.bot)
 
     async def add_currency(self, member: discord.Member, amount: int, name: str) -> Optional[int]:
         async with self.bot.pool.acquire() as conn:
@@ -38,8 +44,7 @@ class BotEcoUtils:
                 money = int(row[0]) if row else None
 
                 if money < amount:
-                    await ctx.reply(embed = discord.Embed(title = "Permission denied", description="You don't have enough currency to execute this action!", color = tv.color))
-                    return False
+                    return await ctx.reply(embed = discord.Embed(title = "Permission denied", description="You don't have enough currency to execute this action!", color = tv.color))
 
         return True
 
@@ -68,9 +73,9 @@ class BotEcoUtils:
                 if not amount:
                     return await ctx.reply("You are unemployed.")
 
-                exe = str(await self.add_currency(ctx.author, amount, name))
+                balance = await self.add_currency(ctx.author, amount, name)
 
-                string = f"Your current balance: {exe}"
+                string = f"Your current balance: {balance}"
 
                 embed = discord.Embed(title="→ \U0001d5e6\U0001d5ee\U0001d5f9\U0001d5ee\U0001d5ff\U0001d606 ←", description = f"Your day was very successful. Your salary for today is *{amount}*.",color=tv.color) # 𝗦𝗮𝗹𝗮𝗿𝘆
                 embed.timestamp = discord.utils.utcnow()
@@ -85,12 +90,41 @@ class GuildEcoUtils:
     def __init__(self, bot: commands.Bot):
         self.bot = bot
         self.db = DB_Operations(self.bot)
+        self.seu = SharedEconomyUtils(self.bot)
+
+    async def fetch_basic_job_data_by_job_name(self, ctx: commands.Context, name: str) -> Optional[Tuple[Optional[int], Optional[str]]]:
+        async with self.bot.pool.acquire() as conn:
+            async with conn.transaction():
+                data = await conn.fetchrow("SELECT salary, description FROM jobs WHERE guild_id = $1 AND name = $2", ctx.guild.id, name)
+
+        return data[0], data[1]
+
+    async def fetch_basic_job_data_by_username(self, ctx: commands.Context, member: discord.Member) -> Optional[Tuple[Optional[str], Optional[int], Optional[str], Optional[int]]]:
+        async with self.bot.pool.acquire() as conn:
+            async with conn.transaction():
+
+                if not member:
+                    member = ctx.author
+
+                record = await conn.fetchrow("SELECT job_id FROM users WHERE user_id = $1 AND guild_id = $2 AND event_type = 'server'", member.id, member.guild.id)
+
+                if not (record[0] if record else None):
+                    return await ctx.reply(embed=discord.Embed(description="The job isn't yet set.", color=tv.color), ephemeral = True) # ephemeral:  if member == ctx.author else False
+
+                data = await conn.fetchrow("SELECT name, salary, description FROM jobs WHERE id = $1 AND guild_id = $2", record[0], member.guild.id)
+
+                if not data:
+                    raise TypeError
+                
+                name, salary, description, job_id = str(data[0]), int(data[1]), str(data[2]) if data[2] else None, int(record[0])
+
+        return name, salary, description, job_id
 
     async def server_job_create(self, ctx: commands.Context, name: str, salary: int, description: str) -> Optional[discord.Message]:
         async with self.bot.pool.acquire() as conn:
             async with conn.transaction():
 
-                if salary >= 2000 and salary <= 20000: # DIFFERENT PAYMENT SYSTEM
+                if salary >= 2000 and salary <= 20000: # DIFFERENT SALARY SYSTEM
                     pass
 
                 else:
@@ -142,15 +176,35 @@ class GuildEcoUtils:
                     if not name:
                         continue
                     
-                    value = f"*Salary:* {salary}\n*Description:*{description if description else None}"
+                    value = f"*Salary:* {salary}\n*Description:* {description if description else None}"
                     job_embed.add_field(name = name, value = value, inline = False)
 
                 if not job_embed.fields:
                     job_embed = failure_embed
 
         return await ctx.reply(embed = job_embed, mention_author = False)
+    
+    async def server_job_remove(self, ctx: commands.Context, member: Optional[discord.Member]) -> Optional[discord.Message]:
+        async with self.bot.pool.acquire() as conn:
+            async with conn.transaction():
 
-    async def server_job_remove(self, ctx: commands.Context, name: Union[str, Literal['all']]) -> Optional[discord.Message]:
+                if not ctx.author.guild_permissions.administrator and member and member != ctx.author:
+                    return await ctx.reply("You can't remove someone's job unless you are a server administrator.", ephemeral=True)
+                
+                if not member:
+                    member = ctx.author
+                
+                try:
+                    name, salary, description, job_id = await self.fetch_basic_job_data_by_username(ctx, member)
+                
+                except TypeError:
+                    return # that means that secondary function probably already returned discord.Message, so handle it to prevent any further issues
+
+                await conn.execute("UPDATE users SET job_id = NULL WHERE job_id = $1 AND guild_id = $2 AND user_id = $3 AND event_type = 'server'", job_id, ctx.guild.id, member.id)
+
+        return await ctx.reply(embed=discord.Embed(description=f"{'Your job' if member == ctx.author else f'The job of {member}'} is removed.\n\n**Details**\nJob name: {name}\nSalary: {salary}\nDescription: {description if not description else f'```{description}```'}",color=tv.color))
+
+    async def server_job_delete(self, ctx: commands.Context, name: Union[str, Literal['all']]) -> Optional[discord.Message]:
         async with self.bot.pool.acquire() as conn:
             async with conn.transaction():
 
@@ -165,18 +219,25 @@ class GuildEcoUtils:
                         if record:
                             job_count += 1
                     await conn.execute("DELETE FROM jobs WHERE id IS NOT NULL AND guild_id = $1", ctx.guild.id)
+                    await conn.execute("UPDATE users SET job_id = NULL WHERE guild_id = $1 AND event_type = 'server'", ctx.guild.id)
 
                 else:
-                    data_ = await conn.fetchrow("SELECT salary, description FROM jobs WHERE guild_id = $1 AND name = $2", ctx.guild.id, name)
+                    try:
+                        salary, description = await self.fetch_basic_job_data_by_job_name(ctx, name)
+
+                    except TypeError:
+                        return await ctx.reply("That job doesn't exist.", ephemeral=True)
+                    job_id = await conn.fetchrow("SELECT id FROM jobs WHERE name = $1 AND guild_id = $2", name, ctx.guild.id)
+
                     await conn.execute("DELETE FROM jobs WHERE name = $1 AND guild_id = $2", name, ctx.guild.id)
-                    print(data_)
+                    await conn.execute("UPDATE users SET job_id = NULL WHERE job_id = $1 AND guild_id = $2 AND event_type = 'server'", job_id[0], ctx.guild.id)
                 
-                embed_string = f"Successfully removed " + ((f'*{job_count}* job(s).') if name == 'all' else f'the job.\n\n**Details**\nJob name: {name}\nSalary: {data_[0]}\nDescription: {data_[1]}')
+                embed_string = f"Successfully removed " + ((f'*{job_count}* job(s).') if name == 'all' else (f'the job.\n\n**Details**\nJob name: {name}\nSalary: {salary}\nDescription: ' + (description if not description else f'```{description}```')))
 
                 public_embed = discord.Embed(title="Removed!", description=f"*Removed by:* {ctx.author.mention} \n{embed_string}", color=tv.color)
                 public_embed.timestamp = discord.utils.utcnow()
 
-        await self.db.fetch_table_data("jobs")
+        await self.db.fetch_table_data("jobs", "users")
         return await ctx.reply(embed = public_embed, mention_author=False) # KEEP IT PUBLIC? ADMIN COULD REMOVE IT AND NO ONE WILL KNOW WHO DID IT. MAYBE MAKE BOT/JOB LOGS TO ADD SIMILAIR ACTIONS TO THEM
 
     '''async def user_job_display(ctx, member = None) -> None:
@@ -216,27 +277,30 @@ class GuildEcoUtils:
             await cursor.close()
         await connector.close()'''
 
-    async def server_job_info(self, ctx: commands.Context, member: discord.Member) -> Tuple[Optional[str], Optional[int], Optional[str]]:
+    '''async def server_user_job_display(self, ctx: commands.Context, member: discord.Member) -> Optional[Tuple[Optional[str], Optional[int], Optional[str]]]:
         async with self.bot.pool.acquire() as conn:
             async with conn.transaction():
 
+                name, salary, description = await self.fetch_basic_job_data_by_username(ctx, member)
+
+                embed = discord.Embed(title="Your job", description=f"**{name}**\n*Salary:* {salary}\n*Description:* {description}", color=tv.color)
+                #failure_embed = discord.Embed(title="You have no job!", description="> Go on and get it!", color=tv.color)
+                return await ctx.reply(embed if name else failure_embed ,mention_author=False) #*ID:* `{job[1]}`
+
                 if not member:
-                    member = ctx.message.author
+                    member = ctx.author
 
-                job_id = await conn.fetchrow("SELECT job_id FROM users WHERE user_id = $1 AND guild_id = $2 AND event_type = $3", member.id, member.guild.id, "server")
+                record = await conn.fetchrow("SELECT job_id FROM users WHERE user_id = $1 AND guild_id = $2 AND event_type = 'server'", member.id, member.guild.id)
 
-                job_id = int(job_id[0]) if job_id[0] else None
+                if not (record[0] if record else None):
+                    return await ctx.reply(embed=discord.Embed(description="The job isn't set.", color=tv.color), ephemeral = True if member == ctx.author else False)
 
-                data = await conn.fetch("SELECT name, salary, description FROM jobs WHERE id = $1 AND guild_id = $2", job_id, member.guild.id)
+                data = await conn.fetchrow("SELECT name, salary, description FROM jobs WHERE id = $1 AND guild_id = $2", record[0], member.guild.id)
 
-                name = data["name"][0] if data else None
-                salary = data["salary"][0] if data else None
-                description = data["description"][0] if data else None
+                if not data:
+                    print(data)
+                    return 
+                
+                name, salary, description = str(data[0]), int(data[1]), str(data[2]) if data[2] else None
 
-                name = str(name) if name else None
-                salary = int(salary) if salary else None
-                description = str(description) if description else None
-
-                # OR [None, str(name)][bool(name)]
-
-        return name, salary, description
+        return name, salary, description'''

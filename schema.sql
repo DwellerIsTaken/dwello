@@ -7,7 +7,7 @@ CREATE TABLE IF NOT EXISTS users(
     level BIGINT DEFAULT 1,
     messages BIGINT DEFAULT 0,
     total_xp BIGINT DEFAULT 0,
-    money TEXT DEFAULT '0',
+    money TEXT DEFAULT 0,
     worked BIGINT DEFAULT 0,
     event_type TEXT,
     job_id BIGINT,
@@ -48,7 +48,12 @@ CREATE TABLE IF NOT EXISTS jobs(
     description TEXT
 );
 
--- ALTER SEQUENCE jobs_id_seq RESTART WITH 1000000;
--- ALTER SEQUENCE warnings_warn_id_seq RESTART WITH 1000000;
+ALTER SEQUENCE jobs_id_seq START 10000000 INCREMENT BY 1;
+ALTER SEQUENCE warnings_warn_id_seq START 10000000 INCREMENT BY 1;
+
+ALTER TABLE jobs ALTER COLUMN id SET DEFAULT NEXTVAL('jobs_id_seq');
+ALTER TABLE warnings ALTER COLUMN warn_id SET DEFAULT NEXTVAL('warnings_warn_id_seq');
+
+-- SINGLE-LINE COMMENT 
 
 COMMIT;

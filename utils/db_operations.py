@@ -2,7 +2,7 @@ import asyncpg, os
 import text_variables as tv
 from discord.ext import commands
 
-from typing import Literal, List, Dict
+from typing import Literal, List, Dict, Any
 
 class DB_Operations:
 
@@ -50,15 +50,15 @@ class DB_Operations:
 
         return all_data
     
-    async def fetch_table_data(self, table: Literal["jobs", "users", "warnings", "server_data", "twitch_users"]) -> List:
+    async def fetch_table_data(self, *tables: Literal["jobs", "users", "warnings", "server_data", "twitch_users"]) -> List[Dict[str, Any]]: # not sure annotation is correct
         async with self.bot.pool.acquire() as conn:
             async with conn.transaction():
-
-                query = "SELECT * FROM " + table
-                data = await conn.fetch(query)
-                self.bot.db_data[table] = data
+                for table in tables:
+                    query = "SELECT * FROM " + table
+                    data = await conn.fetch(query)
+                    self.bot.db_data[table] = data
         
-        return data
+        return [].extend(data)
 
     async def fetch_job_data(self) -> dict: # remove later
         async with self.bot.pool.acquire() as conn:

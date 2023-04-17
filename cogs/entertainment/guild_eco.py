@@ -5,6 +5,8 @@ from discord.ext import commands
 import text_variables as tv
 import discord
 
+from contextlib import suppress
+
 from typing import Optional, Any
 from utils import BaseCog, BotEcoUtils, DB_Operations, GuildEcoUtils, AutoComplete
 
@@ -21,114 +23,79 @@ class Guild_Economy(BaseCog):
 
     @commands.hybrid_group(name="server", invoke_without_command=True, with_app_command=True)
     async def server(self, ctx: commands.Context) -> Optional[discord.Message]:
-
-        embed = discord.Embed(title="Denied", description="```$server [subgroup name]```",color=tv.color) # TURN THESE DESCRIPTIONS INTO POINTERS TO HELP COMMAND
-
-        return await ctx.reply(embed=embed)
+        async with ctx.typing(ephemeral=True):
+            embed = discord.Embed(title="Denied", description="```$server [subgroup name]```",color=tv.color) # TURN THESE DESCRIPTIONS INTO POINTERS TO HELP COMMAND
+            return await ctx.reply(embed=embed)
 
     @server.group(name="job", invoke_without_command=True, with_app_command=True)
     async def jobs(self, ctx: commands.Context) -> Optional[discord.Message]:
-
-        embed = discord.Embed(title="Denied", description="```$job list```",color=tv.color)
-
-        return await ctx.reply(embed=embed)
+        async with ctx.typing(ephemeral=True):
+            embed = discord.Embed(title="Denied", description="```$job list```",color=tv.color)
+            return await ctx.reply(embed=embed)
 
     @jobs.command(name = "list", description = "Shows a list of available jobs on the server set by the server administrator.")
     async def job_list(self, ctx: commands.Context) -> Optional[discord.Message]:
+        async with ctx.typing(ephemeral=True):
+            return await self.ge.jobs_display(ctx)
 
-        return await self.ge.jobs_display(ctx)
-
-    @jobs.command(name = "create", description = "Creating jobs. | Administration")
-    #@discord.app_commands.rename(name='job_name') #\U00000020
+    @jobs.command(name = "create", description = "Creating a job. | Administration")
     @commands.has_permissions(administrator = True)
-    async def job_create(self, ctx: commands.Context, job_name: str, salary: commands.Range[int, 2000, 20000], job_description: Optional[str]):
-        
-        return await self.ge.server_job_create(ctx, job_name, salary, job_description)
+    async def job_create(self, ctx: commands.Context, name: str, salary: commands.Range[int, 2000, 20000], description: Optional[str]):
+        async with ctx.typing(ephemeral=True):
+            return await self.ge.server_job_create(ctx, name, salary, description)
 
-    @jobs.command(name = "remove", description = "Removing jobs. | Administration")
+    @jobs.command(name = "delete", description = "Purges job(s) from the guild. | Administration")
     @commands.has_permissions(administrator = True)
-    async def job_remove(self, ctx: commands.Context, job_name: str):
-        
-        return await self.ge.server_job_remove(ctx, job_name)
-        #self.bot.jobs_data = await self.db.fetch_job_data()
+    async def job_delete(self, ctx: commands.Context, name: str):
+        async with ctx.typing(ephemeral=True):
+            return await self.ge.server_job_delete(ctx, name)
 
-    @job_remove.autocomplete('job_name')
+    @job_delete.autocomplete('name')
     async def autocomplete_callback(self, interaction: discord.Interaction, current: str):
-        
         return await self.ac.choice_autocomplete(interaction, current, "jobs", "name", None, True)
     
     @jobs.command(name = "set", description = "You can set your server job here!")
-    async def job_set(self, ctx: commands.Context, job_name: str) -> Optional[discord.Message]:
-        async with self.bot.pool.acquire() as conn:
-            async with conn.transaction():
+    async def job_set(self, ctx: commands.Context, name: str) -> Optional[discord.Message]:
+        async with ctx.typing(ephemeral=True):
+            async with self.bot.pool.acquire() as conn:
+                async with conn.transaction():
 
-                # IF SLASH: FORCE TO CHOOSE FROM AUTOCOMPLETE MENU
-                # ELSE: FETCH ALL AND DO CHECKS
-                if ctx.prefix:
-                    data = await conn.fetch("SELECT id, name FROM jobs WHERE guild_id = $1", ctx.guild.id)
+                    names = await conn.fetchval("SELECT array_agg(name) FROM jobs WHERE guild_id = $1", ctx.guild.id)
 
-                    check = 0
-                    for record in data:
-                        name, id = record['name'], record['id']
-                        if job_name == str(name) or int(job_name if job_name.isdigit() else False) == int(id):
+                    if name.isdigit():
+                        if str(name) not in names:
+                            return await ctx.reply("Please provide a correct job name.", ephemeral=True)
 
-                            await conn.execute("UPDATE users SET job_id = ? WHERE user_id = ? AND guild_id = ? AND event_type = ?",(id, ctx.message.author.id, ctx.guild.id,"server"))
-                            check += 1
-                            break
+                    data = await conn.fetchrow("SELECT id, salary, description FROM jobs WHERE guild_id = $1 AND name = $2", ctx.guild.id, name)
+
+                    if not data:
+                        return await ctx.reply("The provided job doesn't exist.", ephemeral=True)
                     
-                    if check == 0:
-                        return await ctx.reply("The provided job doesn't exist.")
+                    await conn.execute("UPDATE users SET job_id = $1 WHERE user_id = $2 AND guild_id = $3 AND event_type = 'server'", data[0], ctx.author.id, ctx.guild.id)
 
-                    self.bot.jobs_data = await self.db.fetch_job_data()
-                    return await ctx.reply(embed=discord.Embed(description=f'The job is set to: **{name}**', color = tv.color), mention_author=False)
+            await self.db.fetch_table_data("jobs")
+            return await ctx.reply(embed=discord.Embed(description=f"The job is set to: **{name}**", color = tv.color), mention_author=False)
 
-    @job_set.autocomplete('job_name')
+    @job_set.autocomplete('name')
     async def autocomplete_callback(self, interaction: discord.Interaction, current: str):
-
         return await self.ac.choice_autocomplete(interaction, current, "jobs", "name", None, False)
     
-        '''async with self.bot.pool.acquire() as conn:
-            async with conn.transaction():
+    @jobs.command(name = "remove", description = "Removes member's job. | Admin-associated") # thus only one param is for admins
+    async def job_remove(self, ctx: commands.Context, member: discord.Member = None):
+        async with ctx.typing(ephemeral=True):
+            return await self.ge.server_job_remove(ctx, member)
 
-                #DICT STRUCTURE: {guild_id: {'name': [], 'id': [], 'salary': [], 'description': []}}
-                d = self.bot.jobs_data
-
-                choices = []
-                item = len(current)
-                new_list = [(str(d[int(interaction.guild.id)]['name'][i]), int(d[int(interaction.guild.id)]['id'][i])) for i in range(len(d[int(interaction.guild.id)]['id']))]
-
-                for record in new_list:
-                    name, id = str(record[0]), int(record[1])
-
-                    if id is None:
-                        if name is None:
-                            continue
-
-                    if current:
-                        pass
-
-                    if current.startswith(name.lower()[:int(item)]):
-                        choices.append(Choice(name = name, value = str(id)))
-                        pass
-                        
-                    elif current.startswith(name[:int(item)]):
-                        choices.append(Choice(name = name, value = str(id)))
-                        pass
-
-                if len(choices) > 5:
-                    return choices[:5]
-
-        return choices'''
-
-    @jobs.command(name = "display", description = "Displays member's current job!")
-    async def server_user_job_display(self, ctx: commands.Context, member: discord.Member = None) -> Optional[discord.Message]:
-
-        name, salary, description =  await self.ge.server_job_info(ctx, member)
-        embed = discord.Embed(title="Your job", description=f"**{name}**\n*Salary:* {salary}\n*Description:* {description}", color=tv.color)
-        failure_embed = discord.Embed(title="You have no job!", description="> Go on and get it!", color=tv.color)
-        return await ctx.reply(embed if name else failure_embed ,mention_author=False) #*ID:* `{job[1]}`
+    @jobs.command(name = "display", description = "Displays member's current job.")
+    async def display(self, ctx: commands.Context, member: discord.Member = None) -> Optional[discord.Message]:
+        async with ctx.typing(ephemeral=True):
+            try:
+                name, salary, description, job_id =  await self.ge.fetch_basic_job_data_by_username(ctx, member)
+                return await ctx.reply(embed =  discord.Embed(title="Your job", description=f"**{name}**\n*Salary:* {salary}\n*Description:* {description}", color=tv.color), mention_author=False)
+            
+            except TypeError:
+                return
 
     @jobs.command(name = "work", description = "Your server work.")
-    async def server_work(self, ctx):
-        
-        return await self.be.work(ctx, "server")
+    async def server_work(self, ctx: commands.Context):
+        async with ctx.typing(ephemeral=True):
+            return await self.be.work(ctx, "server")

@@ -5,6 +5,8 @@ from discord.ext import commands
 import text_variables as tv
 import discord, datetime
 
+from contextlib import suppress
+
 from utils import BaseCog, member_check, HandleHTTPException
 from typing import Optional, Any
 
@@ -43,9 +45,8 @@ class Timeout(BaseCog):
         try:
             await member.send(embed=ban_embed)
 
-        except discord.HTTPException as e:
+        except TypeError as e:
             print(e)
-            pass
 
         embed = discord.Embed(
             title="User is timed out!",
