@@ -1,7 +1,7 @@
 from aiohttp import web
 
 async def handle_post(request):
-    print("It works!")
+    print("It works!", request)
     return web.Response(text="Hello from aiohttp!")
 
 app = web.Application()
