@@ -14,7 +14,7 @@ class Events(BaseCog):
         self.listeners = ListenersFunctions(self.bot)
 
     @commands.hybrid_command(name="table",with_app_command=False)
-    async def test(self, ctx):
+    async def test(self, ctx: commands.Context):
         await self.listeners.bot_join(ctx.guild)
 
     @commands.Cog.listener()
@@ -64,11 +64,11 @@ class Events(BaseCog):
     async def on_member_join(self, member: discord.Member):
 
         await self.levelling.create_user(member.id, member.guild.id)
-        await self.listeners.join_leave_event(self, member, "welcome")
+        await self.listeners.join_leave_event(member, "welcome")
 
     @commands.Cog.listener()
     async def on_member_remove(self, member: discord.Member):
-        await self.listeners.join_leave_event(self, member, "leave")
+        await self.listeners.join_leave_event(member, "leave")
 
     @commands.Cog.listener()
     async def on_member_update(self, before, after):

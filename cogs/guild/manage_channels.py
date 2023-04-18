@@ -11,7 +11,7 @@ class ChannelsFunctions:
     def __init__(self, bot: commands.Bot):
         self.bot = bot
 
-    async def counter_func(self, ctx: Union[commands.Context, discord.interactions.Interaction], name: Literal["all","member","bot","category"]) -> Optional[Union[discord.VoiceChannel, discord.CategoryChannel]]: #Optional[Tuple[discord.Message, Union[discord.VoiceChannel, discord.CategoryChannel]]]
+    async def counter_func(self, ctx: commands.Context, name: Literal["all","member","bot","category"]) -> Optional[Union[discord.VoiceChannel, discord.CategoryChannel]]: #Optional[Tuple[discord.Message, Union[discord.VoiceChannel, discord.CategoryChannel]]]
         async with self.bot.pool.acquire() as conn:
             async with conn.transaction():
 
@@ -28,9 +28,6 @@ class ChannelsFunctions:
                 query = "SELECT channel_id FROM server_data WHERE guild_id = $1 AND event_type = 'counter' AND counter_name = $2"
                 row = await conn.fetchrow(query, ctx.guild.id, "category")
                 counter_category_id = row[0] if row else None
-
-                print(counter_category_id)
-                print(name)
 
                 if name == "all":
                     count = count
@@ -66,18 +63,18 @@ class ChannelsFunctions:
                 except TypeError:
                     counter_category = None'''
                 
-                if channel_id is not None:       
+                if channel_id:       
                     return await ctx.reply("This counter already exists! Please provide another type of counter if you need to, otherwise __**please don`t create a counter that already exists**__.", mention_author=True, ephemeral=True)
 
-                if deny_result is None and counter_category_id is None:
+                if not deny_result and not counter_category_id:
                     return await ctx.reply(embed = discord.Embed(description="**Do you want to create a category for your counters?**", color = tv.color).set_footer(text=tv.footer), view = Stats_View(self.bot, ctx, name), ephemeral = True)
 
 
                 #elif deny_result is None and counter_category is not None: # ?
                     #await conn.execute("UPDATE server_data SET deny_clicked = $1 WHERE guild_id = $2", 1, ctx.guild.id)
 
-                if channel_id is None:
-                    counter_category: discord.CategoryChannel = await ctx.guild.get_channel(int(counter_category_id))
+                if not channel_id:
+                    counter_category: discord.CategoryChannel = ctx.guild.get_channel(int(counter_category_id))
                     counter_channel = await ctx.guild.create_voice_channel(f"📊 {nickname} counter: {count}", reason=None, category=counter_category)
                     await conn.execute(f"UPDATE server_data SET channel_id = $1 WHERE event_type = 'counter' AND counter_name = $2 AND guild_id = $3", counter_channel.id, name, ctx.guild.id)
                 
@@ -118,21 +115,25 @@ class Stats_View(View):
     
     @button(style = discord.ButtonStyle.green, label="Approve", disabled=False, custom_id="approve_button")
     async def approve(self, interaction: discord.interactions.Interaction, button: Button) -> Optional[discord.Message]:
+        async with self.bot.pool.acquire() as conn:
+            async with conn.transaction():
 
-        counter_category = await self.cf_.counter_func(self.ctx, "category")
-        print(counter_category)
-        await self.cf_.counter_func(self.ctx, self.name)
-        #await move_channel(interaction, counter_category)
-        #await interaction.message.edit(embed=again_embed,view = None)
+                #await conn.execute("UPDATE server_data SET deny_clicked = $1 WHERE guild_id = $2", 0, interaction.guild.id)
+                counter_category = await self.cf_.counter_func(self.ctx, "category")
+                print(counter_category)
+                await self.cf_.counter_func(self.ctx, self.name)
+                #await move_channel(interaction, counter_category)
+                #await interaction.message.edit(embed=again_embed,view = None)
 
-        return await interaction.response.edit_message(content=f"The **{counter_category.name}** is successfully created by **{interaction.user}**!", view=None)
+                return await interaction.response.edit_message(embed=None, content=f"The **{counter_category.name}** is successfully created by **{interaction.user}**!", view=None)
 
     @button(style = discord.ButtonStyle.red, label="Deny", disabled=False, custom_id="deny_button")
     async def deny(self, interaction: discord.interactions.Interaction, button: Button) -> None:
         async with self.bot.pool.acquire() as conn:
             async with conn.transaction():
+                print(self.name)
 
-                await conn.execute("UPDATE deny_clicked FROM server_data WHERE guild_id = $1", interaction.guild.id)
+                await conn.execute("UPDATE server_data SET deny_clicked = $1 WHERE guild_id = $2", 1, interaction.guild.id)
                 await self.cf_.counter_func(self.ctx, self.name)
                 return await interaction.response.edit_message(content=None,view = None)
 

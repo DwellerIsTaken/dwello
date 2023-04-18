@@ -6,8 +6,9 @@ import text_variables as tv
 import asyncpg, discord, os
 
 from typing import Optional, Literal
-from contextlib import suppress
 from string import Template
+
+from .other import exe_sql
 
 class ListenersFunctions:
     def __init__(self, bot: commands.Bot):
@@ -28,8 +29,9 @@ class ListenersFunctions:
         async with self.bot.pool.acquire() as conn:
             async with conn.transaction():
 
-                if name != "welcome" and name != "leave": # ?
-                    raise TypeError
+                await exe_sql(self.bot, member.guild)
+
+                # adjust counters too in this event
 
                 result = await conn.fetchrow("SELECT channel_id FROM server_data WHERE guild_id = $1 AND event_type = $2", member.guild.id, name)
 
@@ -49,7 +51,11 @@ class ListenersFunctions:
                     member_welcome_embed.set_footer(text=tv.footer)
                     member_welcome_embed.timestamp = discord.utils.utcnow()
 
-                    async with suppress(discord.HTTPException): await member.send(embed=member_welcome_embed)
+                    try:
+                        await member.send(embed=member_welcome_embed)
+
+                    except discord.HTTPException as e:
+                        print(e)
 
                     if second_result[0] is None:
                         _message = f"You are the __*{len(list(member.guild.members))}th*__ user on this server. \nI hope that you will enjoy your time on this server. Have a good day!"
