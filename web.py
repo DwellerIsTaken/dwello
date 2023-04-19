@@ -5,6 +5,8 @@ from utils import twitch_to_discord
 async def handle_post(request):
     data = await request.json()
 
+    print(data)
+
     await twitch_to_discord(data)
     
     return web.json_response({"message": "data received by aiohttp: {}".format(data)})
