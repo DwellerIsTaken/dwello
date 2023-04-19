@@ -200,6 +200,7 @@ class Twitch:
         return await ctx.reply(f"Unsubscribed from {f'{count} streamer(s)' if count != 0 else username}.", ephemeral=True)
 
 async def twitch_to_discord(data) -> None:
+    print(os.getenv('pg_name'), os.getenv('pg_username'), os.getenv('pg_password'), tv.host, tv.port)
     async with await asyncpg.connect(database=os.getenv('pg_name'), user=os.getenv('pg_username'), password=os.getenv('pg_password'), host=tv.host, port=tv.port) as conn:
         async with conn.transaction():
 
