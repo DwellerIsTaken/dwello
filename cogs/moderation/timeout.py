@@ -72,15 +72,14 @@ class Timeout(BaseCog):
     @commands.bot_has_permissions(moderate_members = True)
     @commands.has_permissions(moderate_members = True)
     @commands.guild_only()
-    async def mute(self, ctx: commands.Context, member: discord.Member, duration: int, period: Choice[str] = None, *, reason=None) -> None:
-        async with ctx.typing():
+    async def mute(self, ctx: commands.Context, member: discord.Member, duration: int, period: Optional[Choice[str]], *, reason=None) -> None:
+        async with ctx.typing(ephemeral=True):
 
-            await ctx.defer(emphemeral=True)
-            return self.tempmute(self.bot, ctx, member, duration, period, reason)
+            return await self.tempmute(ctx, member, duration, period, reason)
 
     # LOOK INTO THIS:   
     @mute.error
-    async def mute_error(self,ctx, error):
+    async def mute_error(self, ctx, error):
         if isinstance(error, commands.MissingPermissions):
             missing_permissions_embed = discord.Embed(title = "Permission Denied.", description = f"You (or the bot) don't have permission to use this command. It should have __*{error.missing_permissions}*__ permission(s) to be able to use this command.", color = tv.warn_color)
             missing_permissions_embed.set_image(url = '\n https://cdn-images-1.medium.com/max/833/1*kmsuUjqrZUkh_WW-nDFRgQ.gif')
@@ -112,7 +111,7 @@ class Timeout(BaseCog):
     @commands.has_permissions(moderate_members = True)
     @commands.guild_only()
     async def unmute(self, ctx: commands.Context, member: discord.Member) -> Optional[discord.Embed]:
-        async with ctx.typing():
+        async with ctx.typing(ephemeral=True):
 
             if member.id == self.bot.user.id:
                 return await ctx.reply(embed= discord.Embed(title="Permission Denied.", description="**I'm no hannibal Lector though, no need to unmute.**", color=tv.color), ephemeral = True)
@@ -128,17 +127,37 @@ class Timeout(BaseCog):
 
             return await ctx.reply(embed= discord.Embed(title="Unmuted", description=f"{member} is unmuted.", color=tv.color), ephemeral = True)
 
-    @commands.hybrid_command(name='timed_out', help="Shows everyone whom is timed out. | Moderation", with_app_command = True)
-    @commands.bot_has_permissions(moderate_members = True, view_audit_log = True)
-    @commands.has_permissions(moderate_members = True)
+    @commands.hybrid_command(name='timed_out', help="Shows everyone whom is timed out.", with_app_command = True) # MODERATION OR MEMBER-FRIENDLY?
+    @commands.bot_has_permissions(view_audit_log = True)
+    #@commands.has_permissions(moderate_members = True)
     @commands.guild_only()
     async def timed_out(self, ctx: commands.Context) -> Optional[discord.Embed]:
-        async with ctx.typing():
+        async with ctx.typing(ephemeral=True):
 
             timed_out_list = []
             reason_list = []
 
+            member_updates = {}
+
+            async for entry in ctx.guild.audit_logs(action=discord.AuditLogAction.member_update):
+                if entry.target in ctx.guild.members:
+                    member_updates[entry.target.id] = entry
+
+            print(member_updates)
+
             for member in ctx.guild.members:
+                if member.is_timed_out():
+                    entry = member_updates.get(member.id)
+                    if entry:
+                        if not entry.reason:
+                            reason = "Not specified"
+                        else:
+                            reason = entry.reason
+
+                        reason_list.append(str(reason))
+                    timed_out_list.append(member)
+
+            '''for member in ctx.guild.members:
                 if member.is_timed_out():
                     timed_out_list.append(member)
 
@@ -152,7 +171,7 @@ class Timeout(BaseCog):
                                 reason = entry.reason
 
                             reason_list.append(str(reason))
-                            break
+                            break'''
 
             embed = discord.Embed(title = "Timed out list", color = tv.color)
 

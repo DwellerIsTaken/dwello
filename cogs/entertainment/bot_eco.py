@@ -12,6 +12,7 @@ class Bot_Economy(BaseCog):
         self.be = BotEcoUtils(self.bot)
 
     @commands.hybrid_command(name = "work", description = "A boring job with a basic income. Gives some of the bot's currency in return.")
-    async def work_bot(self, ctx):
+    async def work_bot(self, ctx: commands.Context):
+        async with ctx.typing(ephemeral=True):
 
-        return await self.be.work(ctx, "bot")
+            return await self.be.work(ctx, "bot")

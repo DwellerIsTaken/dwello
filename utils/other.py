@@ -16,10 +16,8 @@ async def exe_sql(bot, guild: discord.Guild) -> None:
 
             for row in channels:
                 channel_id, event_type = int(row["channel_id"]), str(row["counter_name"])
-                print(channel_id, event_type)
 
                 if event_type in counters:
-                    print(channel_id, event_type)
                     try:
                         channel = guild.get_channel(channel_id)
                         if event_type == counters[0]:

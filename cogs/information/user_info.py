@@ -24,7 +24,7 @@ class UserInfo(BaseCog):
 
     @commands.hybrid_command(name = 'stats', description="Shows personal information and rank statistics",with_app_command=True) 
     async def stats(self, ctx: commands.Context, member: Optional[Union[discord.Member, discord.User]] = commands.Author) -> Optional[discord.Message]:
-        async with ctx.typing():
+        async with ctx.typing(ephemeral=True):
             async with self.bot.pool.acquire() as conn:
                 async with conn.transaction():
                     

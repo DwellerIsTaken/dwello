@@ -31,19 +31,16 @@ class ChannelsFunctions:
 
                 if name == "all":
                     count = count
-                    nickname = "All"
 
                 if name == "member":
                     count = member_counter
-                    nickname = "Member"
 
                 elif name == "bot":
                     count = bot_counter
-                    nickname = "Bot"
 
                 elif name == "category":
                     if counter_category_id:
-                        return await ctx.reply("This category already exists.", ephemeral = True)
+                        return await ctx.reply("This category already exists.", mention_author = True, ephemeral = True)
                     
                     else:
                         counter_channel = await ctx.guild.create_category("📊 Server Counters 📊", reason=None)
@@ -67,18 +64,18 @@ class ChannelsFunctions:
                     return await ctx.reply("This counter already exists! Please provide another type of counter if you need to, otherwise __**please don`t create a counter that already exists**__.", mention_author=True, ephemeral=True)
 
                 if not deny_result and not counter_category_id:
-                    return await ctx.reply(embed = discord.Embed(description="**Do you want to create a category for your counters?**", color = tv.color).set_footer(text=tv.footer), view = Stats_View(self.bot, ctx, name), ephemeral = True)
-
+                    return await ctx.reply(embed = discord.Embed(description="**Do you want to create a category for your counters?**", color = tv.color).set_footer(text=tv.footer), 
+                                           view = Stats_View(self.bot, ctx, name), ephemeral = True, mention_author=True)
 
                 #elif deny_result is None and counter_category is not None: # ?
                     #await conn.execute("UPDATE server_data SET deny_clicked = $1 WHERE guild_id = $2", 1, ctx.guild.id)
 
                 if not channel_id:
                     counter_category: discord.CategoryChannel = ctx.guild.get_channel(int(counter_category_id))
-                    counter_channel = await ctx.guild.create_voice_channel(f"📊 {nickname} counter: {count}", reason=None, category=counter_category)
+                    counter_channel = await ctx.guild.create_voice_channel(f"📊 {name.capitalize()} counter: {count}", reason=None, category=counter_category)
                     await conn.execute(f"UPDATE server_data SET channel_id = $1 WHERE event_type = 'counter' AND counter_name = $2 AND guild_id = $3", counter_channel.id, name, ctx.guild.id)
                 
-        await ctx.reply(f"The **{counter_channel.name}** is successfully created!", mention_author=False)
+        await ctx.reply(embed=discord.Embed(description=f"**{counter_channel.name}** is successfully created!", color=tv.color), mention_author=False)
         return counter_channel
 
     async def move_channel(self, ctx: commands.Context, category: discord.CategoryChannel, *args: str) -> None:
@@ -92,7 +89,7 @@ class ChannelsFunctions:
 
                 for row in rows:
                     channel = ctx.guild.get_channel(row[0])
-                    async with HandleHTTPException(ctx, title=f'Failed to move {channel} into {category}'):
+                    async with HandleHTTPException(ctx, title=f"Failed to move {channel} into {category}"):
                         await channel.move(category=category, beginning=True)
 
 class Stats_View(View):
@@ -131,7 +128,6 @@ class Stats_View(View):
     async def deny(self, interaction: discord.interactions.Interaction, button: Button) -> None:
         async with self.bot.pool.acquire() as conn:
             async with conn.transaction():
-                print(self.name)
 
                 await conn.execute("UPDATE server_data SET deny_clicked = $1 WHERE guild_id = $2", 1, interaction.guild.id)
                 await self.cf_.counter_func(self.ctx, self.name)
@@ -148,33 +144,39 @@ class Channels(BaseCog):
     @commands.has_permissions(manage_channels=True)
     @commands.guild_only()
     async def counter(self, ctx: commands.Context):
+        async with ctx.typing(ephemeral=True):
 
-        return await ctx.reply("Please provide an argument! ```$counter [counter type]```", ephemeral=True)
+            embed = discord.Embed(description="```$counter [counter type]```", color=tv.warn_color)
+            return await ctx.reply(embed=embed, ephemeral=True, mention_author=True)
 
     @counter.command(name='all', help="Creates a [voice] channel with all-user (bots included) count on this server.")
     async def all(self, ctx: commands.Context):
+        async with ctx.typing(ephemeral=True):
 
-        return await self.cf.counter_func(ctx, "all")
+            return await self.cf.counter_func(ctx, "all")
 
     @counter.command(name='members', help="Creating a [voice] channel with all-member count on this specific server.")
     async def members(self, ctx: commands.Context):
+        async with ctx.typing(ephemeral=True):
         
-        return await self.cf.counter_func(ctx, "member")
+            return await self.cf.counter_func(ctx, "member")
 
     @counter.command(name='bots', help="Creating a [voice] channel with all-bot count on this specific server.")
     async def bots(self, ctx: commands.Context):
+        async with ctx.typing(ephemeral=True):
         
-        return await self.cf.counter_func(ctx, "bot")
+            return await self.cf.counter_func(ctx, "bot")
 
     @counter.command(name='category', help="Creates a category where your counter(s) will be stored.")
     async def category(self, ctx: commands.Context):
+        async with ctx.typing(ephemeral=True):
 
-        category = await self.cf.counter_func(ctx, "category")
-        return await self.cf.move_channel(ctx, category[1], "all", "member", "bot")
+            category = await self.cf.counter_func(ctx, "category")
+            return await self.cf.move_channel(ctx, category[1], "all", "member", "bot")
 
     @counter.command(name='list', help="Shows a list of counters you can create.")
     async def list(self, ctx: commands.Context):
+        async with ctx.typing(ephemeral=True):
 
-        help_embed = discord.Embed(title = ":bar_chart: AVAILABLE COUNTERS :bar_chart:", description =  tv.server_statistics_list_help_embed_description, color = tv.color).set_footer(text=tv.footer)
-
-        return await ctx.reply(embed = help_embed, ephemeral = True)
+            help_embed = discord.Embed(title = ":bar_chart: AVAILABLE COUNTERS :bar_chart:", description =  tv.server_statistics_list_help_embed_description, color = tv.color).set_footer(text=tv.footer)
+            return await ctx.reply(embed = help_embed, ephemeral = True)

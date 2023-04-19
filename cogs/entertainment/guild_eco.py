@@ -54,22 +54,22 @@ class Guild_Economy(BaseCog):
     async def autocomplete_callback(self, interaction: discord.Interaction, current: str):
         return await self.ac.choice_autocomplete(interaction, current, "jobs", "name", None, True)
     
-    @jobs.command(name = "set", description = "You can set your server job here!")
+    @jobs.command(name = "set", description = "You can set your server job here!") # MAYBE PUT THIS IN ECONOMY.PY
     async def job_set(self, ctx: commands.Context, name: str) -> Optional[discord.Message]:
         async with ctx.typing(ephemeral=True):
             async with self.bot.pool.acquire() as conn:
-                async with conn.transaction():
+                async with conn.transaction(): 
 
                     names = await conn.fetchval("SELECT array_agg(name) FROM jobs WHERE guild_id = $1", ctx.guild.id)
 
                     if name.isdigit():
                         if str(name) not in names:
-                            return await ctx.reply("Please provide a correct job name.", ephemeral=True)
+                            return await ctx.reply("Please provide a correct job name.", ephemeral=True, mention_author=True)
 
                     data = await conn.fetchrow("SELECT id, salary, description FROM jobs WHERE guild_id = $1 AND name = $2", ctx.guild.id, name)
 
                     if not data:
-                        return await ctx.reply("The provided job doesn't exist.", ephemeral=True)
+                        return await ctx.reply("The provided job doesn't exist.", ephemeral=True, mention_author=True)
                     
                     await conn.execute("UPDATE users SET job_id = $1 WHERE user_id = $2 AND guild_id = $3 AND event_type = 'server'", data[0], ctx.author.id, ctx.guild.id)
 

@@ -1,10 +1,14 @@
 from aiohttp import web
 
+from utils import Twitch
+
 async def handle_post(request):
-    print("It works!", request)
-    return web.Response(text="Hello from aiohttp!")
+    data = await request.json()
+    
+    return web.json_response({"message": "data received by aiohttp: {}".format(data)})
 
 app = web.Application()
-app.router.add_post('/aiohttp', handle_post)  # Add a route for handling post requests
+app.router.add_post('/api/post', handle_post)
 
-web.run_app(app, host='0.0.0.0', port=8080)
+if __name__ == '__main__':
+    web.run_app(app, port=8081)

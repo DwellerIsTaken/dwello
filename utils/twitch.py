@@ -199,24 +199,27 @@ class Twitch:
         await self.db.fetch_table_data("twitch_users")
         return await ctx.reply(f"Unsubscribed from {f'{count} streamer(s)' if count != 0 else username}.", ephemeral=True)
 
-    # OUTSIDE OF CLASS CAUSE WILL INTERACT WITH FLASK (?)
-    async def twitch_to_discord(self, data) -> None:
-        async with await asyncpg.connect(database= os.getenv('pg_name'), user= os.getenv('pg_username'), password= os.getenv('pg_password')) as conn:
-            async with conn.transaction():
-                twitch_id = data['subscription']['condition']['broadcaster_user_id']
-                username = await self.id_to_username(twitch_id)
+async def twitch_to_discord(data) -> None:
+    async with asyncpg.connect(database=os.getenv('pg_name'), user=os.getenv('pg_username'), password=os.getenv('pg_password'), host=tv.host, port=tv.port) as conn:
+        async with conn.transaction():
 
-                guilds = await conn.fetch("SELECT * FROM twitch_users WHERE user_id = $1", twitch_id)
-                for guild in guilds:
-                    result = await conn.fetchrow("SELECT message_text, channel_id FROM server_data WHERE guild_id = $1", guild['guild_id'])
-                    message_text, channel_id = result[0], result[1]
+            channel: discord.TextChannel = await discord.Guild.get_channel(1080883008741064854)
+            return await channel.send(data)
+            
+            '''twitch_id = data['subscription']['condition']['broadcaster_user_id']
+            username = await self.id_to_username(twitch_id)
 
-                    twitch_embed = discord.Embed(title= f"{username} started streaming", description= f"{message_text}\n\nhttps://www.twitch.tv/{username}", color= tv.twitch_color)
+            guilds = await conn.fetch("SELECT * FROM twitch_users WHERE user_id = $1", twitch_id)
+            for guild in guilds:
+                result = await conn.fetchrow("SELECT message_text, channel_id FROM server_data WHERE guild_id = $1", guild['guild_id'])
+                message_text, channel_id = result[0], result[1]
 
-                    channel: discord.TextChannel = await self.bot.get_channel(int(channel_id)) if channel_id else None
-                    if channel:
-                        await channel.send(embed = twitch_embed)
+                twitch_embed = discord.Embed(title= f"{username} started streaming", description= f"{message_text}\n\nhttps://www.twitch.tv/{username}", color= tv.twitch_color)
 
-                    #for row in results:
-                    #message_text = row['message_text']
-                    #channel_id = row['channel_id']
+                channel: discord.TextChannel = await self.bot.get_channel(int(channel_id)) if channel_id else None
+                if channel:
+                    await channel.send(embed = twitch_embed)'''
+
+                #for row in results:
+                #message_text = row['message_text']
+                #channel_id = row['channel_id']
