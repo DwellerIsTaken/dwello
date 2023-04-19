@@ -5,7 +5,7 @@ from utils import twitch_to_discord
 async def handle_post(request):
     data = await request.json()
 
-    print(data)
+    print(0, data)
 
     await twitch_to_discord(data)
     

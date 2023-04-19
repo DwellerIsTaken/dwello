@@ -204,9 +204,9 @@ async def twitch_to_discord(data) -> None:
     async with await asyncpg.connect(database=os.getenv('pg_name'), user=os.getenv('pg_username'), password=os.getenv('pg_password'), host=tv.host, port=tv.port) as conn:
         async with conn.transaction():
 
-            print(data)
+            print(1, data)
 
-            channel: discord.TextChannel = await discord.Guild.get_channel(1080883008741064854)
+            channel: discord.TextChannel = discord.Guild.get_channel(1080883008741064854)
 
             print(channel)
             return await channel.send(data)
