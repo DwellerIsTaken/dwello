@@ -5,13 +5,17 @@ from discord.app_commands import Choice
 from discord.ext import commands
 import text_variables as tv
 import datetime, discord
+import asyncpg
 
 from contextlib import suppress
 
 from .timeout import Timeout
 
 from typing import Optional, List, Any
-from utils import BaseCog, member_check, interaction_check
+from utils import (BaseCog, 
+                   apostrophize,
+                   member_check, 
+                   interaction_check)
 
 class TimeoutSuggestion(View):
 
@@ -43,6 +47,7 @@ class Warnings(BaseCog):
 
     def __init__(self, bot: commands.Bot, *args: Any, **kwargs: Any):
         super().__init__(bot, *args, **kwargs)
+        self.pool: asyncpg.Pool = self.bot.pool
 
     @commands.hybrid_group(invoke_without_command=True, with_app_command=True)
     async def warning(self, ctx: commands.Context):
@@ -55,17 +60,15 @@ class Warnings(BaseCog):
     @commands.has_permissions(moderate_members = True)
     @commands.guild_only()
     async def warn(self, ctx: commands.Context, member: discord.Member, reason: Optional[str] = None) -> Optional[discord.Message]:
-        async with ctx.typing():
-            async with self.bot.pool.acquire() as conn:
+        async with ctx.typing(ephemeral=True):
+            async with self.pool.acquire() as conn:
+                conn: asyncpg.Connection
                 async with conn.transaction():
 
-                    if ctx.interaction is not None:          
-                        await ctx.interaction.response.defer(ephemeral = True)
-
-                    if await member_check(ctx, member, self.bot) != True:
+                    if not await member_check(ctx, member, self.bot):
                         return
 
-                    if reason is None:
+                    if not reason:
                         reason = "Not specified"
 
                     await self.bot.lvl.create_user(member.id, ctx.guild.id)
@@ -75,13 +78,15 @@ class Warnings(BaseCog):
 
                     warns = 0
                     for result in results:
-                        if result["warn_text"] is not None:
+                        if result['warn_text']:
                             warns += 1
 
-                    public_embed = discord.Embed(title="User is warned!", description=f'*Warned by:* {ctx.author.mention} \n \n**{member}** has been successfully warned! \nReason: `{reason}`', color=tv.warn_color, timestamp=discord.utils.utcnow())
+                    public_embed = discord.Embed(title="User is warned!", description=f"*Warned by:* {ctx.author.mention} \n "
+                                                f"\n**{member}** has been successfully warned! \nReason: `{reason}`", color=tv.warn_color, timestamp=discord.utils.utcnow())
                     public_embed.set_footer(text = f"Amount of warnings: {warns}")
 
-                    ban_embed=discord.Embed(title="Warned", description=f"Goede morgen! \nYou have been warned. Try to avoid being warned next time or it might get bad... \n\nReason: **{reason}**\n\nYour amount of warnings: `{warns}`", color=tv.warn_color, timestamp=discord.utils.utcnow())
+                    ban_embed=discord.Embed(title="Warned", description=f"Goede morgen! \nYou have been warned. Try to avoid being warned next time or it might get bad..."
+                                            f" \n\nReason: **{reason}**\n\nYour amount of warnings: `{warns}`", color=tv.warn_color, timestamp=discord.utils.utcnow())
                     ban_embed.set_image(url = "https://c.tenor.com/GDm0wZykMA4AAAAd/thanos-vs-vision-thanos.gif")
                     ban_embed.set_footer(text= tv.footer) #  • 
 
@@ -97,49 +102,45 @@ class Warnings(BaseCog):
     @commands.bot_has_permissions(moderate_members = True)
     @commands.guild_only()
     async def warnings(self, ctx: commands.Context, member: discord.Member = None) -> Optional[discord.Message]:
-        async with ctx.typing():
-            async with self.bot.pool.acquire() as conn:
+        async with ctx.typing(ephemeral=True):
+            async with self.pool.acquire() as conn:
+                conn: asyncpg.Connection
                 async with conn.transaction():
-
-                    suggest = True
-                    string = "This user has"
 
                     if not member:
                         member = ctx.author
 
-                    if member.id == ctx.author.id:
+                    if member == ctx.author:
                         string = "You have"
                         suggest = False
+                    
+                    else:
+                        suggest = True
+                        string = "This user has"
 
                     results = await conn.fetch("SELECT * FROM warnings WHERE guild_id = $1 AND user_id = $2", ctx.guild.id, member.id)
 
-                    member_s_check = str(member.name)[-1]
                     reason_list = []
                     date_list = []
-
-                    if member_s_check == "s":
-                        apostrophe = "`"
-
-                    else:
-                        apostrophe = "`s"
 
                     #public_embed = discord.Embed(title=f"{member.name}{apostrophe} warnings",color=discord.Colour.red())
                     public_embed = discord.Embed(color=tv.warn_color, timestamp=discord.utils.utcnow())
                     public_embed.set_thumbnail(url=f"{member.display_avatar}")
-                    public_embed.set_author(name=f"{member.name}{apostrophe} warnings", icon_url=f"{member.display_avatar}")
+                    public_embed.set_author(name=f"{apostrophize(member.name)} warnings", icon_url=str(member.display_avatar))
                     public_embed.set_footer(text = tv.footer)
 
                     warns = 0
                     for result in results:
-                        reason = result["warn_text"]
-                        date = result["created_at"]
-                        if reason is not None:
+                        reason = result['warn_text']
+                        date = result['created_at']
+
+                        if reason:
                             reason_list.append(str(reason))
                             date_list.append(date)
                             warns += 1
 
                     if warns == 0:
-                        return await ctx.reply(f"{string} no warnings yet.", mention_author = True, ephemeral=True)
+                        return await ctx.reply(embed=discord.Embed(description=f"{string} no warnings yet.", color=tv.color), mention_author = True, ephemeral=True) # kind of success, so embed can be used
 
                     warns_1 = 0
                     for result in range(warns):
@@ -154,14 +155,14 @@ class Warnings(BaseCog):
                         public_embed.add_field(name = f"Warning:   {int(warns_1) + 1}", value = f"Reason: `{reason_list[int(warns_1)]}`\nDate: *{date}*", inline = False) # -1
                         warns_1 += 1
 
-                    await ctx.defer()
-                    await ctx.reply(embed = public_embed, mention_author=True)
+                    await ctx.defer() # because view can be called (?)
+                    await ctx.reply(embed = public_embed, mention_author=False)
 
-            if suggest != False:
+            if suggest:
                 suggestion_embed = discord.Embed(title = "A lot of warnings", description = f"Would you like to time **{member}** out for 12 hours?", color = tv.warn_color)
 
             if warns > 3:
-                if ctx.author.guild_permissions.moderate_members == True:
+                if ctx.author.guild_permissions.moderate_members: # == True ?
                     return await ctx.send(embed = suggestion_embed, view = TimeoutSuggestion(self.bot, ctx, member, "Too many warnings!"))
 
     @warning.command(name='remove', help="Removes selected warnings. | Moderation", with_app_command = True)
@@ -169,47 +170,53 @@ class Warnings(BaseCog):
     @commands.has_permissions(moderate_members = True)
     @commands.guild_only()
     async def remove_warn(self, ctx: commands.Context, member: discord.Member, warning: str) -> Optional[discord.Message]:
-        async with ctx.typing():
-            async with self.bot.pool.acquire() as conn:
+        async with ctx.typing(ephemeral=True):
+            async with self.pool.acquire() as conn:
+                conn: asyncpg.Connection
                 async with conn.transaction():
 
-                    await ctx.defer()
-
                     if member == ctx.author:
-                        return await ctx.reply(embed= discord.Embed(title="Permission Denied.", description= "**Do. Not. Attempt.**", color=tv.warn_color), mention_author = True)
+                        return await ctx.reply(embed= discord.Embed(title="Permission Denied.", description= "**Do. Not. Attempt.**", color=tv.warn_color), mention_author = True, ephemeral=True)
 
-                    elif await member_check(ctx, member, self.bot) != True:
+                    if not await member_check(ctx, member, self.bot):
                         return
                     
-                    records = await conn.fetch("SELECT * FROM warnings WHERE guild_id = $1 AND user_id = $2", ctx.guild.id, member.id)
+                    #records = await conn.fetch("SELECT * FROM warnings WHERE guild_id = $1 AND user_id = $2", ctx.guild.id, member.id)
 
-                    warnings = 0
-                    warns = 0
+                    #warnings = await conn.fetch("SELECT COUNT(*) FROM warnings WHERE guild_id = $1 AND user_id = $2", ctx.guild.id, member.id)
+                    '''warns = 0
                     for result in records:
-                        if result["warn_text"] is not None:
+                        if result["warn_text"]:
                             warns += 1
 
                     if warning == "all":
-                        for result in records:
-                            if result["warn_text"] is not None:
-                                warnings += 1
-
+                        warnings = await conn.fetch("SELECT COUNT(*) FROM warnings WHERE guild_id = $1 AND user_id = $2", ctx.guild.id, member.id)
                         await conn.execute("DELETE FROM warnings WHERE warn_text IS NOT NULL AND guild_id = $1 AND user_id = $2", ctx.guild.id, member.id)
 
                     else:
                         await conn.execute("DELETE FROM warnings WHERE warn_text = $1 AND guild_id = $2 AND user_id = $3", warning, ctx.guild.id, member.id)
-                        warnings += 1
+                        warnings += 1'''
+                    
+                    if warning == "all":
+                        warnings = await conn.fetchval("DELETE FROM warnings WHERE warn_text IS NOT NULL AND guild_id = $1 AND user_id = $2 RETURNING COUNT(*)", ctx.guild.id, member.id)
 
-                    #embed = discord.Embed(title="Removed",description=f"Successfully removed *{warnings}* warning(s).",color=tv.color)
+                    else:
+                        await conn.execute("DELETE FROM warnings WHERE warn_text = $1 AND guild_id = $2 AND user_id = $3", warning, ctx.guild.id, member.id)
+                        warnings = 1
 
-                    public_embed = discord.Embed(title="Removed!", description=f'*Removed by:* {ctx.author.mention} \n \nSuccessfully removed *{warnings}* warning(s) from {member}.',color=tv.color, timestamp=discord.utils.utcnow())
-                    public_embed.set_footer(text = f"Warnings left: {warns - warnings}")
+                    embed = discord.Embed(title="Removed", 
+                                                 description=f'*Removed by:* {ctx.author.mention} \n \nSuccessfully removed *{warnings}* warning(s) from {member}.',
+                                                 color=tv.color, 
+                                                 timestamp=discord.utils.utcnow())
+                    
+                    #embed.set_footer(text = f"Warnings left: {warns - warnings}") why tho
 
-            return await ctx.reply(embed = public_embed, mention_author=False)
+            return await ctx.reply(embed = embed, mention_author=False, ephemeral=True)
 
     @remove_warn.autocomplete('warning')
     async def autocomplete_callback(self, interaction: discord.Interaction, current: str) -> List[Choice]:
-        async with self.bot.pool.acquire() as conn:
+        async with self.pool.acquire() as conn:
+            conn: asyncpg.Connection
             async with conn.transaction(): # REDO: DONT FETCH ON AUTOCOMPLETE
 
                 member = interaction.namespace["member"]

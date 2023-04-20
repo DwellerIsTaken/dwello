@@ -7,17 +7,21 @@ from typing import List, Dict, Any, Optional
 import text_variables as tv
 
 class LevellingUtils:
-    def __init__(self, bot):
-        self.bot = bot
+
+    def __init__(self, bot: commands.Bot):
+        self.bot: commands.Bot = bot
+        self.pool: asyncpg.Pool = self.bot.pool
 
     async def create_user(self, user_id: Optional[int], guild_id: Optional[int]) -> None:
-        async with self.bot.pool.acquire() as conn:
+        async with self.pool.acquire() as conn:
+            conn: asyncpg.Connection
             async with conn.transaction():
 
                 await conn.execute("INSERT INTO users(user_id, guild_id, event_type) VALUES($1, $2, 'server'), ($1, $2, 'bot') ON CONFLICT (user_id, guild_id, event_type) DO NOTHING", user_id, guild_id)
 
     async def increase_xp(self, message: discord.Message, rate: int = 5) -> None:
-        async with self.bot.pool.acquire() as conn:
+        async with self.pool.acquire() as conn:
+            conn: asyncpg.Connection
             async with conn.transaction():
                 if message.author.bot or not message.guild:
                     return
@@ -69,7 +73,8 @@ class LevellingUtils:
                 )
 
     async def get_user_data(self, user_id: Optional[discord.Member.id] = int, guild_id: Optional[discord.Guild.id] = int) -> List[Dict[str, Any]]:
-        async with self.bot.pool.acquire() as conn:
+        async with self.pool.acquire() as conn:
+            conn: asyncpg.Connection
             async with conn.transaction():
 
                 await self.create_user(user_id, guild_id)
@@ -83,7 +88,8 @@ class LevellingUtils:
 
 
     async def get_rank(self, user_id: Optional[discord.Member.id] = int, guild_id: Optional[discord.Guild.id] = int) -> Optional[int]:
-        async with self.bot.pool.acquire() as conn:
+        async with self.pool.acquire() as conn:
+            conn: asyncpg.Connection
             async with conn.transaction():
 
                 await self.create_user(user_id, guild_id)
@@ -93,7 +99,7 @@ class LevellingUtils:
                 rank = 0
                 for record in records:
                     rank += 1
-                    if record["user_id"] == user_id:
+                    if record['user_id'] == user_id:
                         break
                         
         return rank

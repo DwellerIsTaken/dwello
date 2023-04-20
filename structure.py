@@ -6,6 +6,7 @@
     #           • send msg directly to invoker and not in guild,
     #           • or both, or neither and it will be displayed in audit_logs,
     #           • or let owner create admin channel where all the moderator actions will be displayed)
+    # | Embeds: try to create separate string vars to store embed's description and plit them, stringvar = ("" ""), to save space
     
 # -> GROUPS/SUBGROUPS
     # | Invoke: invoke_without_command = True, with_app_command = True

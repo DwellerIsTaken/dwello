@@ -1,5 +1,5 @@
 # REDO TO PIL
-import discord
+import discord, asyncpg
 import os
 from discord.ext import commands
 import text_variables
@@ -19,13 +19,16 @@ class UserInfo(BaseCog):
 
     def __init__(self, bot: commands.Bot, *args: Any, **kwargs: Any):
         super().__init__(bot, *args, **kwargs)
-        self.levelling = LevellingUtils(self.bot)
-        self.ge = GuildEcoUtils(self.bot)
+        self.levelling: LevellingUtils = LevellingUtils(self.bot)
+        self.ge: GuildEcoUtils = GuildEcoUtils(self.bot)
+
+        self.pool: asyncpg.Pool = self.bot.pool
 
     @commands.hybrid_command(name = 'stats', description="Shows personal information and rank statistics",with_app_command=True) 
     async def stats(self, ctx: commands.Context, member: Optional[Union[discord.Member, discord.User]] = commands.Author) -> Optional[discord.Message]:
         async with ctx.typing(ephemeral=True):
-            async with self.bot.pool.acquire() as conn:
+            async with self.pool.acquire() as conn:
+                conn: asyncpg.Connection
                 async with conn.transaction():
                     
                     if ctx.guild:

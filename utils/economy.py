@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 import text_variables as tv
-import datetime, re, discord
+import datetime, re, discord, asyncpg
 from contextlib import suppress
 
 from discord.ext import commands
@@ -18,12 +18,15 @@ class SharedEconomyUtils:
 
 class BotEcoUtils:
 
-    def __init__(self, bot):
-        self.bot = bot
+    def __init__(self, bot: commands.Bot):
+        self.bot: commands.Bot = bot
         self.seu = SharedEconomyUtils(self.bot)
 
+        self.pool: asyncpg.Pool = self.bot.pool
+
     async def add_currency(self, member: discord.Member, amount: int, name: str) -> Optional[int]:
-        async with self.bot.pool.acquire() as conn:
+        async with self.pool.acquire() as conn:
+            conn: asyncpg.Connection
             async with conn.transaction():
                 
                 row = await conn.fetchrow("SELECT money FROM users WHERE user_id = $1 AND guild_id = $2 AND event_type = $3", member.id, not None if str(name) == 'bot' else member.guild.id, name)
@@ -36,8 +39,9 @@ class BotEcoUtils:
                 return balance
 
     async def balance_check(self, ctx: commands.Context, amount: int, name: str) -> Optional[bool]:
-        async with self.bot.pool.acquire() as conn:
-            async with conn.transaction(): 
+        async with self.pool.acquire() as conn:
+            conn: asyncpg.Connection
+            async with conn.transaction():
 
                 row = await conn.fetchrow("SELECT money FROM users WHERE user_id = $1 AND guild_id = $2 AND event_type = $3", ctx.author.id, not None if str(name) == 'bot' else ctx.guild.id, name)
 
@@ -49,7 +53,8 @@ class BotEcoUtils:
         return True
 
     async def work(self, ctx: commands.Context, name: str) -> Optional[discord.Message]:
-        async with self.bot.pool.acquire() as conn:
+        async with self.pool.acquire() as conn:
+            conn: asyncpg.Connection
             async with conn.transaction():
 
                 worked = await conn.fetchrow("SELECT worked FROM users WHERE user_id = $1 AND event_type = $2", ctx.author.id, name)
@@ -88,19 +93,22 @@ class BotEcoUtils:
 class GuildEcoUtils:
 
     def __init__(self, bot: commands.Bot):
-        self.bot = bot
+        self.bot: commands.Bot = bot
         self.db = DB_Operations(self.bot)
         self.seu = SharedEconomyUtils(self.bot)
+        self.pool: asyncpg.Pool = self.bot.pool
 
     async def fetch_basic_job_data_by_job_name(self, ctx: commands.Context, name: str) -> Optional[Tuple[Optional[int], Optional[str]]]:
-        async with self.bot.pool.acquire() as conn:
+        async with self.pool.acquire() as conn:
+            conn: asyncpg.Connection
             async with conn.transaction():
                 data = await conn.fetchrow("SELECT salary, description FROM jobs WHERE guild_id = $1 AND name = $2", ctx.guild.id, name)
 
         return data[0], data[1]
 
     async def fetch_basic_job_data_by_username(self, ctx: commands.Context, member: discord.Member) -> Optional[Tuple[Optional[str], Optional[int], Optional[str], Optional[int]]]:
-        async with self.bot.pool.acquire() as conn:
+        async with self.pool.acquire() as conn:
+            conn: asyncpg.Connection
             async with conn.transaction():
 
                 if not member:
@@ -121,7 +129,8 @@ class GuildEcoUtils:
         return name, salary, description, job_id
 
     async def server_job_create(self, ctx: commands.Context, name: str, salary: int, description: str) -> Optional[discord.Message]:
-        async with self.bot.pool.acquire() as conn:
+        async with self.pool.acquire() as conn:
+            conn: asyncpg.Connection
             async with conn.transaction():
 
                 if salary >= 2000 and salary <= 20000: # DIFFERENT SALARY SYSTEM
@@ -162,7 +171,8 @@ class GuildEcoUtils:
                 #new_job_id_list.append(str(''.join(["{}".format(random.randint(0, 9)) for num in range(0, limit)])))
 
     async def jobs_display(self, ctx: commands.Context) -> Optional[discord.Message]:
-        async with self.bot.pool.acquire() as conn:
+        async with self.pool.acquire() as conn:
+            conn: asyncpg.Connection
             async with conn.transaction():
 
                 data = await conn.fetch("SELECT name, salary, description FROM jobs WHERE guild_id = $1", ctx.guild.id)
@@ -185,7 +195,8 @@ class GuildEcoUtils:
         return await ctx.reply(embed = job_embed, mention_author = False)
     
     async def server_job_remove(self, ctx: commands.Context, member: Optional[discord.Member]) -> Optional[discord.Message]:
-        async with self.bot.pool.acquire() as conn:
+        async with self.pool.acquire() as conn:
+            conn: asyncpg.Connection
             async with conn.transaction():
 
                 if not ctx.author.guild_permissions.administrator and member and member != ctx.author:
@@ -205,7 +216,8 @@ class GuildEcoUtils:
         return await ctx.reply(embed=discord.Embed(description=f"{'Your job' if member == ctx.author else f'The job of {member}'} is removed.\n\n**Details**\nJob name: {name}\nSalary: {salary}\nDescription: {description if not description else f'```{description}```'}",color=tv.color))
 
     async def server_job_delete(self, ctx: commands.Context, name: Union[str, Literal['all']]) -> Optional[discord.Message]:
-        async with self.bot.pool.acquire() as conn:
+        async with self.pool.acquire() as conn:
+            conn: asyncpg.Connection
             async with conn.transaction():
 
                 data = await conn.fetch("SELECT id FROM jobs WHERE guild_id = $1", ctx.guild.id)

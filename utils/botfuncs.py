@@ -4,6 +4,12 @@ import pkg_resources, sys
 # MODIFY | FIX
 # DO WE NEED THIS?
 
+def apostrophize(word: str) -> str:
+    if word[-1] == 's':
+        return word + "'"
+    else:
+        return word + "'s"
+
 def add_requirements(*packages) -> None:
     try:
         with open('requirements.txt', 'x') as file:

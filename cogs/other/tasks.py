@@ -3,12 +3,12 @@ from __future__ import annotations
 from discord.ext import commands, tasks
 from datetime import datetime
 from pytz import timezone
-import discord, asyncio
+import asyncpg, asyncio
 
 import text_variables as tv
 
 from typing import Any
-from utils import BaseCog, exe_sql
+from utils import BaseCog, OtherUtils
 
 class Tasks(BaseCog):
 
@@ -17,11 +17,14 @@ class Tasks(BaseCog):
         self.stats_loop.start()
         self.eco_loop.start()
 
+        self.ou: OtherUtils = OtherUtils(self.bot)
+        self.pool: asyncpg.Pool = self.bot.pool
+
     @tasks.loop(minutes = 10)
     async def stats_loop(self):
 
         for guild in self.bot.guilds:
-            await exe_sql(self.bot, guild)
+            await self.ou.exe_sql(guild) # in case join/leave won't work because of rate limitations
 
     @stats_loop.before_loop
     async def before_stats(self):
@@ -34,8 +37,9 @@ class Tasks(BaseCog):
         now = datetime.now(cet)
 
         if now.hour == 10 and now.minute == 0 and now.second == 0:
-            async with self.bot.pool.acquire() as conn:
-                async with conn.transaction(): 
+            async with self.pool.acquire() as conn:
+                conn: asyncpg.Connection
+                async with conn.transaction():
                     await conn.execute("UPDATE users SET worked = 0")
 
     @eco_loop.before_loop

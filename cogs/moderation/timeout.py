@@ -10,56 +10,57 @@ from contextlib import suppress
 from utils import BaseCog, member_check, HandleHTTPException
 from typing import Optional, Any
 
+async def tempmute(self, ctx: commands.Context, member: discord.Member, duration: int, period: Optional[str] = None, reason: Optional[str] = None) -> Optional[discord.Embed]:
+
+    time_period_dict = {
+        "seconds": "seconds",
+        "minutes": "minutes",
+        "hours": "hours",
+        "days": "days",
+        "weeks": "weeks"
+    }
+    time_period = next((tp for tp in time_period_dict if tp in str(period)), "hours")
+    time_delta = datetime.timedelta(**{time_period_dict[time_period]: duration})
+
+    if not await member_check(ctx, member, self.bot): # ?
+        return
+
+    if member.is_timed_out():
+        message = "Provided member is already timed out!"
+        return await ctx.reply(message, mention_author=True, ephemeral=True)
+
+    ban_embed = discord.Embed(
+        title="Timed out",
+        description=f"Guten tag! \nYou have been timed out in **{ctx.channel.guild.name}**, in case you were wondering. You must have said something wrong or it's just an administrator whom is playing with his toys. In any way, Make Yourself Great Again.\n \n Reason: **{reason}**\n\nTimed out for: `{time_delta}`",
+        color=tv.warn_color,
+        timestamp=discord.utils.utcnow()
+    )
+    ban_embed.set_image(url="https://c.tenor.com/vZiLS-HKM90AAAAC/thanos-balance.gif")
+    ban_embed.set_footer(text=tv.footer)
+
+    try:
+        await member.send(embed=ban_embed)
+
+    except TypeError as e:
+        print(e)
+
+    embed = discord.Embed(
+        title="User is timed out!",
+        description=f'*Timed out by:* {ctx.author.mention} \n \n**{member}** has been successfully timed out for awhile from this server! \nReason: `{reason}`',
+        color=tv.warn_color,
+        timestamp = discord.utils.utcnow()
+    )
+    embed.set_footer(text=f"Timed out for {time_delta}")
+
+    async with HandleHTTPException(ctx, title=f'Failed to unban {member}'):
+        await member.timeout(time_delta, reason=reason)
+
+    return await ctx.send(embed=embed)
+
 class Timeout(BaseCog):
 
     def __init__(self, bot: commands.Bot, *args: Any, **kwargs: Any):
         super().__init__(bot, *args, **kwargs)
-
-    async def tempmute(self, ctx: commands.Context, member: discord.Member, duration: int, period: Optional[str] = None, reason: Optional[str] = None) -> Optional[discord.Embed]:
-        time_period_dict = {
-            "seconds": "seconds",
-            "minutes": "minutes",
-            "hours": "hours",
-            "days": "days",
-            "weeks": "weeks"
-        }
-        time_period = next((tp for tp in time_period_dict if tp in str(period)), "hours")
-        time_delta = datetime.timedelta(**{time_period_dict[time_period]: duration})
-
-        if not await member_check(ctx, member, self.bot):
-            return
-
-        if member.is_timed_out():
-            message = "Provided member is already timed out!"
-            return await ctx.reply(message, mention_author=True, ephemeral=True)
-
-        ban_embed = discord.Embed(
-            title="Timed out",
-            description=f"Guten tag! \nYou have been timed out in **{ctx.channel.guild.name}**, in case you were wondering. You must have said something wrong or it's just an administrator whom is playing with his toys. In any way, Make Yourself Great Again.\n \n Reason: **{reason}**\n\nTimed out for: `{time_delta}`",
-            color=tv.warn_color,
-            timestamp=discord.utils.utcnow()
-        )
-        ban_embed.set_image(url="https://c.tenor.com/vZiLS-HKM90AAAAC/thanos-balance.gif")
-        ban_embed.set_footer(text=tv.footer)
-
-        try:
-            await member.send(embed=ban_embed)
-
-        except TypeError as e:
-            print(e)
-
-        embed = discord.Embed(
-            title="User is timed out!",
-            description=f'*Timed out by:* {ctx.author.mention} \n \n**{member}** has been successfully timed out for awhile from this server! \nReason: `{reason}`',
-            color=tv.warn_color,
-            timestamp = discord.utils.utcnow()
-        )
-        embed.set_footer(text=f"Timed out for {time_delta}")
-
-        async with HandleHTTPException(ctx, title=f'Failed to unban {member}'):
-            await member.timeout(time_delta, reason=reason)
-
-        return await ctx.send(embed=embed)
 
     @commands.hybrid_command(name='mute', help="Mutes users whom are being dissidents. | Moderation ", with_app_command = True)
     @discord.app_commands.choices(period = [
@@ -75,7 +76,7 @@ class Timeout(BaseCog):
     async def mute(self, ctx: commands.Context, member: discord.Member, duration: int, period: Optional[Choice[str]], *, reason=None) -> None:
         async with ctx.typing(ephemeral=True):
 
-            return await self.tempmute(ctx, member, duration, period, reason)
+            return await tempmute(self, ctx, member, duration, period, reason)
 
     # LOOK INTO THIS:   
     @mute.error
@@ -157,22 +158,6 @@ class Timeout(BaseCog):
                         reason_list.append(str(reason))
                     timed_out_list.append(member)
 
-            '''for member in ctx.guild.members:
-                if member.is_timed_out():
-                    timed_out_list.append(member)
-
-                    async for entry in ctx.guild.audit_logs(action = discord.AuditLogAction.member_update):
-
-                        if member == entry.target:
-                            if str(entry.reason) == "None":
-                                reason = "Not specified"
-
-                            else:
-                                reason = entry.reason
-
-                            reason_list.append(str(reason))
-                            break'''
-
             embed = discord.Embed(title = "Timed out list", color = tv.color)
 
             if len(timed_out_list) == 0:
@@ -188,4 +173,4 @@ class Timeout(BaseCog):
                     embed.add_field(name = f"{i.name}", value = f"*ID: {i.id}*\nReason: `{reason_list[num]}`", inline = False) #*#{i.discriminator}*
                     num += 1
             
-            return await ctx.reply(embed=embed, ephemeral = True)
+            return await ctx.reply(embed=embed, ephemeral = True, mention_author = False)

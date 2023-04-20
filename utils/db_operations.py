@@ -4,17 +4,19 @@ from discord.ext import commands
 
 from typing import Literal, List, Dict, Any
 
+async def create_pool() -> asyncpg.Pool: # ADD SSH KEY CONNECTION
+    pool = await asyncpg.create_pool(database= os.getenv('pg_name'), user= os.getenv('pg_username'), password= os.getenv('pg_password'), host= tv.host, port= tv.port)
+    return pool
+
 class DB_Operations:
 
-    def __init__(self, bot):
-        self.bot = bot
-
-    async def create_pool(self) -> None: # ADD SSH KEY CONNECTION
-        pool = await asyncpg.create_pool(database= os.getenv('pg_name'), user= os.getenv('pg_username'), password= os.getenv('pg_password'), host= tv.host, port= tv.port)
-        return pool
+    def __init__(self, bot: commands.Bot):
+        self.bot: commands.Bot = bot
+        self.pool: asyncpg.Pool = self.bot.pool
     
     async def create_tables(self) -> None:
-        async with self.bot.pool.acquire() as conn:
+        async with self.pool.acquire() as conn:
+            conn: asyncpg.Connection
             async with conn.transaction():
                 with open("schema.sql", "r") as f:
                     tables = f.read()
@@ -22,7 +24,8 @@ class DB_Operations:
                 return await conn.execute(tables)
     
     async def fetch_data(self) -> dict:
-        async with self.bot.pool.acquire() as conn:
+        async with self.pool.acquire() as conn:
+            conn: asyncpg.Connection
             async with conn.transaction():
                 
                 # Fetch data from users table
@@ -51,7 +54,8 @@ class DB_Operations:
         return all_data
     
     async def fetch_table_data(self, *tables: Literal["jobs", "users", "warnings", "server_data", "twitch_users"]) -> List[Dict[str, Any]]: # not sure annotation is correct
-        async with self.bot.pool.acquire() as conn:
+        async with self.pool.acquire() as conn:
+            conn: asyncpg.Connection
             async with conn.transaction():
                 for table in tables:
                     query = "SELECT * FROM " + table
@@ -61,7 +65,8 @@ class DB_Operations:
         return [].extend(data)
 
     async def fetch_job_data(self) -> dict: # remove later
-        async with self.bot.pool.acquire() as conn:
+        async with self.pool.acquire() as conn:
+            conn: asyncpg.Connection
             async with conn.transaction():
 
                 job_dict = {}

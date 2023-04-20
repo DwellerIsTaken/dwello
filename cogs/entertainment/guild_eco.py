@@ -3,7 +3,7 @@ from __future__ import annotations
 from discord.app_commands import Choice
 from discord.ext import commands
 import text_variables as tv
-import discord
+import discord, asyncpg
 
 from contextlib import suppress
 
@@ -19,7 +19,9 @@ class Guild_Economy(BaseCog):
         self.db: DB_Operations = DB_Operations(self.bot)
         self.ac: AutoComplete = AutoComplete(self.bot)
 
-    #jobs -- lots of available jobs
+        self.pool: asyncpg.Pool = self.bot.pool
+
+    #jobs -- lots of available jobs ?
 
     @commands.hybrid_group(name="server", invoke_without_command=True, with_app_command=True)
     async def server(self, ctx: commands.Context) -> Optional[discord.Message]:
@@ -57,8 +59,9 @@ class Guild_Economy(BaseCog):
     @jobs.command(name = "set", description = "You can set your server job here!") # MAYBE PUT THIS IN ECONOMY.PY
     async def job_set(self, ctx: commands.Context, name: str) -> Optional[discord.Message]:
         async with ctx.typing(ephemeral=True):
-            async with self.bot.pool.acquire() as conn:
-                async with conn.transaction(): 
+            async with self.pool.acquire() as conn:
+                conn: asyncpg.Connection
+                async with conn.transaction():
 
                     names = await conn.fetchval("SELECT array_agg(name) FROM jobs WHERE guild_id = $1", ctx.guild.id)
 

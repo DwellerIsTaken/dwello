@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-import discord
+import discord, asyncpg
 from discord.ext import commands
 
 from typing import Any
@@ -12,6 +12,8 @@ class Events(BaseCog):
         super().__init__(bot, *args, **kwargs)
         self.levelling = LevellingUtils(self.bot)
         self.listeners = ListenersFunctions(self.bot)
+
+        self.pool: asyncpg.Pool = self.bot.pool
 
     @commands.hybrid_command(name="table",with_app_command=False)
     async def test(self, ctx: commands.Context):
@@ -38,13 +40,14 @@ class Events(BaseCog):
 
     '''@commands.Cog.listener()
     async def on_interaction(self, interaction: discord.interactions.Interaction):
-        await levelling.create_user(interaction.user.id, interaction.guild.id)'''
+        await levelling.create_user(interaction.user.id, interaction.guild.id)''' # because on_member_join exist | can use this as a backup
 
     channel_type_list = ['category', 'all', 'member', 'bot']
 
     @commands.Cog.listener()
     async def on_guild_channel_delete(self, channel: discord.abc.GuildChannel) -> None:
-        async with self.bot.pool.acquire() as conn:
+        async with self.pool.acquire() as conn:
+            conn: asyncpg.Connection
             async with conn.transaction():
                 record_list = []
 

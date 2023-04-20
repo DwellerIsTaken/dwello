@@ -21,7 +21,6 @@ class AutoComplete:
 
         records = self.bot.db_data
         table_ = records[table]
-        print(table_)
 
         choices = []
         item = len(current)
@@ -35,7 +34,6 @@ class AutoComplete:
         for record in table_:
             name_ = record[name]
             value_ = record[value]
-            print(name_, value_)
 
             if value_ is None:
                 if name_ is None:
@@ -55,6 +53,5 @@ class AutoComplete:
         if len(choices) > 5:
             return choices[:5]
 
-        print(choices)
         return choices
 

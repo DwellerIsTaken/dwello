@@ -4,18 +4,21 @@ from discord.app_commands import Choice
 from discord.ext import commands
 from string import Template
 import text_variables as tv
-import discord, os
+import discord, asyncpg
 
 from typing import Optional, Literal, Any
 from utils import Twitch, BaseCog, AutoComplete
 
-class ConfigFunctions():
+class ConfigFunctions:
 
-    def __init__(self, bot):
+    def __init__(self, bot: commands.Bot):
         self.bot = bot
 
+        self.pool: asyncpg.Pool = self.bot.pool
+
     async def add_message(self, ctx: commands.Context, name: str, text: str) -> Optional[discord.Message]:
-        async with self.bot.pool.acquire() as conn:
+        async with self.pool.acquire() as conn:
+            conn: asyncpg.Connection
             async with conn.transaction():
 
                 record = await conn.fetchrow("SELECT channel_id FROM server_data WHERE guild_id = $1 AND event_type = $2", ctx.guild.id, name)
@@ -34,7 +37,8 @@ class ConfigFunctions():
         return await ctx.reply(embed = discord.Embed(description=string, color = tv.color), mention_author = False, ephemeral=True)
     
     async def add_channel(self, ctx: commands.Context, name: str, channel: Optional[discord.TextChannel] = commands.CurrentChannel) -> Optional[discord.Message]:
-        async with self.bot.pool.acquire() as conn:
+        async with self.pool.acquire() as conn:
+            conn: asyncpg.Connection
             async with conn.transaction():
 
                 result = await conn.fetchrow("SELECT channel_id FROM server_data WHERE guild_id = $1 AND event_type = $2", ctx.guild.id, name)
@@ -52,7 +56,8 @@ class ConfigFunctions():
         return await ctx.reply(embed = discord.Embed(description=string, color = tv.color), mention_author = False, ephemeral=True)
 
     async def message_display(self, ctx: commands.Context, name: str) -> Optional[discord.Message]:
-        async with self.bot.pool.acquire() as conn:
+        async with self.pool.acquire() as conn:
+            conn: asyncpg.Connection
             async with conn.transaction():
 
                 result = await conn.fetchrow("SELECT message_text FROM server_data WHERE guild_id = $1 AND event_type = $2", ctx.guild.id, name)
@@ -63,7 +68,8 @@ class ConfigFunctions():
         return await ctx.reply(embed = discord.Embed(title = f"{name.capitalize()} channel message", description=f"```{result[0]}```", color=tv.color), mention_author=False, ephemeral=True)
 
     async def channel_display(self, ctx: commands.Context, name: str) -> Optional[discord.Message]:
-        async with self.bot.pool.acquire() as conn:
+        async with self.pool.acquire() as conn:
+            conn: asyncpg.Connection
             async with conn.transaction():
 
                 result = await conn.fetchrow("SELECT channel_id FROM server_data WHERE guild_id = $1 AND event_type = $2", ctx.guild.id, name)
@@ -77,7 +83,8 @@ class ConfigFunctions():
         return await ctx.reply(embed = discord.Embed(description=f"{name.capitalize()} channel is currently set to {channel.mention}", color=tv.color), mention_author=False, ephemeral=True)
 
     async def remove(self, ctx: commands.Context, name: str) -> Optional[discord.Message]:
-        async with self.bot.pool.acquire() as conn:
+        async with self.pool.acquire() as conn:
+            conn: asyncpg.Connection
             async with conn.transaction():
 
                 result = await conn.fetchrow("SELECT channel_id FROM server_data WHERE guild_id = $1 AND event_type = $2", ctx.guild.id, name)
@@ -92,9 +99,9 @@ class Config(BaseCog):
 
     def __init__(self, bot: commands.Bot, *args: Any, **kwargs: Any):
         super().__init__(bot, *args, **kwargs)
-        self.config = ConfigFunctions(self.bot)
-        self.twitchutils = Twitch(self.bot) 
-        self.ac = AutoComplete(self.bot)
+        self.config: ConfigFunctions = ConfigFunctions(self.bot)
+        self.twitchutils: Twitch = Twitch(self.bot) 
+        self.ac: AutoComplete = AutoComplete(self.bot)
 
     @commands.hybrid_group(invoke_without_command=True,with_app_command=True)
     @commands.bot_has_permissions(manage_channels=True,manage_messages=True)

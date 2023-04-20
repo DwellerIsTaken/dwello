@@ -5,7 +5,7 @@ from discord.ext import commands
 
 from .events import Events
 from .tasks import Tasks
-from .bot import BotConfig
+from .botconfig import BotConfig
 
 class Other(Events, Tasks, BotConfig):
     '''Other Class'''

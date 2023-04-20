@@ -1,6 +1,6 @@
 from discord.ext import commands
 import text_variables as tv
-import discord, os
+import discord, asyncpg
 
 from discord.ui import button, View, Button
 from typing import Optional, Union, Tuple, Literal, Any
@@ -9,10 +9,13 @@ from utils import HandleHTTPException, BaseCog
 class ChannelsFunctions:
 
     def __init__(self, bot: commands.Bot):
-        self.bot = bot
+        self.bot: commands.Bot = bot
+
+        self.pool: asyncpg.Pool = self.bot.pool
 
     async def counter_func(self, ctx: commands.Context, name: Literal["all","member","bot","category"]) -> Optional[Union[discord.VoiceChannel, discord.CategoryChannel]]: #Optional[Tuple[discord.Message, Union[discord.VoiceChannel, discord.CategoryChannel]]]
-        async with self.bot.pool.acquire() as conn:
+        async with self.pool.acquire() as conn:
+            conn: asyncpg.Connection
             async with conn.transaction():
 
                 count = ctx.guild.member_count
@@ -79,7 +82,8 @@ class ChannelsFunctions:
         return counter_channel
 
     async def move_channel(self, ctx: commands.Context, category: discord.CategoryChannel, *args: str) -> None:
-        async with self.bot.pool.acquire() as conn:
+        async with self.pool.acquire() as conn:
+            conn: asyncpg.Connection
             async with conn.transaction():
 
                 placeholders = ','.join(['${}'.format(i + 2) for i in range(len(args))])
@@ -99,7 +103,9 @@ class Stats_View(View):
         self.bot = bot
         self.ctx = ctx
         self.name = name
-        self.cf_ = ChannelsFunctions(self.bot)
+
+        self.cf_: ChannelsFunctions = ChannelsFunctions(self.bot)
+        self.pool: asyncpg.Pool = self.bot.pool
     
     async def interaction_check(self, interaction: discord.Interaction) -> Optional[discord.Message]:
         if interaction.user.id == self.ctx.author.id:
@@ -112,7 +118,8 @@ class Stats_View(View):
     
     @button(style = discord.ButtonStyle.green, label="Approve", disabled=False, custom_id="approve_button")
     async def approve(self, interaction: discord.interactions.Interaction, button: Button) -> Optional[discord.Message]:
-        async with self.bot.pool.acquire() as conn:
+        async with self.pool.acquire() as conn:
+            conn: asyncpg.Connection
             async with conn.transaction():
 
                 #await conn.execute("UPDATE server_data SET deny_clicked = $1 WHERE guild_id = $2", 0, interaction.guild.id)
@@ -126,7 +133,8 @@ class Stats_View(View):
 
     @button(style = discord.ButtonStyle.red, label="Deny", disabled=False, custom_id="deny_button")
     async def deny(self, interaction: discord.interactions.Interaction, button: Button) -> None:
-        async with self.bot.pool.acquire() as conn:
+        async with self.pool.acquire() as conn:
+            conn: asyncpg.Connection
             async with conn.transaction():
 
                 await conn.execute("UPDATE server_data SET deny_clicked = $1 WHERE guild_id = $2", 1, interaction.guild.id)
@@ -137,7 +145,7 @@ class Channels(BaseCog):
 
     def __init__(self, bot: commands.Bot, *args: Any, **kwargs: Any):
         super().__init__(bot, *args, **kwargs)
-        self.cf = ChannelsFunctions(self.bot)
+        self.cf: ChannelsFunctions = ChannelsFunctions(self.bot)
 
     @commands.hybrid_group(name="counter", description="Counter group.", invoke_without_command = True, with_app_command=True)
     @commands.bot_has_permissions(manage_channels=True)

@@ -7,9 +7,10 @@ from discord.ext import commands
 import text_variables as tv
 from utils import DB_Operations
 
-# Set your app's client ID and secret
 CLIENT_ID = os.getenv('TWITCH_CLIENT_ID')
 CLIENT_SECRET = os.getenv('TWITCH_CLIENT_SECRET')
+
+helix_url = 'https://api.twitch.tv/helix/eventsub/subscriptions'
 
 def get_access_token():
 
@@ -30,13 +31,13 @@ def get_access_token():
 
     return access_token, headers
 
-helix_url = 'https://api.twitch.tv/helix/eventsub/subscriptions'
-
 class Twitch:
+
     def __init__(self, bot: commands.Bot):
-        self.bot = bot
-        self.access_token, self.headers = get_access_token()
+        self.bot: commands.Bot = bot
         self.db = DB_Operations(self.bot)
+        self.pool: asyncpg.Pool = self.bot.pool
+        self.access_token, self.headers = get_access_token()
 
     async def username_to_id(self, username: str) -> Optional[str]:
             
@@ -71,7 +72,8 @@ class Twitch:
         return username
 
     async def event_subscription(self, ctx: commands.Context, type_: str, username: str) -> Optional[Tuple[discord.Message, dict]]:
-        async with self.bot.pool.acquire() as conn:
+        async with self.pool.acquire() as conn:
+            conn: asyncpg.Connection
             async with conn.transaction():
 
                 try:
@@ -136,7 +138,8 @@ class Twitch:
 
     # return a list of users the guild is subscribed to
     async def guild_twitch_subscriptions(self, ctx: commands.Context) -> Optional[discord.Message]:
-        async with self.bot.pool.acquire() as conn:
+        async with self.pool.acquire() as conn:
+            conn: asyncpg.Connection
             async with conn.transaction():
 
                 data = await conn.fetch("SELECT username, user_id FROM twitch_users WHERE guild_id = $1", ctx.guild.id)
@@ -155,18 +158,9 @@ class Twitch:
                 
         return await ctx.reply(embed=twitch_embed)
 
-
-    async def event_subscription_list(self): # RETURNS ALL SUBSCRIPTIONS FOR A CERTAIN CLIENT_ID (?)
-        response = requests.get(helix_url, headers=self.headers).json()
-
-        # Print the response to show the list of subscriptions
-        for i in response['data']:
-            print(i['condition']['broadcaster_user_id'])
-            print(i['type'])
-        print(response['data'])
-
     async def twitch_unsubscribe_from_streamer(self, ctx: commands.Context, username: Union[str, Literal['all']]) -> Optional[discord.Message]: # IF ALL: GET ALL TWITCH USERS THAT GUILD IS SUBSCRIBED TO AND UNSUB (what if the same user for multiple guilds)
-        async with self.bot.pool.acquire() as conn: # LOOKS SHITTY - SHOULD REWRITE
+        async with self.pool.acquire() as conn:
+            conn: asyncpg.Connection
             async with conn.transaction():
 
                 response = requests.get(helix_url, headers=self.headers).json()
@@ -199,31 +193,59 @@ class Twitch:
         await self.db.fetch_table_data("twitch_users")
         return await ctx.reply(f"Unsubscribed from {f'{count} streamer(s)' if count != 0 else username}.", ephemeral=True)
 
-    async def twitch_to_discord(self, data) -> None:
-        async with self.bot.pool.acquire() as conn:
+    async def twitch_to_discord(self, data) -> Optional[discord.Message]: # LET MEMBERS CUSTOMISE EVERYTHING (thumbnail, title, description, footer, timestamp...)
+        async with self.pool.acquire() as conn:
+            conn: asyncpg.Connection
             async with conn.transaction():
 
-                print(1, data)
-
-                channel: discord.TextChannel = discord.Guild.get_channel(1080883008741064854)
-
-                print(channel)
-                return await channel.send(data)
-                
-                '''twitch_id = data['subscription']['condition']['broadcaster_user_id']
+                twitch_id: int = int(data['subscription']['condition']['broadcaster_user_id'])
                 username = await self.id_to_username(twitch_id)
 
                 guilds = await conn.fetch("SELECT * FROM twitch_users WHERE user_id = $1", twitch_id)
                 for guild in guilds:
-                    result = await conn.fetchrow("SELECT message_text, channel_id FROM server_data WHERE guild_id = $1", guild['guild_id'])
-                    message_text, channel_id = result[0], result[1]
+                    try:
+                        result = await conn.fetchrow("SELECT message_text, channel_id FROM server_data WHERE guild_id = $1 AND event_type = 'twitch'", guild['guild_id'])
+                        message_text, channel_id = result[0], result[1]
 
-                    twitch_embed = discord.Embed(title= f"{username} started streaming", description= f"{message_text}\n\nhttps://www.twitch.tv/{username}", color= tv.twitch_color)
+                        twitch_embed = discord.Embed(title= f"{username} started streaming", description= f"{message_text}\n\nhttps://www.twitch.tv/{username}", color= tv.twitch_color)
+                        twitch_embed.set_thumbnail(url="https://mlpnk72yciwc.i.optimole.com/cqhiHA-5_fN-hee/w:350/h:350/q:90/rt:fill/g:ce/https://bleedingcool.com/wp-content/uploads/2019/09/twitch-logo-icon-2019.jpg")
 
-                    channel: discord.TextChannel = await self.bot.get_channel(int(channel_id)) if channel_id else None
-                    if channel:
-                        await channel.send(embed = twitch_embed)'''
+                        channel: discord.TextChannel = self.bot.get_channel(int(channel_id)) if channel_id else None
+                        if channel:
+                            await channel.send(embed = twitch_embed)
+                    
+                    except Exception as e:
+                        print(e)
+                        continue
 
                     #for row in results:
                     #message_text = row['message_text']
                     #channel_id = row['channel_id']
+
+
+    def event_subscription_list(self): # RETURNS ALL SUBSCRIPTIONS FOR A CERTAIN CLIENT_ID (?)
+        response = requests.get(helix_url, headers=self.headers).json()
+
+        # Print the response to show the list of subscriptions
+        for i in response['data']:
+            print(i['condition']['broadcaster_user_id'])
+            print(i['type'])
+        print(response['data'])
+
+    # UNSUBSCRIBE FROM ALL (OWNER)
+    def unsubscribe_from_all_eventsubs(self):
+
+        response = requests.get(helix_url, headers=self.headers).json()
+
+        count = 0
+        if not response['data']:
+            print("No events to unsubscribe from.")
+            return
+
+        for subscription in response['data']:
+            subscription_id = subscription['id']
+            url = f'https://api.twitch.tv/helix/eventsub/subscriptions?id={subscription_id}'
+            response = requests.delete(url, headers=self.headers)
+            count += 1
+
+        print(f"Unsubscribed from {count} event(s).")

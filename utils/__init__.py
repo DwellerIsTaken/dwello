@@ -7,6 +7,7 @@ from .botfuncs import *
 from .economy import *
 from .twitch import *
 from .other import *
+from .web import *
 
 from utils.bases.base_cog import *
 from utils.bases.autocomplete import *

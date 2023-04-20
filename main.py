@@ -3,11 +3,9 @@ load_dotenv()
 
 import sys, typing, os
 import asyncio, discord, logging, matplotlib, requests, colorthief, aiohttp, asyncpg, setuptools
-from utils import add_requirements
+from utils import add_requirements, create_pool, AiohttpWeb, LevellingUtils, Twitch
 from text_variables import bot_reply_list
 from discord.ext import commands
-from utils.db_operations import DB_Operations
-from utils.levelling import LevellingUtils
 
 intents = discord.Intents.all() # Creating a client and setting up its parameters
 bot = commands.Bot(command_prefix = '$', chunk_guilds_at_startup = False, activity = discord.Streaming(name = 'Visual Studio Code', url="https://youtu.be/dQw4w9WgXcQ") , intents = intents, help=False, status = discord.Status.do_not_disturb, allowed_mentions=discord.AllowedMentions.none()) #Activity
@@ -36,6 +34,18 @@ async def on_ready():
     print('Python version:', sys.version)
     print('{0} is online'.format(bot.user.name))
     print('Version:', discord.__version__)
+
+@bot.command()
+@commands.is_owner()
+async def list_eventsubs(ctx: commands.Context):
+
+    return bot.tw.event_subscription_list()
+
+@bot.command()
+@commands.is_owner()
+async def wipe_all_eventsubs(ctx: commands.Context):
+
+    return bot.tw.unsubscribe_from_all_eventsubs()
 
 @bot.command()
 @commands.is_owner()
@@ -73,7 +83,7 @@ async def sync(
     await ctx.send(f"Synced the tree to {ret}/{len(guilds)}.")
 
 async def main():
-    package_list = [asyncio, 
+    '''package_list = [asyncio, 
                     discord,
                     matplotlib, 
                     requests, 
@@ -82,18 +92,22 @@ async def main():
                     asyncpg, 
                     setuptools
                     ]
-    add_requirements(*package_list)
+    add_requirements(*package_list)'''
 
+    bot.pool = await create_pool()
+
+    from utils import DB_Operations
     bot.db = DB_Operations(bot)
-    bot.pool = await bot.db.create_pool()
-    
+
     await bot.db.create_tables()
     bot.db_data = await bot.db.fetch_data()
 
-    #bot.lvl = LevellingUtils(bot)
+    web = AiohttpWeb(bot)
+    asyncio.create_task(web.run(port=8081))
+
+    bot.tw = Twitch(bot)
 
     async with bot:
-        #for category, cogs_ in cogs.items():
         for cog in cogs:
             await bot.load_extension(cog)
 
