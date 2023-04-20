@@ -18,8 +18,8 @@ async def exe_sql(bot, guild: discord.Guild) -> None:
                 channel_id, event_type = int(row["channel_id"]), str(row["counter_name"])
 
                 if event_type in counters:
-                    try:
-                        channel = guild.get_channel(channel_id)
+                    channel = guild.get_channel(channel_id)
+                    try: # suppress?
                         if event_type == counters[0]:
                             name = f"📊 All counter: {guild.member_count}"
                         if event_type == counters[1]:
@@ -28,5 +28,5 @@ async def exe_sql(bot, guild: discord.Guild) -> None:
                             name = f"📊 Bot counter: {bot_counter_}"
                         await channel.edit(name=name)
 
-                    except Exception as e:
+                    except Exception as e: # handle type error
                         print(e)

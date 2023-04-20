@@ -14,10 +14,10 @@ class Guild_Economy(BaseCog):
 
     def __init__(self, bot: commands.Bot, *args: Any, **kwargs: Any):
         super().__init__(bot, *args, **kwargs)
-        self.be = BotEcoUtils(self.bot)
-        self.ge = GuildEcoUtils(self.bot)
-        self.db = DB_Operations(self.bot)
-        self.ac = AutoComplete(self.bot)
+        self.be: BotEcoUtils = BotEcoUtils(self.bot)
+        self.ge: GuildEcoUtils = GuildEcoUtils(self.bot)
+        self.db: DB_Operations = DB_Operations(self.bot)
+        self.ac: AutoComplete = AutoComplete(self.bot)
 
     #jobs -- lots of available jobs
 

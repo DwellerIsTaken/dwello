@@ -7,3 +7,5 @@
 # -> Make a comprehensive description for a group/subgroup. 
 #       • Group: list all subgroups and commands with their description. 
 #       • Subgroup: list all commands within subgroup and their descriptions.
+
+# CREATE IPC base for web.py and look into it
