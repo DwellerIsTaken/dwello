@@ -98,8 +98,10 @@ class Twitch:
                 if user_id in broadcaster_check_dict and type_ in broadcaster_check_dict[user_id]['types']:
                     return await ctx.reply(f"Guild is already subscribed to user **{username}**.", ephemeral=True)
                 
-                channel_id = await conn.fetchrow("SELECT channel_id FROM server_data WHERE guild_id = $1 AND event_type = $2", ctx.guild.id, "twitch")
-                if not channel_id or not self.bot.get_channel(int(channel_id[0]) if channel_id and channel_id[0].isdigit() else None):
+                channel_record = await conn.fetchrow("SELECT channel_id FROM server_data WHERE guild_id = $1 AND event_type = $2", ctx.guild.id, "twitch")
+                type(channel_record[0])
+                channel_id = int(channel_record[0]) if isinstance(channel_record[0], (str, int)) else None
+                if not channel_record or not self.bot.get_channel(channel_id):
                     return await ctx.reply("You must set the channel for twitch notifications first. ```/twitch channel set [#channel]```")
                 
                 # Set up the request body for creating a subscription
