@@ -206,7 +206,7 @@ class Twitch:
                 for guild in guilds:
                     try:
                         result = await conn.fetchrow("SELECT message_text, channel_id FROM server_data WHERE guild_id = $1 AND event_type = 'twitch'", guild['guild_id'])
-                        message_text, channel_id = result[0], result[1]
+                        message_text, channel_id = result[0], result[1] # SEND DEFAULT STREAM MESSAGE INSTEAD IF NOT message_text
 
                         twitch_embed = discord.Embed(title= f"{username} started streaming", description= f"{message_text}\n\nhttps://www.twitch.tv/{username}", color= tv.twitch_color)
                         twitch_embed.set_thumbnail(url="https://mlpnk72yciwc.i.optimole.com/cqhiHA-5_fN-hee/w:350/h:350/q:90/rt:fill/g:ce/https://bleedingcool.com/wp-content/uploads/2019/09/twitch-logo-icon-2019.jpg")
