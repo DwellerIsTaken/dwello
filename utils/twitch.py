@@ -99,7 +99,7 @@ class Twitch:
                     return await ctx.reply(f"Guild is already subscribed to user **{username}**.", ephemeral=True)
                 
                 channel_id = await conn.fetchrow("SELECT channel_id FROM server_data WHERE guild_id = $1 AND event_type = $2", ctx.guild.id, "twitch")
-                if not channel_id or not self.bot.get_channel(int(channel_id[0]) if channel_id else None):
+                if not channel_id or not self.bot.get_channel((int(channel_id[0])) if channel_id else None):
                     return await ctx.reply("You must set the channel for twitch notifications first. ```/twitch channel set [#channel]```")
                 
                 # Set up the request body for creating a subscription
@@ -207,12 +207,12 @@ class Twitch:
                         result = await conn.fetchrow("SELECT message_text, channel_id FROM server_data WHERE guild_id = $1 AND event_type = 'twitch'", guild['guild_id'])
                         message_text, channel_id = result[0], result[1]
 
-                        twitch_embed = discord.Embed(title= f"{username} started streaming", description= f"{message_text}\n\nhttps://www.twitch.tv/{username}", color= tv.twitch_color)
+                        twitch_embed = discord.Embed(title= f"{username} started streaming", description= f"{message_text}", color= tv.twitch_color)
                         twitch_embed.set_thumbnail(url="https://mlpnk72yciwc.i.optimole.com/cqhiHA-5_fN-hee/w:350/h:350/q:90/rt:fill/g:ce/https://bleedingcool.com/wp-content/uploads/2019/09/twitch-logo-icon-2019.jpg")
 
                         channel: discord.TextChannel = self.bot.get_channel(int(channel_id)) if channel_id else None
                         if channel:
-                            await channel.send(embed = twitch_embed)
+                            await channel.send(embed = twitch_embed, content=f"https://www.twitch.tv/{username}")
                     
                     except Exception as e:
                         print(e)
