@@ -99,7 +99,7 @@ class Twitch:
                     return await ctx.reply(f"Guild is already subscribed to user **{username}**.", ephemeral=True)
                 
                 channel_id = await conn.fetchrow("SELECT channel_id FROM server_data WHERE guild_id = $1 AND event_type = $2", ctx.guild.id, "twitch")
-                if not channel_id or not self.bot.get_channel((int(channel_id[0])) if channel_id else None):
+                if not channel_id or not self.bot.get_channel(int(channel_id[0]) if channel_id and channel_id[0].isdigit() else None):
                     return await ctx.reply("You must set the channel for twitch notifications first. ```/twitch channel set [#channel]```")
                 
                 # Set up the request body for creating a subscription
