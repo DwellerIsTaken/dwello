@@ -99,7 +99,6 @@ class Twitch:
                     return await ctx.reply(f"Guild is already subscribed to user **{username}**.", ephemeral=True)
                 
                 channel_record = await conn.fetchrow("SELECT channel_id FROM server_data WHERE guild_id = $1 AND event_type = $2", ctx.guild.id, "twitch")
-                type(channel_record[0])
                 channel_id = int(channel_record[0]) if isinstance(channel_record[0], (str, int)) else None
                 if not channel_record or not self.bot.get_channel(channel_id):
                     return await ctx.reply("You must set the channel for twitch notifications first. ```/twitch channel set [#channel]```")
