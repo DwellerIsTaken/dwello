@@ -117,7 +117,6 @@ async def main():
         await bot.start(token) #log_handler=None
 asyncio.run(main())
 
-# EMPTY SPACE: \u2800
 # This command doesn't exist: function (error handler)
 # Make an info(help) command
 # REDO Economy
