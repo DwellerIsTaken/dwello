@@ -52,10 +52,10 @@ class Warnings(BaseCog):
     @commands.hybrid_group(invoke_without_command=True, with_app_command=True)
     async def warning(self, ctx: commands.Context):
 
-        embed = discord.Embed(title="Denied", description="Use `$warning [command_name]` instead.", color = tv.color)
+        embed = discord.Embed(description=f"```{ctx.clean_prefix}warning [command_name]```", color = tv.warn_color)
         return await ctx.reply(embed=embed)
 
-    @warning.command(name='warn', help="Gives member a warning. | Moderation", with_app_command = True)
+    @warning.command(name='warn', help="Gives member a warning.", with_app_command = True)
     @commands.bot_has_permissions(moderate_members = True)
     @commands.has_permissions(moderate_members = True)
     @commands.guild_only()
@@ -98,7 +98,7 @@ class Warnings(BaseCog):
 
             return await ctx.send(embed=public_embed)
 
-    @warning.command(name='warnings', help="Shows member`s warnings.", with_app_command = True)
+    @warning.command(name='warnings', help="Shows member's warnings.", with_app_command = True)
     @commands.bot_has_permissions(moderate_members = True)
     @commands.guild_only()
     async def warnings(self, ctx: commands.Context, member: discord.Member = None) -> Optional[discord.Message]:
@@ -165,7 +165,7 @@ class Warnings(BaseCog):
                 if ctx.author.guild_permissions.moderate_members: # == True ?
                     return await ctx.send(embed = suggestion_embed, view = TimeoutSuggestion(self.bot, ctx, member, "Too many warnings!"))
 
-    @warning.command(name='remove', help="Removes selected warnings. | Moderation", with_app_command = True)
+    @warning.command(name='remove', help="Removes selected warnings.", with_app_command = True)
     @commands.bot_has_permissions(moderate_members = True)
     @commands.has_permissions(moderate_members = True)
     @commands.guild_only()

@@ -12,7 +12,7 @@ bot = commands.Bot(command_prefix = '$', chunk_guilds_at_startup = False, activi
 bot.remove_command("help")
 
 cogs = {
-    "cogs.entertainment",
+    "cogs.economy",
     "cogs.information",
     "cogs.moderation", 
     "cogs.guild", 

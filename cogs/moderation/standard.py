@@ -13,7 +13,7 @@ class StandardModeration(BaseCog):
     def __init__(self, bot: commands.Bot, *args: Any, **kwargs: Any):
         super().__init__(bot, *args, **kwargs)
 
-    @commands.hybrid_command(name='ban', help="Bans users with bad behaviour. | Moderation", with_app_command = True)
+    @commands.hybrid_command(name='ban', help="Bans users with bad behaviour.", with_app_command = True)
     @commands.bot_has_guild_permissions(ban_members=True)
     @commands.has_guild_permissions(ban_members=True)
     @commands.guild_only()
@@ -56,7 +56,7 @@ class StandardModeration(BaseCog):
     # guild.bans (?)
     # REDO
 
-    @commands.hybrid_command(name='unban', help="Unbans users for good behaviour. | Moderation", with_app_command = True)
+    @commands.hybrid_command(name='unban', help="Unbans users for good behaviour.", with_app_command = True)
     @commands.bot_has_permissions(send_messages=True, view_audit_log=True, ban_members=True)
     @commands.has_guild_permissions(ban_members=True)
     @commands.guild_only()
@@ -97,7 +97,7 @@ class StandardModeration(BaseCog):
 
         return choices
 
-    @commands.hybrid_command(name='kick', help="Kick a member for bad behaviour. | Moderation", with_app_command = True)
+    @commands.hybrid_command(name='kick', help="Kick a member for bad behaviour.", with_app_command = True)
     @commands.bot_has_permissions(send_messages=True, kick_members=True)
     @commands.has_permissions(kick_members=True)
     @commands.guild_only()
@@ -118,7 +118,7 @@ class StandardModeration(BaseCog):
 
             return await ctx.channel.send(embed=embed)
 
-    @commands.hybrid_command(name='nick', help="Changes the nickname of a provided member. | Moderation", with_app_command = True)
+    @commands.hybrid_command(name='nick', help="Changes the nickname of a provided member.", with_app_command = True)
     @commands.bot_has_guild_permissions(manage_nicknames=True)
     @commands.has_guild_permissions(manage_nicknames=True)
     @commands.guild_only()

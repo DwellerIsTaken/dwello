@@ -11,7 +11,7 @@ class AutoComplete:
     def __init__(self, bot: commands.Bot):
         self.bot = bot
 
-    async def choice_autocomplete(self, interaction: discord.Interaction, current: str, table: str, name: str, value: Optional[str], all: Optional[bool]) -> List[Choice]: 
+    async def choice_autocomplete(self, interaction: discord.Interaction, current: str, table: str, name: str, value: Optional[str], all: bool = False) -> List[Choice]: 
 
         '''
             :Actually yea. The data type of the value needs to match the annotation

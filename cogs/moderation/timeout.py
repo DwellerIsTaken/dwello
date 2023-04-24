@@ -8,7 +8,7 @@ import discord, datetime
 from contextlib import suppress
 
 from utils import BaseCog, member_check, HandleHTTPException
-from typing import Optional, Any
+from typing import Optional, Any, List
 
 async def tempmute(self, ctx: commands.Context, member: discord.Member, duration: int, period: Optional[str] = None, reason: Optional[str] = None) -> Optional[discord.Embed]:
 
@@ -62,7 +62,7 @@ class Timeout(BaseCog):
     def __init__(self, bot: commands.Bot, *args: Any, **kwargs: Any):
         super().__init__(bot, *args, **kwargs)
 
-    @commands.hybrid_command(name='mute', help="Mutes users whom are being dissidents. | Moderation ", with_app_command = True)
+    @commands.hybrid_command(name='mute', help="Mutes member.", with_app_command = True)
     @discord.app_commands.choices(period = [
         Choice(name="Seconds", value="seconds"), 
         Choice(name="Minutes", value="minutes"), 
@@ -107,7 +107,7 @@ class Timeout(BaseCog):
         else:
             raise error
 
-    @commands.hybrid_command(name='unmute', help="Unmutes users for good behaviour. | Moderation", with_app_command = True)
+    @commands.hybrid_command(name='unmute', help="Unmutes member.", with_app_command = True)
     @commands.bot_has_permissions(moderate_members = True)
     @commands.has_permissions(moderate_members = True)
     @commands.guild_only()
@@ -135,7 +135,7 @@ class Timeout(BaseCog):
     async def timed_out(self, ctx: commands.Context) -> Optional[discord.Embed]:
         async with ctx.typing(ephemeral=True):
 
-            timed_out_list = []
+            timed_out_list: List[discord.Member] = []
             reason_list = []
 
             member_updates = {}
