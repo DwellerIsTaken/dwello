@@ -12,3 +12,4 @@
 # SEPARATE FILE FOR OWNER COMMS
 # IF CHANNEL IS DELETED BY USER CHECK IF ITS IN DB, IF SO: UPDATE TO NULL
 # WHEN YOU REPLY TO SOMEONE WITH BOT COMMAND MAKE BOT REPLY TO THE PERSON YOU REPLIED TO INSTEAD OF YOU
+# contributor command which should only be used by owner that will add contibutor to contributors.txt

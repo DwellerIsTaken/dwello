@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import difflib
 import itertools
+import traceback
 
 from discord.ext import commands
 from discord import Interaction
@@ -70,8 +71,7 @@ class HelpCentre(discord.ui.View):
         )
         embed.add_field(
             name="`<argument>...` or `<argument...>`",
-            value="Means that this argument is __**required**__ and can take __**multiple entries**__"
-            "\nFor example: db.mass-mute @user1 @user2 @user3",
+            value="Means that this argument is __**required**__ and can take __**multiple entries**__",
             inline=False,
         )
         embed.add_field(
@@ -82,8 +82,8 @@ class HelpCentre(discord.ui.View):
         embed.set_footer(text="To continue browsing the help menu, press 🏠Go Back")
         embed.set_author(name="About this Help Command", icon_url=self.bot.user.display_avatar.url)
         self.embed = interaction.message.embeds[0]
-        self.add_item(discord.ui.Button(label="Support Server", url="https://discord.gg/TdRfGKg8Wh"))
-        self.add_item(
+        self.add_item(discord.ui.Button(label="Support Server", url="https://discord.gg/8FKNF8pC9u"))
+        '''self.add_item(
             discord.ui.Button(
                 label="Invite Me",
                 url=discord.utils.oauth_url(
@@ -92,7 +92,7 @@ class HelpCentre(discord.ui.View):
                     scopes=("applications.commands", "bot"),
                 ),
             )
-        )
+        )''' # Later
         await interaction.response.edit_message(embed=embed, view=self)
 
     async def interaction_check(self, interaction: Interaction) -> bool:
@@ -105,16 +105,15 @@ class HelpView(discord.ui.View):
 
     def __init__(
         self,
-        bot: commands.Bot,
         ctx: commands.Context,
         data: Dict[commands.Cog, List[commands.Command]], 
         help_command: commands.HelpCommand,
     ):
         super().__init__()
         self.ctx = ctx
+        self.bot: commands.Bot = self.ctx.bot
         self.data = data
         self.current_page = 0
-        self.bot: commands.Bot = bot
         self.help_command = help_command
         self.message: discord.Message = None
         self.main_embed = self.build_main_page()
@@ -140,15 +139,17 @@ class HelpView(discord.ui.View):
 
     def build_embeds(self, cog: commands.Cog) -> List[discord.Embed]:
         embeds = []
-        comm = cog.get_commands()
-        embed = discord.Embed(
-            title=f"{cog.qualified_name} commands [{len(comm)}]",
-            color=tv.color,
-            description=cog.description or "No description provided",
-        )
+        #comm = cog.get_commands()
+
         for cog_, comm in self.data.items():
             if cog_ != cog:
                 continue
+
+            embed = discord.Embed(
+                title=f"{cog.qualified_name} commands [{len(comm)}]",
+                color=tv.color,
+                description=cog.description or "No description provided",
+            )
 
             for cmd in comm:     
                 if cmd.extras.get("nsfw", False):
@@ -190,41 +191,41 @@ class HelpView(discord.ui.View):
     def build_main_page(self) -> discord.Embed:
         embed = discord.Embed(
             color=tv.color,
-            title="DuckBot Help Menu",
-            description="Hello, I'm DuckBot! A multi-purpose bot with a lot of features.",
+            title="Dwello Help Menu",
+            description="Hello, I'm Dwello! I'm still in development, but you can use me.",
         )
         embed.add_field(
             name="Getting Help",
             inline=False,
-            value="Use `db.help <command>` for more info on a command."
-            "\nThere is also `db.help <command> [subcommand]`."
-            "\nUse `db.help <category>` for more info on a category."
+            value="Use `$help <command>` for more info on a command."
+            "\nThere is also `$help <command> [subcommand]`."
+            "\nUse `$help <category>` for more info on a category."
             "\nYou can also use the menu below to view a category.",
         )
         embed.add_field(
             name="Getting Support",
             inline=False,
             value="To get help or __**suggest features**__, you can join my"
-            f"\nsupport server: **__<https://discord.gg/TdRfGKg8Wh>__**"
+            f"\nsupport server: **__<https://discord.gg/8FKNF8pC9u>__**"
             "\n📨 You can also DM me for help if you prefer to,"
             "\nbut please join the support server for suggestions.",
         )
         embed.add_field(
             name="Who Am I?",
             inline=False,
-            value=f"I'm DuckBot, a multipurpose bot created and maintained "
-            f"leoCx1000). You can use me to play games, moderate "
+            value=f"I'm Dwello, a multipurpose discordbot. You can use me to play games, moderate "
             f"\nyour server, mess with some images and more! Check out "
             f"\nall my features using the dropdown below.",
         )
         embed.add_field(
             name="Support DuckBot",
-            value="None",
+            value="Add patreon later.",
             inline=False,
         )
-        embed.set_footer(
-            text="For more info on the help command press ❓help",
-            icon_url="https://cdn.discordapp.com/emojis/895407958035431434.png",
+        embed.add_field(
+            name="\t",
+            value="Invaluable assistance: <:github:1100906448030011503> [LeoCx1000](https://github.com/leoCx1000).",
+            inline=False,
         )
         embed.set_author(name=self.bot.user.name, icon_url=self.bot.user.display_avatar.url)
         return embed
@@ -293,11 +294,29 @@ class MyHelp(commands.HelpCommand):
             "CommandErrorHandler", 
             "Other", "Jishaku",
         ]
-        mapping = {
-            cog: cog.get_commands()
-            for cog in sorted(bot.cogs.values(), key=lambda c: len(c.get_commands()), reverse=True)
-            if cog.qualified_name not in ignored_cogs
-        }
+        
+        mapping = {}
+            
+        for cog in sorted(bot.cogs.values(), key=lambda c: len(c.get_commands()), reverse=True):
+            if cog.qualified_name in ignored_cogs:
+                continue
+            
+            commands_list: List[commands.Command] = []
+            for command in cog.walk_commands():
+                if isinstance(command, commands.Group):
+                    subcommands = command.commands
+                    while isinstance(subcommands, list) and len(subcommands) == 1 and isinstance(subcommands[0], commands.Group):
+                        subcommands = subcommands[0].commands
+                    
+                    if isinstance(subcommands, list):
+                        commands_list.extend(subcommands)
+                    elif isinstance(subcommands, commands.Command):
+                        commands_list.append(subcommands)
+                else:
+                    commands_list.append(command)
+            
+            mapping[cog] = commands_list
+        
         return mapping
 
     def get_minimal_command_signature(self, command):
@@ -391,7 +410,7 @@ class MyHelp(commands.HelpCommand):
                 )
                 print(f"{command} failed to execute: {exc}")
         finally:
-            await self.context.send(embed=embed, footer=False)
+            await self.context.send(embed=embed)
 
     async def send_cog_help(self, cog):
         entries = cog.get_commands()
@@ -406,7 +425,7 @@ class MyHelp(commands.HelpCommand):
                 f"\n`[G]` means group, these have sub-commands."
                 f"\n`(C)` means command, these do not have sub-commands."
             )
-            await self.context.send(embed=embed, footer=False)
+            await self.context.send(embed=embed)
         else:
             await self.context.send(f"No commands found in {cog.qualified_name}")
 
@@ -426,7 +445,7 @@ class MyHelp(commands.HelpCommand):
             formatted = "\n".join([self.get_minimal_command_signature(c) for c in group.commands])
             embed.add_field(
                 name="Sub-commands for this command:",
-                value=f"```css\n{formatted}\n```**Do `{self.context.clean_prefix}help command subcommand` for more info on a sub-command**",
+                value=f"```css\n{formatted}\n```\n**Do `{self.context.clean_prefix}help command subcommand` for more info on a sub-command**",
                 inline=False,
             )
         # noinspection PyBroadException
@@ -482,7 +501,7 @@ class MyHelp(commands.HelpCommand):
     async def send_error_message(self, error):
         matches = difflib.get_close_matches(error, self.context.bot.cogs.keys())
         if matches:
-            confirm = await self.context.confirm(
+            '''confirm = await self.context.confirm(
                 message=f"Sorry but i couldn't recognise {error} as one of my categories!"
                 f"\n{f'**did you mean... `{matches[0]}`?**' if matches else ''}",
                 delete_after_confirm=True,
@@ -495,8 +514,14 @@ class MyHelp(commands.HelpCommand):
                 timeout=15,
             )
             if confirm is True:
-                return await self.send_cog_help(self.context.bot.cogs[matches[0]])
-            return
+                return await self.send_cog_help(self.context.bot.cogs[matches[0]])'''
+            return await self.context.send(embed=
+                discord.Embed(
+                description=
+                f"Sorry but i couldn't recognise {error} as one of my categories!"
+                f"\n{f'**did you mean... `{matches[0]}`?**' if matches else ''}"),
+                ephemeral=True
+            )
         else:
             command_names = []
             for command in [c for c in self.context.bot.commands]:
@@ -509,7 +534,7 @@ class MyHelp(commands.HelpCommand):
             command_names = list(itertools.chain.from_iterable(command_names))
             matches = difflib.get_close_matches(error, command_names)
             if matches:
-                confirm = await self.context.confirm(
+                '''confirm = await self.context.confirm(
                     message=f"Sorry but i couldn't recognise {error} as one of my commands!"
                     f"\n{f'**did you mean... `{matches[0]}`?**' if matches else ''}",
                     delete_after_confirm=True,
@@ -523,7 +548,14 @@ class MyHelp(commands.HelpCommand):
                 )
                 if confirm is True:
                     return await self.send_command_help(self.context.bot.get_command(matches[0]))
-                return
+                return'''
+                return await self.context.send(embed=
+                    discord.Embed(
+                    description=
+                    f"Sorry but i couldn't recognise {error} as one of my categories!"
+                    f"\n{f'**did you mean... `{matches[0]}`?**' if matches else ''}"),
+                    ephemeral=True
+                )
 
         await self.context.send(
             f'Sorry but i couldn\'t recognise "{discord.utils.remove_markdown(error)}" as one of my commands or categories!'
@@ -532,7 +564,7 @@ class MyHelp(commands.HelpCommand):
 
     async def on_help_command_error(self, ctx, error):
         if isinstance(error, commands.CommandInvokeError):
-            await ctx.send(embed=discord.Embed(description=str(error.original)))
+            await ctx.send(embed=discord.Embed(title=str(error.original),description=''.join(traceback.format_exception(error.__class__, error, error.__traceback__))))
 
 class About(BaseCog):
 
@@ -573,7 +605,7 @@ class About(BaseCog):
 
 class ManualHelp:
 
-    def __init__(self, bot: commands.Bot):
+    def __init__(self, bot: commands.Bot = None):
         self.bot: commands.Bot = bot
         self.ignored_cogs = ['CommandErrorHandler', 'Other', 'Jishaku']
 

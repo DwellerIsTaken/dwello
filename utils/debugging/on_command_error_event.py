@@ -11,9 +11,6 @@ class on_command_error():
     @commands.Cog.listener()
     async def on_command_error(self, ctx, error):
 
-        #if str(ctx.command.name).startswith('help'):
-            #return await ctx.channel.send("Did you mean `$info`?")
-
         if isinstance(error, commands.MissingPermissions):
             missing_permissions_embed = discord.Embed(title = "Permission Denied.", description = f"You (or the bot) don't have permission to use this command. It should have __*{error.missing_permissions}*__ permission(s) to be able to use this command.", color = discord.Color.random())
             missing_permissions_embed.set_image(url = '\n https://cdn-images-1.medium.com/max/833/1*kmsuUjqrZUkh_WW-nDFRgQ.gif')
