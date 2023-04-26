@@ -15,7 +15,7 @@ from typing import (Optional,
                     Dict
                 )
 
-from utils import BaseCog
+#from utils import BaseCog
 import text_variables as tv
 
 newline = "\n"
@@ -288,12 +288,10 @@ class MyHelp(commands.HelpCommand):
 
     def get_bot_mapping(self):
         """Retrieves the bot mapping passed to :meth:`send_bot_help`."""
-
         bot = self.context.bot
         ignored_cogs = [
             "CommandErrorHandler", 
-            "Jishaku",
-            "Other", 
+            "Other", "Jishaku",
         ]
         mapping = {
             cog: cog.get_commands()
@@ -316,7 +314,7 @@ class MyHelp(commands.HelpCommand):
         )
 
     # !help
-    async def send_bot_help(self, mapping: Dict[commands.Cog, List[commands.Command]]):
+    async def send_bot_help(self, mapping):
         view = HelpView(self.context, data=mapping, help_command=self)
         await view.start()
 
@@ -342,7 +340,7 @@ class MyHelp(commands.HelpCommand):
             await command.can_run(self.context)
         except BaseException as e:
             try:
-                if isinstance(e, commands.CheckAnyFailure):
+                if isinstance(e, discord.ext.commands.CheckAnyFailure):
                     for e in e.errors:
                         if not isinstance(e, commands.NotOwner):
                             raise e
