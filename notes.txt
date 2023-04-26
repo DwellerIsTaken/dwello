@@ -1,0 +1,103 @@
+from flask import Flask, request, render_template, jsonify, Response
+from flask_sqlalchemy import SQLAlchemy
+import hmac, hashlib, json, logging
+import requests, importlib
+
+app = Flask(__name__, template_folder='project/template')
+app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:////var/www/static-website/main.sqlite'
+app.app_context().push()
+db = SQLAlchemy(app)
+
+logger_path = '/var/log/app.log'
+previous_request = None
+
+logger = logging.getLogger('werkzeug')
+logger.setLevel(logging.DEBUG)
+handler = logging.FileHandler(logger_path)
+handler.setLevel(logging.DEBUG)
+formatter = logging.Formatter('%(asctime)s %(levelname)s %(message)s')
+handler.setFormatter(formatter)
+logger.addHandler(handler)
+
+class User(db.Model):
+    __tablename__ = 'users'
+    user_id = db.Column(db.BigInteger, primary_key=True)
+    guild_id = db.Column(db.BigInteger, primary_key=True)
+
+    xp = db.Column(db.BigInteger, default=0)
+    level = db.Column(db.BigInteger, default=1)
+    messages = db.Column(db.BigInteger, default=0)
+    total_xp = db.Column(db.BigInteger, default=0)
+
+    money = db.Column(db.Text, default=0)
+    worked = db.Column(db.BigInteger, default=0)
+
+    event_type = db.Column(db.Text)
+    job_id = db.Column(db.BigInteger)
+
+class Warning(db.Model):
+    __tablename__ = 'warnings'
+    user_id = db.Column(db.BigInteger, primary_key=True)
+    guild_id = db.Column(db.BigInteger, primary_key=True)
+
+    warn_id = db.Column(db.Integer, primary_key=True,autoincrement=True)
+    warn_text = db.Column(db.Text)
+    created_at = db.Column(db.TIMESTAMP)
+
+    warned_by = db.Column(db.BigInteger)
+
+class ServerData(db.Model):
+    __tablename__ = 'server_data'
+    guild_id = db.Column(db.BigInteger, primary_key=True)
+
+    message_text = db.Column(db.Text)
+    channel_id = db.Column(db.BigInteger)
+
+    event_type = db.Column(db.Text,primary_key=True)
+    deny_clicked = db.Column(db.Integer)
+
+class Job(db.Model):
+    __tablename__ = 'jobs'
+    guild_id = db.Column(db.BigInteger, primary_key=True)
+
+    name = db.Column(db.Text)
+    id = db.Column(db.Integer, primary_key=True,autoincrement=True)
+    salary = db.Column(db.BigInteger)
+    description = db.Column(db.Text)
+
+@app.route('/')
+def home():
+    users = User.query.all()
+    warnings = Warning.query.all()
+    server_data = ServerData.query.all()
+    jobs = Job.query.all()
+
+    return render_template('home.html', users=users, warnings=warnings,server_data=server_data, jobs=jobs)
+
+@app.route('/eventsub/callback', methods=['POST'])
+def eventsub_callback():
+    global previous_request
+    req_body = request.get_data()
+    if request.method == 'POST':
+        if req_body['subscription']['status'] == 'webhook_callback_verification_pending':
+            logger.info("Returned challenge: ", req_body['challenge'])
+            return req_body['challenge']
+
+        elif previous_request == req_body:
+            logger.info(previous_request, req_body)
+            return
+
+        else:
+            logger.info(req_body)
+            previous_request = req_body
+            json_payload = json.dumps(req_body)
+            headers = {'Content-type': 'application/json'}
+            return requests.post("http://localhost:8081/api/post", data=json_payload, headers=headers)
+
+@app.errorhandler(404)
+def page_not_found(e):
+    return "The requested URL was not found on the server. You tried to access: {}".format(request.url), 404
+
+if __name__ == "__main__":
+    db.create_all()
+    app.run(host='0.0.0.0', port=8080, debug=True)

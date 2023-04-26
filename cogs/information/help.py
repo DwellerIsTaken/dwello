@@ -15,13 +15,13 @@ from typing import (Optional,
                     Dict
                 )
 
-#from utils import BaseCog
+from utils import BaseCog
 import text_variables as tv
 
 newline = "\n"
 
-async def setup(bot: commands.Bot):
-    await bot.add_cog(About(bot))
+'''async def setup(bot: commands.Bot):
+    await bot.add_cog(About(bot))'''
 
 class HelpCentre(discord.ui.View):
     def __init__(
@@ -534,7 +534,24 @@ class MyHelp(commands.HelpCommand):
         if isinstance(error, commands.CommandInvokeError):
             await ctx.send(embed=discord.Embed(description=str(error.original)))
 
-class About(commands.Cog):
+class About(BaseCog):
+
+    def __init__(self, bot: commands.Bot, *args: Any, **kwargs: Any):
+        super().__init__(bot, *args, **kwargs)
+        
+        help_command = MyHelp()
+        help_command.command_attrs = {
+            "help": "Shows help about a command or category, it can also display other useful information, such as "
+            "examples on how to use the command, or special syntax that can be used for a command, for example, "
+            "in the `welcome message` command, it shows all available special tags.",
+            "name": "help",
+        }
+        help_command.cog = self
+        bot.help_command = help_command
+        self.select_emoji = '<:info:895407958035431434>'
+        self.select_brief = "Bot Information commands."
+
+'''class About(commands.Cog):
     """
     😮 Commands related to the bot itself, that have the only purpose to show information.
     """
@@ -552,7 +569,7 @@ class About(commands.Cog):
         help_command.cog = self
         bot.help_command = help_command
         self.select_emoji = '<:info:895407958035431434>'
-        self.select_brief = "Bot Information commands."
+        self.select_brief = "Bot Information commands."'''
 
 class ManualHelp:
 

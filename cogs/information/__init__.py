@@ -2,11 +2,11 @@ from __future__ import annotations
 
 from discord.ext import commands
 
-#from .help import About
+from .help import About
 from .weather import Weather
 from .user_info import UserInfo
 
-class Information(UserInfo, Weather, name="Information"):
+class Information(About, UserInfo, Weather, name="Information"):
     """
     📚 Includes commands and tools that provide information to users, such as server and user statistics, weather updates, news feeds, and other relevant information.
     """

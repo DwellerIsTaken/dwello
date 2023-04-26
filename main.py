@@ -2,7 +2,7 @@ from dotenv import load_dotenv
 load_dotenv()
 
 import sys, typing, os
-import asyncio, discord, logging, matplotlib, requests, colorthief, aiohttp, asyncpg, setuptools
+import asyncio, discord, logging
 from utils import add_requirements, create_pool, AiohttpWeb, LevellingUtils, Twitch
 from text_variables import bot_reply_list
 from discord.ext import commands
