@@ -29,7 +29,7 @@ async def on_ready():
     bot_reply_list.append(f"**Stop it!** - asked {bot.user.name} calmly.",)
     await bot.tree.sync(guild=discord.Object(690995360411156531))
     
-    bot.jobs_data = await bot.db.fetch_job_data()
+    bot.jobs_data = await bot.db.fetch_job_data() # check it | probably remove
 
     print('Python version:', sys.version)
     print('{0} is online'.format(bot.user.name))

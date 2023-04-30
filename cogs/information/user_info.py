@@ -102,10 +102,11 @@ class UserInfo(BaseCog):
     '''@commands.hybrid_command(name = 'rank', description="Shows your rank or another member's rank.",with_app_command=True) 
     async def rank(self, ctx: commands.Context, member: Optional[Union[discord.Member, discord.User]] = commands.Author):
         async with ctx.typing():
-            async with self.bot.pool.acquire() as conn:
+            async with self.pool.acquire() as conn:
+                conn: asyncpg.Connection
                 async with conn.transaction():
 
-                    rank = await levelling.get_rank(member.id, member.guild.id) # use random: create a file with random number with 9 digits, after the file is used add to a list, so it won't be used again
+                    rank = await self.levelling.get_rank(member.id, member.guild.id) # use random: create a file with random number with 9 digits, after the file is used add to a list, so it won't be used again
 
                     with open("avatar.png", "w") as file:
 

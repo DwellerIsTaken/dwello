@@ -1,9 +1,19 @@
 import matplotlib.colors as clr
 from colorthief import ColorThief
 from typing import Optional, Tuple
+from colour import Color
 from io import BytesIO
 import discord
 import PIL
+
+'''# probably doesnt work
+def get_opposite_hex(hex_color):
+    color = Color(hex_color)
+    opposite = color.complementary()
+    return opposite.hex_l
+
+opposite_color = get_opposite_hex('#FFFFFF')  # provide hex code for white
+print(opposite_color)  # prints "#000000", which is the hex code for black'''
 
 # DEFAULT IMAGES DONT WORK
 async def get_avatar_dominant_color(member: Optional[discord.Member]) -> Optional[discord.Colour]:
