@@ -56,11 +56,11 @@ class LevellingUtils:
 
                     #async with suppress(discord.HTTPException): await message.author.send(embed=level_embed)
 
-                    try:
+                    '''try:
                         await message.author.send(embed=level_embed)
 
                     except discord.HTTPException:
-                        pass
+                        pass'''
 
                     await conn.execute(
                         "UPDATE users SET xp = $1, total_xp = $2, level = $3, messages = $4 WHERE user_id = $5 AND guild_id = $6",
