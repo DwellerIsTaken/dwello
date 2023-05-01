@@ -28,6 +28,9 @@ class Weather(BaseCog):
     async def weather(self, ctx: commands.Context, *, city: str) -> Optional[discord.Message]:
         async with ctx.typing(ephemeral=True):
 
+            if not city:
+                return await ctx.reply("Please provide a city or a contry.", mention_author=True, ephemeral=True)
+
             key = os.getenv('weather_key')
             args = city.lower()
 

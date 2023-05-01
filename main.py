@@ -130,7 +130,5 @@ asyncio.run(main())
 # global/local leaderboards
 # make cooldowns
 # PUT ALL ERROR HANDLER IN ONE FILE | fucking organize it already
-# do subclassing (subcogging)
 # from easypil to PIL
-# cannot install easypil
 #

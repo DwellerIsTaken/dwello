@@ -40,7 +40,7 @@ class ListenersFunctions:
 
                 result = await conn.fetchrow("SELECT channel_id FROM server_data WHERE guild_id = $1 AND event_type = $2", member.guild.id, name)
 
-                if (result[0] if result else None) is None:   
+                if not (result[0] if result else None):   
                     return
 
                 send_channel = discord.utils.get(member.guild.channels, id=int(result[0]))
@@ -51,8 +51,8 @@ class ListenersFunctions:
 
                 if str(name) == 'welcome':
                     member_welcome_embed = discord.Embed(title = "You have successfully joined the guild!", description = f"```Guild joined: {guild.name}\nMember joined: {member}\nGuild id: {guild.id}\nMember id: {member.id}```", color = discord.Color.random())
-                    member_welcome_embed.set_thumbnail(url=guild.icon.url if guild.icon is not None else self.bot.user.display_avatar.url)
-                    member_welcome_embed.set_author(name=member.name, icon_url=member.display_avatar.url if member.display_avatar is not None else self.bot.user.display_avatar.url)
+                    member_welcome_embed.set_thumbnail(url=guild.icon.url if guild.icon else self.bot.user.display_avatar.url)
+                    member_welcome_embed.set_author(name=member.name, icon_url=member.display_avatar.url if member.display_avatar else self.bot.user.display_avatar.url)
                     member_welcome_embed.set_footer(text=tv.footer)
                     member_welcome_embed.timestamp = discord.utils.utcnow()
 
@@ -62,23 +62,23 @@ class ListenersFunctions:
                     except discord.HTTPException as e:
                         print(e)
 
-                    if second_result[0] is None:
+                    if not second_result[0]:
                         _message = f"You are the __*{len(list(member.guild.members))}th*__ user on this server. \nI hope that you will enjoy your time on this server. Have a good day!"
 
                     _title = f"Welcome to {member.guild.name}!"
 
                 elif str(name) == 'leave':
-                    if second_result[0] is None:
+                    if not second_result[0]:
                         _message = "If you left, you had a reason to do so. Farewell, dweller!"
 
                     _title = f"Goodbye {member}!"
 
-                if second_result[0] is not None:
+                if second_result[0]:
                     _message = Template(second_result[0]).safe_substitute(members=len(list(member.guild.members)),mention=member.mention,user=member.name,guild=member.guild.name,space="\n")
 
                 _embed = discord.Embed(title = _title, description =  _message, color = discord.Color.random())
-                _embed.set_thumbnail(url= member.display_avatar.url if member.display_avatar is not None else self.bot.user.display_avatar.url)
-                _embed.set_author(name= member.name, icon_url= member.display_avatar.url if member.display_avatar is not None else self.bot.user.display_avatar.url)
+                _embed.set_thumbnail(url= member.display_avatar.url if member.display_avatar else self.bot.user.display_avatar.url)
+                _embed.set_author(name= member.name, icon_url= member.display_avatar.url if member.display_avatar else self.bot.user.display_avatar.url)
                 _embed.set_footer(text=tv.footer)
                 _embed.timestamp = discord.utils.utcnow()
 

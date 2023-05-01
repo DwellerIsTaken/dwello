@@ -16,7 +16,7 @@ from typing import (Optional,
                     Dict
                 )
 
-from utils import BaseCog
+from utils import BaseCog, CustomContext
 import text_variables as tv
 
 newline = "\n"
@@ -28,7 +28,7 @@ class HelpCentre(discord.ui.View):
     def __init__(
         self, 
         bot: commands.Bot,
-        ctx: commands.Context, 
+        ctx: CustomContext, 
         other_view: discord.ui.View
     ):
         super().__init__()
@@ -105,7 +105,7 @@ class HelpView(discord.ui.View):
 
     def __init__(
         self,
-        ctx: commands.Context,
+        ctx: CustomContext,
         data: Dict[commands.Cog, List[commands.Command]], 
         help_command: commands.HelpCommand,
     ):
@@ -285,7 +285,7 @@ class HelpView(discord.ui.View):
 class MyHelp(commands.HelpCommand):
     def __init__(self, **options):
         super().__init__(**options)
-        self.context: commands.Context = None
+        self.context: CustomContext = None
 
     def get_bot_mapping(self):
         """Retrieves the bot mapping passed to :meth:`send_bot_help`."""
@@ -501,7 +501,7 @@ class MyHelp(commands.HelpCommand):
     async def send_error_message(self, error):
         matches = difflib.get_close_matches(error, self.context.bot.cogs.keys())
         if matches:
-            '''confirm = await self.context.confirm(
+            confirm = await self.context.confirm(
                 message=f"Sorry but i couldn't recognise {error} as one of my categories!"
                 f"\n{f'**did you mean... `{matches[0]}`?**' if matches else ''}",
                 delete_after_confirm=True,
@@ -514,14 +514,8 @@ class MyHelp(commands.HelpCommand):
                 timeout=15,
             )
             if confirm is True:
-                return await self.send_cog_help(self.context.bot.cogs[matches[0]])'''
-            return await self.context.send(embed=
-                discord.Embed(
-                description=
-                f"Sorry but i couldn't recognise {error} as one of my categories!"
-                f"\n{f'**did you mean... `{matches[0]}`?**' if matches else ''}"),
-                ephemeral=True
-            )
+                return await self.send_cog_help(self.context.bot.cogs[matches[0]])
+            return
         else:
             command_names = []
             for command in [c for c in self.context.bot.commands]:
@@ -534,7 +528,7 @@ class MyHelp(commands.HelpCommand):
             command_names = list(itertools.chain.from_iterable(command_names))
             matches = difflib.get_close_matches(error, command_names)
             if matches:
-                '''confirm = await self.context.confirm(
+                confirm = await self.context.confirm(
                     message=f"Sorry but i couldn't recognise {error} as one of my commands!"
                     f"\n{f'**did you mean... `{matches[0]}`?**' if matches else ''}",
                     delete_after_confirm=True,
@@ -548,14 +542,7 @@ class MyHelp(commands.HelpCommand):
                 )
                 if confirm is True:
                     return await self.send_command_help(self.context.bot.get_command(matches[0]))
-                return'''
-                return await self.context.send(embed=
-                    discord.Embed(
-                    description=
-                    f"Sorry but i couldn't recognise {error} as one of my categories!"
-                    f"\n{f'**did you mean... `{matches[0]}`?**' if matches else ''}"),
-                    ephemeral=True
-                )
+                return
 
         await self.context.send(
             f'Sorry but i couldn\'t recognise "{discord.utils.remove_markdown(error)}" as one of my commands or categories!'
