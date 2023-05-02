@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from discord.ext import commands
+from bot import Dwello
 
 class Entertainment(name="Entertainment"):
     """
@@ -13,5 +13,5 @@ class Entertainment(name="Entertainment"):
         self.select_emoji = "🎲"
         self.select_brief = "Commands for providing entertainment and recreational features."
 
-async def setup(bot: commands.Bot):
+async def setup(bot: Dwello):
     await bot.add_cog(Entertainment(bot))

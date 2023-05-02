@@ -15,9 +15,13 @@ from discord.ext.commands.errors import BadArgument
 
 from typing import Union, Optional, Sequence, Any, TYPE_CHECKING
 
-target_type = Union[discord.Member, discord.User, discord.PartialEmoji, discord.Guild, discord.Invite]
+if TYPE_CHECKING:
+    from bot import Dwello 
+    
+else:
+    from discord.ext.commands import Bot as Dwello
 
-from discord.ext.commands import Bot
+target_type = Union[discord.Member, discord.User, discord.PartialEmoji, discord.Guild, discord.Invite]
 
 def cleanup_code(content):
     """Automatically removes code blocks from the code."""
@@ -60,7 +64,7 @@ class Confirm(discord.ui.View):
         super().__init__(timeout=timeout)
         self.message = None
         self.value = None
-        self.ctx: CustomContext = None
+        self.ctx: DwelloContext = None
         self.add_item(
             ConfirmButton(
                 emoji=buttons[0][0],
@@ -98,8 +102,8 @@ class Confirm(discord.ui.View):
 
         return False
 
-class CustomContext(commands.Context):
-    bot: Bot
+class DwelloContext(commands.Context):
+    bot: Dwello
     guild: discord.Guild
     me: discord.Member
 
@@ -118,11 +122,9 @@ class CustomContext(commands.Context):
         files: Optional[Sequence[discord.file.File]] = None,
         reference: Optional[Union[discord.Message, discord.MessageReference, discord.PartialMessage]] = None,
         mention_author: Optional[bool] = None,
+        ephemeral: bool = False,
         **kwargs,
     ) -> discord.Message:
-
-        if reminders is True:
-            reminders = random.randint(0, 200) == 100
 
         if embed and embeds:
             raise BadArgument("cannot pass both embed and embeds parameter to send()")
@@ -136,38 +138,50 @@ class CustomContext(commands.Context):
             if self.bot.http.token in test_string.replace("\u200b", "").replace(" ", ""):
                 raise commands.BadArgument("Could not send message as it contained the bot's token!")
 
-        if embed:
+        '''if embed:
             colors = {embed.color} - {discord.Color.default(), None}
-            embed.colour = next(iter(colors), self.color)
+            embed.colour = next(iter(colors), self.color)'''
 
         embeds = [embed] if embed else (embeds or [])
 
         return await super().send(
             content=content,
-            embed=embed,
             embeds=embeds,
             file=file,
             files=files,
             reference=reference,
             mention_author=mention_author,
+            ephemeral=ephemeral,
             **kwargs
         )
     
         '''except discord.HTTPException:
             return await super().send(content=content, embeds=embeds, reference=None, mention_author=mention_author, file=file, **kwargs)
         '''
-    async def reply(self, content: Optional[str] = None, mention_reference_author: Optional[bool] = True, **kwargs: Any) -> discord.Message:
+    async def reply(
+        self, 
+        content: Optional[str] = None, 
+        *,
+        ephemeral: Optional[bool] = False,
+        mention_author: Optional[bool] = None,
+        mention_reference_author: Optional[bool] = True, 
+        **kwargs: Any
+    ) -> discord.Message:
 
-        message_: discord.Message = self.message
-        reference_: discord.MessageReference = self.message.reference
-        if reference_ and mention_reference_author is True:
-            message_ = reference_.resolved
-            mention = True if message_.author in self.message.mentions else False
+        mention: bool = False
+        message: discord.Message = self.message
+        reference: discord.MessageReference = self.message.reference
+        if reference and mention_reference_author is True:
+            message = reference.resolved
+            mention = True if message.author in self.message.mentions else False
 
+        if mention_author:
+            mention = mention_author
+            
         if not self.interaction:
-            return await self.send(content, reference=self.message, mention_author=mention, **kwargs)
+            return await self.send(content, reference=self.message, mention_author=mention, ephemeral=ephemeral, **kwargs)
         else:
-            return await self.send(content, mention_author=mention, **kwargs)
+            return await self.send(content, mention_author=mention, ephemeral=ephemeral, **kwargs)
 
     async def confirm(
         self,

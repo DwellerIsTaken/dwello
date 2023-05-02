@@ -7,10 +7,11 @@ import discord, datetime
 
 from contextlib import suppress
 
-from utils import BaseCog, member_check, HandleHTTPException
+from utils import BaseCog, member_check, HandleHTTPException, DwelloContext
 from typing import Optional, Any, List
+from bot import Dwello
 
-async def tempmute(self, ctx: commands.Context, member: discord.Member, duration: int, period: Optional[str] = None, reason: Optional[str] = None) -> Optional[discord.Embed]:
+async def tempmute(self, ctx: DwelloContext, member: discord.Member, duration: int, period: Optional[str] = None, reason: Optional[str] = None) -> Optional[discord.Embed]:
 
     time_period_dict = {
         "seconds": "seconds",
@@ -59,7 +60,7 @@ async def tempmute(self, ctx: commands.Context, member: discord.Member, duration
 
 class Timeout(BaseCog):
 
-    def __init__(self, bot: commands.Bot, *args: Any, **kwargs: Any):
+    def __init__(self, bot: Dwello, *args: Any, **kwargs: Any):
         super().__init__(bot, *args, **kwargs)
 
     @commands.hybrid_command(name='mute', help="Mutes member.", with_app_command = True)
@@ -73,7 +74,7 @@ class Timeout(BaseCog):
     @commands.bot_has_permissions(moderate_members = True)
     @commands.has_permissions(moderate_members = True)
     @commands.guild_only()
-    async def mute(self, ctx: commands.Context, member: discord.Member, duration: int, period: Optional[Choice[str]], *, reason=None) -> None:
+    async def mute(self, ctx: DwelloContext, member: discord.Member, duration: int, period: Optional[Choice[str]], *, reason=None) -> None:
         async with ctx.typing(ephemeral=True):
 
             return await tempmute(self, ctx, member, duration, period, reason)
@@ -111,7 +112,7 @@ class Timeout(BaseCog):
     @commands.bot_has_permissions(moderate_members = True)
     @commands.has_permissions(moderate_members = True)
     @commands.guild_only()
-    async def unmute(self, ctx: commands.Context, member: discord.Member) -> Optional[discord.Embed]:
+    async def unmute(self, ctx: DwelloContext, member: discord.Member) -> Optional[discord.Embed]:
         async with ctx.typing(ephemeral=True):
 
             if member.id == self.bot.user.id:
@@ -132,7 +133,7 @@ class Timeout(BaseCog):
     @commands.bot_has_permissions(view_audit_log = True)
     #@commands.has_permissions(moderate_members = True)
     @commands.guild_only()
-    async def timed_out(self, ctx: commands.Context) -> Optional[discord.Embed]:
+    async def timed_out(self, ctx: DwelloContext) -> Optional[discord.Embed]:
         async with ctx.typing(ephemeral=True):
 
             timed_out_list: List[discord.Member] = []

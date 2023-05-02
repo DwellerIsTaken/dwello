@@ -3,14 +3,21 @@ from __future__ import annotations
 from discord.ext import commands
 import discord, asyncpg
 
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from bot import Dwello 
+    
+else:
+    from discord.ext.commands import Bot as Dwello
+
 class OtherUtils:
 
-    def __init__(self, bot: commands.Bot) -> None:
-        self.bot: commands.Bot = bot
-        self.pool: asyncpg.Pool = self.bot.pool
+    def __init__(self, bot: Dwello) -> None:
+        self.bot = bot
 
     async def exe_sql(self, guild: discord.Guild) -> None:
-        async with self.pool.acquire() as conn:
+        async with self.bot.pool.acquire() as conn:
             conn: asyncpg.Connection
             async with conn.transaction():
 

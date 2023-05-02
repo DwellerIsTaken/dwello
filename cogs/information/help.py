@@ -13,28 +13,29 @@ from typing import (Optional,
                     Union, 
                     Any, 
                     List, 
-                    Dict
+                    Dict, 
+                    TYPE_CHECKING,
                 )
 
-from utils import BaseCog, CustomContext
+from utils import BaseCog, DwelloContext
 import text_variables as tv
+from bot import Dwello
 
 newline = "\n"
 
-'''async def setup(bot: commands.Bot):
-    await bot.add_cog(About(bot))'''
+async def setup(bot: Dwello):
+    await bot.add_cog(About(bot))
 
 class HelpCentre(discord.ui.View):
     def __init__(
-        self, 
-        bot: commands.Bot,
-        ctx: CustomContext, 
+        self,
+        ctx: DwelloContext, 
         other_view: discord.ui.View
     ):
         super().__init__()
         self.embed = None
         self.ctx = ctx
-        self.bot: commands.Bot = bot
+        self.bot: Dwello = self.ctx.bot
         self.other_view = other_view
 
     @discord.ui.button(emoji="🏠", label="Go Back", style=discord.ButtonStyle.blurple)
@@ -105,13 +106,13 @@ class HelpView(discord.ui.View):
 
     def __init__(
         self,
-        ctx: CustomContext,
+        ctx: DwelloContext,
         data: Dict[commands.Cog, List[commands.Command]], 
         help_command: commands.HelpCommand,
     ):
         super().__init__()
         self.ctx = ctx
-        self.bot: commands.Bot = self.ctx.bot
+        self.bot: Dwello = self.ctx.bot
         self.data = data
         self.current_page = 0
         self.help_command = help_command
@@ -232,7 +233,7 @@ class HelpView(discord.ui.View):
 
     @button(emoji="❓", label="help", row=1, style=discord.ButtonStyle.green)
     async def help(self, interaction: Interaction, _):
-        view = HelpCentre(self.bot, self.ctx, self)
+        view = HelpCentre(self.ctx, self)
         await view.start(interaction)
 
     @button(label="<", row=1)
@@ -285,7 +286,7 @@ class HelpView(discord.ui.View):
 class MyHelp(commands.HelpCommand):
     def __init__(self, **options):
         super().__init__(**options)
-        self.context: CustomContext = None
+        self.context: DwelloContext = None
 
     def get_bot_mapping(self):
         """Retrieves the bot mapping passed to :meth:`send_bot_help`."""
@@ -359,7 +360,7 @@ class MyHelp(commands.HelpCommand):
             await command.can_run(self.context)
         except BaseException as e:
             try:
-                if isinstance(e, discord.ext.commands.CheckAnyFailure):
+                if isinstance(e, commands.CheckAnyFailure):
                     for e in e.errors:
                         if not isinstance(e, commands.NotOwner):
                             raise e
@@ -412,7 +413,7 @@ class MyHelp(commands.HelpCommand):
         finally:
             await self.context.send(embed=embed)
 
-    async def send_cog_help(self, cog):
+    async def send_cog_help(self, cog: commands.Cog):
         entries = cog.get_commands()
         if entries:
             data = [self.get_minimal_command_signature(entry) for entry in entries]
@@ -429,7 +430,7 @@ class MyHelp(commands.HelpCommand):
         else:
             await self.context.send(f"No commands found in {cog.qualified_name}")
 
-    async def send_group_help(self, group):
+    async def send_group_help(self, group: commands.Group):
         embed = discord.Embed(
             title=f"information about: `{self.context.clean_prefix}{group}`",
             description="**Description:**\n"
@@ -555,7 +556,7 @@ class MyHelp(commands.HelpCommand):
 
 class About(BaseCog):
 
-    def __init__(self, bot: commands.Bot, *args: Any, **kwargs: Any):
+    def __init__(self, bot: Dwello, *args: Any, **kwargs: Any):
         super().__init__(bot, *args, **kwargs)
         
         help_command = MyHelp()
@@ -576,8 +577,7 @@ class About(BaseCog):
     """
 
     def __init__(self, bot):
-        #self.bot: commands.Bot = bot
-        
+        self.bot: Dwello = bot
         help_command = MyHelp()
         help_command.command_attrs = {
             "help": "Shows help about a command or category, it can also display other useful information, such as "
@@ -588,12 +588,13 @@ class About(BaseCog):
         help_command.cog = self
         bot.help_command = help_command
         self.select_emoji = '<:info:895407958035431434>'
-        self.select_brief = "Bot Information commands."'''
+        self.select_brief = "Bot Information commands."
+        print(' yyyyyyyyyyyyyyyyyyyyyyyyYYYYYYY')'''
 
 class ManualHelp:
 
-    def __init__(self, bot: commands.Bot = None):
-        self.bot: commands.Bot = bot
+    def __init__(self, bot: Dwello = None):
+        self.bot = bot
         self.ignored_cogs = ['CommandErrorHandler', 'Other', 'Jishaku']
 
     def get_bot_cog_structure_as_dict(self) -> Dict[str, Dict[str, Union[None, str, Dict[str, Union[None, str]]]]]:

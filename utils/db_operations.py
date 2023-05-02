@@ -2,20 +2,21 @@ import asyncpg, os
 import text_variables as tv
 from discord.ext import commands
 
-from typing import Literal, List, Dict, Any
+from typing import Literal, List, Dict, Any, TYPE_CHECKING
 
-async def create_pool() -> asyncpg.Pool: # ADD SSH KEY CONNECTION
-    pool = await asyncpg.create_pool(database= os.getenv('pg_name'), user= os.getenv('pg_username'), password= os.getenv('pg_password'), host= tv.host, port= tv.port)
-    return pool
+if TYPE_CHECKING:
+    from bot import Dwello 
+    
+else:
+    from discord.ext.commands import Bot as Dwello
 
 class DB_Operations:
 
-    def __init__(self, bot: commands.Bot):
-        self.bot: commands.Bot = bot
-        self.pool: asyncpg.Pool = self.bot.pool
+    def __init__(self, bot: Dwello):
+        self.bot = bot
     
     async def create_tables(self) -> None:
-        async with self.pool.acquire() as conn:
+        async with self.bot.pool.acquire() as conn:
             conn: asyncpg.Connection
             async with conn.transaction():
                 with open("schema.sql", "r") as f:
@@ -24,7 +25,7 @@ class DB_Operations:
                 return await conn.execute(tables)
     
     async def fetch_data(self) -> dict:
-        async with self.pool.acquire() as conn:
+        async with self.bot.pool.acquire() as conn:
             conn: asyncpg.Connection
             async with conn.transaction():
                 
@@ -54,7 +55,7 @@ class DB_Operations:
         return all_data
     
     async def fetch_table_data(self, *tables: Literal["jobs", "users", "warnings", "server_data", "twitch_users"]) -> List[Dict[str, Any]]: # not sure annotation is correct
-        async with self.pool.acquire() as conn:
+        async with self.bot.pool.acquire() as conn:
             conn: asyncpg.Connection
             async with conn.transaction():
                 for table in tables:
@@ -65,7 +66,7 @@ class DB_Operations:
         return [].extend(data)
 
     async def fetch_job_data(self) -> dict: # remove later
-        async with self.pool.acquire() as conn:
+        async with self.bot.pool.acquire() as conn:
             conn: asyncpg.Connection
             async with conn.transaction():
 

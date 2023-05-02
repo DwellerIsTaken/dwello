@@ -7,6 +7,7 @@ from typing import Tuple, Optional, Dict, List, Generator, Any, TYPE_CHECKING, T
 
 import discord
 
+#copy Leos latest
 #__all__: Tuple[str, ...] = ('HandleHTTPException')
 
 class HandleHTTPException(AbstractAsyncContextManager, AbstractContextManager):

@@ -5,20 +5,21 @@ from discord.ext import commands
 import text_variables as tv
 import asyncpg, discord, os
 
-from typing import Optional, Literal
+from typing import Optional, Literal, TYPE_CHECKING
 from string import Template
 
-from .other import OtherUtils
+if TYPE_CHECKING:
+    from bot import Dwello 
+    
+else:
+    from discord.ext.commands import Bot as Dwello
 
 class ListenersFunctions:
-    def __init__(self, bot: commands.Bot):
-        self.bot: commands.Bot = bot
-        self.ou: OtherUtils = OtherUtils(self.bot)
-
-        self.pool: asyncpg.Pool = self.bot.pool
+    def __init__(self, bot: Dwello):
+        self.bot = bot
 
     async def bot_join(self, guild: discord.Guild) -> None:
-        async with self.pool.acquire() as conn:
+        async with self.bot.pool.acquire() as conn:
             conn: asyncpg.Connection
             async with conn.transaction():
 
@@ -30,11 +31,11 @@ class ListenersFunctions:
                 # ADD SOME WELCOME MESSAGE FROM BOT OR SMTH
 
     async def join_leave_event(self, member: discord.Member, name: Literal["welcome", "leave"]) -> Optional[discord.Message]:
-        async with self.pool.acquire() as conn:
+        async with self.bot.pool.acquire() as conn:
             conn: asyncpg.Connection
             async with conn.transaction():
 
-                await self.ou.exe_sql(member.guild)
+                await self.bot.otherutils.exe_sql(member.guild)
 
                 # adjust counters too in this event
 

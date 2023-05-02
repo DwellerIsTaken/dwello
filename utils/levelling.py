@@ -3,24 +3,30 @@ from __future__ import annotations
 import asyncpg, discord, string, os
 from contextlib import suppress
 from discord.ext import commands
-from typing import List, Dict, Any, Optional
+from typing import List, Dict, Any, Optional, TYPE_CHECKING
+
 import text_variables as tv
+
+if TYPE_CHECKING:
+    from bot import Dwello 
+    
+else:
+    from discord.ext.commands import Bot as Dwello
 
 class LevellingUtils:
 
-    def __init__(self, bot: commands.Bot):
-        self.bot: commands.Bot = bot
-        self.pool: asyncpg.Pool = self.bot.pool
+    def __init__(self, bot: Dwello):
+        self.bot = bot
 
     async def create_user(self, user_id: Optional[int], guild_id: Optional[int]) -> None:
-        async with self.pool.acquire() as conn:
+        async with self.bot.pool.acquire() as conn:
             conn: asyncpg.Connection
             async with conn.transaction():
 
                 await conn.execute("INSERT INTO users(user_id, guild_id, event_type) VALUES($1, $2, 'server'), ($1, $2, 'bot') ON CONFLICT (user_id, guild_id, event_type) DO NOTHING", user_id, guild_id)
 
     async def increase_xp(self, message: discord.Message, rate: int = 5) -> None:
-        async with self.pool.acquire() as conn:
+        async with self.bot.pool.acquire() as conn:
             conn: asyncpg.Connection
             async with conn.transaction():
                 if message.author.bot or not message.guild:
@@ -73,7 +79,7 @@ class LevellingUtils:
                 )
 
     async def get_user_data(self, user_id: Optional[discord.Member.id] = int, guild_id: Optional[discord.Guild.id] = int) -> List[Dict[str, Any]]:
-        async with self.pool.acquire() as conn:
+        async with self.bot.pool.acquire() as conn:
             conn: asyncpg.Connection
             async with conn.transaction():
 
@@ -86,9 +92,8 @@ class LevellingUtils:
 
         return results
 
-
     async def get_rank(self, user_id: Optional[discord.Member.id] = int, guild_id: Optional[discord.Guild.id] = int) -> Optional[int]:
-        async with self.pool.acquire() as conn:
+        async with self.bot.pool.acquire() as conn:
             conn: asyncpg.Connection
             async with conn.transaction():
 

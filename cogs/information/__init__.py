@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from discord.ext import commands
+from bot import Dwello
 
 from .help import About
 from .weather import Weather
@@ -16,5 +16,5 @@ class Information(About, UserInfo, Weather, name="Information"):
         self.select_emoji = "📚"
         self.select_brief = "Commands for providing information and data to users."
 
-async def setup(bot: commands.Bot):
+async def setup(bot: Dwello):
     await bot.add_cog(Information(bot))

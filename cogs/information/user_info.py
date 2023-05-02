@@ -10,22 +10,19 @@ from PIL import Image, ImageFont
 #from easy_pil import Editor, Canvas, load_image_async, Font
 import requests
 import io
-from utils.economy import GuildEcoUtils
+from cogs.economy.guild_eco import GuildEcoUtils
 import text_variables as tv
 from typing import Optional, Union, Any
-from utils import get_avatar_dominant_color, BaseCog
+from utils import get_avatar_dominant_color, BaseCog, DwelloContext
+from bot import Dwello
 
 class UserInfo(BaseCog):
 
-    def __init__(self, bot: commands.Bot, *args: Any, **kwargs: Any):
+    def __init__(self, bot: Dwello, *args: Any, **kwargs: Any):
         super().__init__(bot, *args, **kwargs)
-        self.levelling: LevellingUtils = LevellingUtils(self.bot)
-        self.ge: GuildEcoUtils = GuildEcoUtils(self.bot)
-
-        self.pool: asyncpg.Pool = self.bot.pool
 
     @commands.hybrid_command(name = 'stats', description="Shows personal information and rank statistics",with_app_command=True) 
-    async def stats(self, ctx: commands.Context, member: Optional[Union[discord.Member, discord.User]] = commands.Author) -> Optional[discord.Message]:
+    async def stats(self, ctx: DwelloContext, member: Optional[Union[discord.Member, discord.User]] = commands.Author) -> Optional[discord.Message]:
         async with ctx.typing(ephemeral=True):
             async with self.pool.acquire() as conn:
                 conn: asyncpg.Connection

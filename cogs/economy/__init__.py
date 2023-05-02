@@ -1,7 +1,9 @@
-from discord.ext import commands
+from __future__ import annotations
 
 from .bot_eco import Bot_Economy
 from .guild_eco import Guild_Economy
+
+from bot import Dwello
 
 class Economy(Bot_Economy, Guild_Economy, name="Economy"):
     """
@@ -13,5 +15,5 @@ class Economy(Bot_Economy, Guild_Economy, name="Economy"):
         self.select_emoji = "💸"
         self.select_brief = "Commands for managing an economy system."
 
-async def setup(bot: commands.Bot):
+async def setup(bot: Dwello):
     await bot.add_cog(Economy(bot))

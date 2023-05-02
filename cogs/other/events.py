@@ -3,30 +3,27 @@ from __future__ import annotations
 import discord, asyncpg
 from discord.ext import commands
 
+from bot import Dwello
 from typing import Any
-from utils import BaseCog, ListenersFunctions, LevellingUtils
+from utils import BaseCog, DwelloContext
 
 class Events(BaseCog):
 
-    def __init__(self, bot: commands.Bot, *args: Any, **kwargs: Any):
+    def __init__(self, bot: Dwello, *args: Any, **kwargs: Any):
         super().__init__(bot, *args, **kwargs)
-        self.levelling = LevellingUtils(self.bot)
-        self.listeners = ListenersFunctions(self.bot)
-
-        self.pool: asyncpg.Pool = self.bot.pool
 
     @commands.hybrid_command(name="table",with_app_command=False)
-    async def test(self, ctx: commands.Context):
-        await self.listeners.bot_join(ctx.guild)
+    async def test(self, ctx: DwelloContext):
+        await self.bot.listeners.bot_join(ctx.guild)
 
     @commands.Cog.listener()
     async def on_guild_join(self, guild: discord.Guild):
 
-        await self.listeners.bot_join(guild)
+        await self.bot.listeners.bot_join(guild)
 
     @commands.Cog.listener()
     async def on_message(self, message: discord.Message) -> None:
-        await self.levelling.increase_xp(message)
+        await self.bot.levelling.increase_xp(message)
 
         #await levelling.get_user_data(message.author.id, message.guild.id)
 
@@ -46,7 +43,7 @@ class Events(BaseCog):
 
     @commands.Cog.listener()
     async def on_guild_channel_delete(self, channel: discord.abc.GuildChannel) -> None:
-        async with self.pool.acquire() as conn:
+        async with self.bot.pool.acquire() as conn:
             conn: asyncpg.Connection
             async with conn.transaction():
                 record_list = []
@@ -66,12 +63,12 @@ class Events(BaseCog):
     @commands.Cog.listener()
     async def on_member_join(self, member: discord.Member):
 
-        await self.levelling.create_user(member.id, member.guild.id)
-        await self.listeners.join_leave_event(member, "welcome")
+        await self.bot.levelling.create_user(member.id, member.guild.id)
+        await self.bot.listeners.join_leave_event(member, "welcome")
 
     @commands.Cog.listener()
     async def on_member_remove(self, member: discord.Member):
-        await self.listeners.join_leave_event(member, "leave")
+        await self.bot.listeners.join_leave_event(member, "leave")
 
     @commands.Cog.listener()
     async def on_member_update(self, before, after):

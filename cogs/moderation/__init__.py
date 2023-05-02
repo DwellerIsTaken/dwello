@@ -2,6 +2,7 @@ from __future__ import annotations
 #from typing import TYPE_CHECKING
 
 from discord.ext import commands
+from bot import Dwello
 
 from .standard import StandardModeration
 from .timeout import Timeout
@@ -22,5 +23,5 @@ class Moderation(StandardModeration, Timeout, Warnings, name="Moderation"):
             raise commands.NoPrivateMessage
         return True
 
-async def setup(bot: commands.Bot):
+async def setup(bot: Dwello):
     await bot.add_cog(Moderation(bot))

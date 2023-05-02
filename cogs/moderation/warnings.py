@@ -7,11 +7,11 @@ import text_variables as tv
 import datetime, discord
 import asyncpg
 
-from contextlib import suppress
-
-from .timeout import Timeout
+from .timeout import tempmute
 
 from typing import Optional, List, Any
+
+from bot import Dwello, DwelloContext
 from utils import (BaseCog, 
                    apostrophize,
                    member_check, 
@@ -19,7 +19,7 @@ from utils import (BaseCog,
 
 class TimeoutSuggestion(View):
 
-    def __init__(self, bot: commands.Bot, ctx: commands.Context, member: discord.Member, reason: str ,timeout: int = None):
+    def __init__(self, bot: Dwello, ctx: DwelloContext, member: discord.Member, reason: str ,timeout: int = None):
         super().__init__(timeout = timeout)
         self.bot = bot
         self.ctx = ctx
@@ -31,7 +31,7 @@ class TimeoutSuggestion(View):
         await interaction_check(interaction, self.ctx.author)
 
         #await self.ctx.interaction.response.defer()
-        await Timeout.tempmute(self.bot, self.ctx, self.member, 12, None, self.reason)
+        await tempmute(self.bot, self.ctx, self.member, 12, None, self.reason)
 
         await interaction.message.edit(view = None)
         return await interaction.message.delete()
@@ -45,12 +45,11 @@ class TimeoutSuggestion(View):
 
 class Warnings(BaseCog):
 
-    def __init__(self, bot: commands.Bot, *args: Any, **kwargs: Any):
+    def __init__(self, bot: Dwello, *args: Any, **kwargs: Any):
         super().__init__(bot, *args, **kwargs)
-        self.pool: asyncpg.Pool = self.bot.pool
 
     @commands.hybrid_group(invoke_without_command=True, with_app_command=True)
-    async def warning(self, ctx: commands.Context):
+    async def warning(self, ctx: DwelloContext):
 
         embed = discord.Embed(description=f"```{ctx.clean_prefix}warning [command_name]```", color = tv.warn_color)
         return await ctx.reply(embed=embed)
@@ -59,9 +58,9 @@ class Warnings(BaseCog):
     @commands.bot_has_permissions(moderate_members = True)
     @commands.has_permissions(moderate_members = True)
     @commands.guild_only()
-    async def warn(self, ctx: commands.Context, member: discord.Member, reason: Optional[str] = None) -> Optional[discord.Message]:
+    async def warn(self, ctx: DwelloContext, member: discord.Member, reason: Optional[str] = None) -> Optional[discord.Message]:
         async with ctx.typing(ephemeral=True):
-            async with self.pool.acquire() as conn:
+            async with self.bot.pool.acquire() as conn:
                 conn: asyncpg.Connection
                 async with conn.transaction():
 
@@ -101,9 +100,9 @@ class Warnings(BaseCog):
     @warning.command(name='warnings', help="Shows member's warnings.", with_app_command = True)
     @commands.bot_has_permissions(moderate_members = True)
     @commands.guild_only()
-    async def warnings(self, ctx: commands.Context, member: discord.Member = None) -> Optional[discord.Message]:
+    async def warnings(self, ctx: DwelloContext, member: discord.Member = None) -> Optional[discord.Message]:
         async with ctx.typing(ephemeral=True):
-            async with self.pool.acquire() as conn:
+            async with self.bot.pool.acquire() as conn:
                 conn: asyncpg.Connection
                 async with conn.transaction():
 
@@ -169,9 +168,9 @@ class Warnings(BaseCog):
     @commands.bot_has_permissions(moderate_members = True)
     @commands.has_permissions(moderate_members = True)
     @commands.guild_only()
-    async def remove_warn(self, ctx: commands.Context, member: discord.Member, warning: str) -> Optional[discord.Message]:
+    async def remove_warn(self, ctx: DwelloContext, member: discord.Member, warning: str) -> Optional[discord.Message]:
         async with ctx.typing(ephemeral=True):
-            async with self.pool.acquire() as conn:
+            async with self.bot.pool.acquire() as conn:
                 conn: asyncpg.Connection
                 async with conn.transaction():
 
@@ -215,7 +214,7 @@ class Warnings(BaseCog):
 
     @remove_warn.autocomplete('warning')
     async def autocomplete_callback(self, interaction: discord.Interaction, current: str) -> List[Choice]:
-        async with self.pool.acquire() as conn:
+        async with self.bot.pool.acquire() as conn:
             conn: asyncpg.Connection
             async with conn.transaction(): # REDO: DONT FETCH ON AUTOCOMPLETE
 

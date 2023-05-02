@@ -5,7 +5,6 @@ from .levelling import *
 from .listeners import *
 from .botfuncs import *
 from .context import *
-from .economy import *
 from .twitch import *
 from .other import *
 from .web import *

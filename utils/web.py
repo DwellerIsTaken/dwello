@@ -1,17 +1,9 @@
 from aiohttp import web
 
-from discord.ext import commands
-import discord
-
-from utils import Twitch
-
-from typing import Any, Optional
-
 class AiohttpWeb:
 
-    def __init__(self, bot: commands.Bot):
-        self.bot: commands.Bot = bot
-        self.twitch: Twitch = Twitch(self.bot)
+    def __init__(self, bot):
+        self.bot = bot
         self.app: web.Application = web.Application()
         self.app.router.add_post('/api/post', self.handle_post)
 
@@ -20,8 +12,7 @@ class AiohttpWeb:
         data = await request.json()
         print(data)
 
-        await self.twitch.twitch_to_discord(data)
-        
+        await self.bot.twitch.twitch_to_discord(data)
         return web.json_response({"message": "data received by aiohttp: {}".format(data)})
 
     async def run(self, port: int = 8081):

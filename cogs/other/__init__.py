@@ -1,14 +1,15 @@
 from __future__ import annotations
 #from typing import TYPE_CHECKING
 
-from discord.ext import commands
+from bot import Dwello
 
 from .events import Events
 from .tasks import Tasks
 from .botconfig import BotConfig
+from .owner import OwnerCommands
 
-class Other(Events, Tasks, BotConfig):
+class Other(Events, Tasks, OwnerCommands, BotConfig):
     '''Other Class'''
 
-async def setup(bot: commands.Bot):
+async def setup(bot: Dwello):
     await bot.add_cog(Other(bot))

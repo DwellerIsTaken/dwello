@@ -1,11 +1,17 @@
 import requests, discord, os, asyncpg
 
-from typing import Optional, Union, Tuple, Literal
+from typing import Optional, Union, Tuple, Literal, TYPE_CHECKING
 
 from discord.ext import commands
 
 import text_variables as tv
-from utils import DB_Operations
+from utils.context import DwelloContext
+
+if TYPE_CHECKING:
+    from bot import Dwello 
+    
+else:
+    from discord.ext.commands import Bot as Dwello
 
 CLIENT_ID = os.getenv('TWITCH_CLIENT_ID')
 CLIENT_SECRET = os.getenv('TWITCH_CLIENT_SECRET')
@@ -33,10 +39,8 @@ def get_access_token():
 
 class Twitch:
 
-    def __init__(self, bot: commands.Bot):
-        self.bot: commands.Bot = bot
-        self.db = DB_Operations(self.bot)
-        self.pool: asyncpg.Pool = self.bot.pool
+    def __init__(self, bot: Dwello):
+        self.bot = bot
         self.access_token, self.headers = get_access_token()
 
     async def username_to_id(self, username: str) -> Optional[str]:
@@ -71,8 +75,8 @@ class Twitch:
         
         return username
 
-    async def event_subscription(self, ctx: commands.Context, type_: str, username: str) -> Optional[Tuple[discord.Message, dict]]:
-        async with self.pool.acquire() as conn:
+    async def event_subscription(self, ctx: DwelloContext, type_: str, username: str) -> Optional[Tuple[discord.Message, dict]]:
+        async with self.bot.pool.acquire() as conn:
             conn: asyncpg.Connection
             async with conn.transaction():
 
@@ -132,14 +136,14 @@ class Twitch:
                 #await conn.execute("UPDATE server_data SET twitch_id = $1 WHERE guild_id = $2 AND event_type = 'twitch'", user_id, ctx.guild.id)
                 # Print the response to confirm whether the subscription was created successfully or not
                 
-        await self.db.fetch_table_data("twitch_users")
+        await self.bot.db.fetch_table_data("twitch_users")
         return await ctx.reply(f"Added **{username}** to twitch notifications list.",ephemeral=True), response.json()
 
                 # type_ = stream.online
 
     # return a list of users the guild is subscribed to
-    async def guild_twitch_subscriptions(self, ctx: commands.Context) -> Optional[discord.Message]:
-        async with self.pool.acquire() as conn:
+    async def guild_twitch_subscriptions(self, ctx: DwelloContext) -> Optional[discord.Message]:
+        async with self.bot.pool.acquire() as conn:
             conn: asyncpg.Connection
             async with conn.transaction():
 
@@ -159,8 +163,8 @@ class Twitch:
                 
         return await ctx.reply(embed=twitch_embed)
 
-    async def twitch_unsubscribe_from_streamer(self, ctx: commands.Context, username: Union[str, Literal['all']]) -> Optional[discord.Message]: # IF ALL: GET ALL TWITCH USERS THAT GUILD IS SUBSCRIBED TO AND UNSUB (what if the same user for multiple guilds)
-        async with self.pool.acquire() as conn:
+    async def twitch_unsubscribe_from_streamer(self, ctx: DwelloContext, username: Union[str, Literal['all']]) -> Optional[discord.Message]: # IF ALL: GET ALL TWITCH USERS THAT GUILD IS SUBSCRIBED TO AND UNSUB (what if the same user for multiple guilds)
+        async with self.bot.pool.acquire() as conn:
             conn: asyncpg.Connection
             async with conn.transaction():
 
@@ -191,11 +195,11 @@ class Twitch:
                             await conn.execute("DELETE FROM twitch_users WHERE user_id = $1 AND guild_id = $2", user_id, ctx.guild.id)
                             break
 
-        await self.db.fetch_table_data("twitch_users")
+        await self.bot.db.fetch_table_data("twitch_users")
         return await ctx.reply(f"Unsubscribed from {f'{count} streamer(s)' if count != 0 else username}.", ephemeral=True)
 
     async def twitch_to_discord(self, data) -> Optional[discord.Message]: # LET MEMBERS CUSTOMISE EVERYTHING (thumbnail, title, description, footer, timestamp...)
-        async with self.pool.acquire() as conn:
+        async with self.bot.pool.acquire() as conn:
             conn: asyncpg.Connection
             async with conn.transaction():
 
@@ -222,7 +226,6 @@ class Twitch:
                     #for row in results:
                     #message_text = row['message_text']
                     #channel_id = row['channel_id']
-
 
     def event_subscription_list(self): # RETURNS ALL SUBSCRIPTIONS FOR A CERTAIN CLIENT_ID (?)
         response = requests.get(helix_url, headers=self.headers).json()

@@ -5,19 +5,20 @@ import discord
 
 from contextlib import suppress
 
-from utils import BaseCog, member_check, HandleHTTPException
+from utils import BaseCog, member_check, HandleHTTPException, DwelloContext
 from typing import Optional, Union, Any
+from bot import Dwello
 
 class StandardModeration(BaseCog):
 
-    def __init__(self, bot: commands.Bot, *args: Any, **kwargs: Any):
+    def __init__(self, bot: Dwello, *args: Any, **kwargs: Any):
         super().__init__(bot, *args, **kwargs)
 
     @commands.hybrid_command(name='ban', help="Bans users with bad behaviour.", with_app_command = True)
     @commands.bot_has_guild_permissions(ban_members=True)
     @commands.has_guild_permissions(ban_members=True)
     @commands.guild_only()
-    async def ban(self, ctx: commands.Context, member: discord.Member, *, reason: Optional[str] = None) -> Optional[discord.Message]:
+    async def ban(self, ctx: DwelloContext, member: discord.Member, *, reason: Optional[str] = None) -> Optional[discord.Message]:
         async with ctx.typing(ephemeral=True):
 
             if await member_check(ctx, member, self.bot) is not True:
@@ -26,10 +27,15 @@ class StandardModeration(BaseCog):
             if not reason:
                 reason = "Not specified"
 
-            member_embed=discord.Embed(title="Permanently banned", description=
-                                        f"Greetings! \nYou have been banned from **{ctx.channel.guild.name}**. "
-                                        "You must have done something wrong or it's just an administrator whom is playing with his toys. "
-                                        f"In any way, it's an embezzlement kerfuffle out here.\n \n Reason: **{reason}**", color=tv.color)
+            member_embed=discord.Embed(
+            title="Permanently banned", 
+            description=
+                f"Greetings! \nYou have been banned from **{ctx.channel.guild.name}**. "
+                "You must have done something wrong or it's just an administrator whom is playing with his toys. "
+                f"In any way, it's an embezzlement kerfuffle out here.\n \n Reason: **{reason}**", 
+            color=tv.color
+            )
+
             member_embed.set_image(url = "https://media1.tenor.com/images/05186cf068c1d8e4b6e6d81025602215/tenor.gif?itemid=14108167")
             member_embed.set_footer(text=tv.footer)
             member_embed.timestamp = discord.utils.utcnow()
@@ -43,8 +49,11 @@ class StandardModeration(BaseCog):
             except discord.HTTPException as e:
                 print(e)
 
-            guild_embed = discord.Embed(title="User banned!", description=
-                                        f'*Banned by:* {ctx.author.mention} \n \n**{member}** has been succesfully banned from this server! \nReason: `{reason}`',color=tv.warn_color)
+            guild_embed = discord.Embed(
+            title="User banned!", 
+            description= f'*Banned by:* {ctx.author.mention} \n \n**{member}** has been succesfully banned from this server! \nReason: `{reason}`',
+            color=tv.warn_color,
+            )
 
             return await ctx.channel.send(embed=guild_embed)
         
@@ -60,7 +69,7 @@ class StandardModeration(BaseCog):
     @commands.bot_has_permissions(send_messages=True, view_audit_log=True, ban_members=True)
     @commands.has_guild_permissions(ban_members=True)
     @commands.guild_only()
-    async def unban(self, ctx: commands.Context, member_object: str) -> Union[discord.Message, discord.InteractionMessage, None]:
+    async def unban(self, ctx: DwelloContext, member_object: str) -> Union[discord.Message, discord.InteractionMessage, None]:
         async with ctx.typing(ephemeral=True):
 
             member = discord.Object(id=member_object)
@@ -101,7 +110,7 @@ class StandardModeration(BaseCog):
     @commands.bot_has_permissions(send_messages=True, kick_members=True)
     @commands.has_permissions(kick_members=True)
     @commands.guild_only()
-    async def kick(self, ctx: commands.Context, member: discord.Member, *, reason: Optional[str] = None) -> Optional[discord.Message]:
+    async def kick(self, ctx: DwelloContext, member: discord.Member, *, reason: Optional[str] = None) -> Optional[discord.Message]:
         async with ctx.typing(ephemeral=True):
 
             if await member_check(ctx, member, self.bot) != True:
@@ -110,8 +119,11 @@ class StandardModeration(BaseCog):
             if not reason:
                 reason = "Not specified"
 
-            embed = discord.Embed(title="User kicked!", description=
-                                  f'*Kicked by:* {ctx.author.mention} \n \n**{member}** has been succesfully kicked from this server! \nReason: `{reason}`',color=tv.warn_color)
+            embed = discord.Embed(
+            title= "User kicked!", 
+            description= f'*Kicked by:* {ctx.author.mention} \n \n**{member}** has been succesfully kicked from this server! \nReason: `{reason}`',
+            color=tv.warn_color
+            )
 
             async with HandleHTTPException(ctx, title=f'Failed to kick {member}'):
                 await member.kick(reason=reason)
@@ -122,7 +134,7 @@ class StandardModeration(BaseCog):
     @commands.bot_has_guild_permissions(manage_nicknames=True)
     @commands.has_guild_permissions(manage_nicknames=True)
     @commands.guild_only()
-    async def nick(self, ctx: commands.Context, member: discord.Member, *, nickname: Optional[str] = None) -> Optional[discord.Message]:
+    async def nick(self, ctx: DwelloContext, member: discord.Member, *, nickname: Optional[str] = None) -> Optional[discord.Message]:
         async with ctx.typing(ephemeral=True):
 
             if not nickname and not member.nick:
