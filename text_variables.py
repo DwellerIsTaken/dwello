@@ -1,5 +1,7 @@
 import discord
 
+# RENAME TO CONSTANTS OR SMTH
+
 # __EMBED_ATTRIBUTES__
 # EMBED COLOR:
 
@@ -12,6 +14,8 @@ warn_color = discord.Colour.red()
 twitch_color = discord.Colour.random() # get color of streamer later & add customize option
 
 #timestamp = discord.utils.utcnow()
+
+GITHUB = "https://github.com/DwellerIsTaken/discordbot/"
 
 server_statistics_help_embed_description = "Below you can see *the accurate description* of how you should be using the counter commands. \n \n **First of all**, choose a type of counter which you want to create. You can choose from: ```all (Member and bot users) \nmembers (Member users) \nbots (Bot users)``` \n**And**, if you want to create a specific category where all your countes will be located, use: ```category```\n**Second of all**, type the command like: ```$add_counter [chosen type of counter/category]``` \n**And last**, but not least, a quick tip: you can go to the channel settings and set things up as you wish to! \n\nAnd __*don`t*__ create a type of counter channel that already exists on your server!\nFor more information about counters see `$add_counter list`."
 server_statistics_deny_again_embed_description = "... if you want to create more counters! ```$add counter [type]```\nYou have denied the creation of the specific counter category. This notification __*won't appear*__ ever again, unless you want it to appear. If you want to create the counter category please take advantage of `$add counter category`. Much obliged!"
@@ -40,6 +44,8 @@ bot_reply_list = [
 "Don't use Thanos against himself."
 
 ]
+
+# COMPREHENSIVE HELP DESCRIPTIONS
 
 
 

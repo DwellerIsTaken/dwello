@@ -14,6 +14,7 @@ from discord.ext import commands
 from discord.ext.commands.errors import BadArgument
 
 from typing import Union, Optional, Sequence, Any, TYPE_CHECKING
+from typing_extensions import Self, LiteralString, override
 
 if TYPE_CHECKING:
     from bot import Dwello 
@@ -112,6 +113,7 @@ class DwelloContext(commands.Context):
         """Prefix with escaped MarkDown"""
         return super().clean_prefix.replace("@", "(at)")
 
+    @override
     async def send(
         self,
         content: Optional[str] = None,
@@ -158,12 +160,16 @@ class DwelloContext(commands.Context):
         '''except discord.HTTPException:
             return await super().send(content=content, embeds=embeds, reference=None, mention_author=mention_author, file=file, **kwargs)
         '''
+
+    @override
     async def reply(
         self, 
         content: Optional[str] = None, 
         *,
-        ephemeral: Optional[bool] = False,
+        ephemeral: Optional[bool] = None,
+        user_mistake: Optional[bool] = None,
         mention_author: Optional[bool] = None,
+        permission_cmd: Optional[bool] = None,
         mention_reference_author: Optional[bool] = True, 
         **kwargs: Any
     ) -> discord.Message:
@@ -171,15 +177,25 @@ class DwelloContext(commands.Context):
         mention: bool = False
         message: discord.Message = self.message
         reference: discord.MessageReference = self.message.reference
-        if reference and mention_reference_author is True:
+        if reference and mention_reference_author:
             message = reference.resolved
             mention = True if message.author in self.message.mentions else False
 
         if mention_author:
             mention = mention_author
+
+        if user_mistake:
+            if any((mention_author, ephemeral, permission_cmd)):
+                raise BadArgument("Cannot pass mention_author, ephemeral, or permission_cmd when user_mistake = True.")
+            mention, ephemeral = True, True
+
+        elif permission_cmd:
+            if any((mention_author, ephemeral, user_mistake)):
+                raise BadArgument("Cannot pass mention_author, ephemeral, or user_mistake when permission_cmd = True.")
+            mention, ephemeral = False, True
             
         if not self.interaction:
-            return await self.send(content, reference=self.message, mention_author=mention, ephemeral=ephemeral, **kwargs)
+            return await self.send(content, reference=message, mention_author=mention, ephemeral=ephemeral, **kwargs)
         else:
             return await self.send(content, mention_author=mention, ephemeral=ephemeral, **kwargs)
 
@@ -280,6 +296,10 @@ class DwelloContext(commands.Context):
     @property
     def referenced_user(self) -> typing.Optional[discord.abc.User]:
         return getattr(self.reference, "author", None)
+    
+    async def create_codeblock(self: Self, content: str) -> str:
+        fmt: LiteralString = "`" * 3
+        return f"{fmt}py\n{content}{fmt}"
 
     '''@property
     def db(self) -> asyncpg.Pool:

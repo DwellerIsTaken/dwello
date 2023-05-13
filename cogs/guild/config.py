@@ -7,9 +7,9 @@ import text_variables as tv
 import discord, asyncpg
 
 from typing import Optional, Literal, Any
-from utils import BaseCog, DwelloContext
+from utils import BaseCog
 
-from bot import Dwello
+from bot import Dwello, DwelloContext
 
 class ConfigFunctions:
 
@@ -227,7 +227,7 @@ class Config(BaseCog):
     
     @commands.hybrid_group(invoke_without_command=True, with_app_command=True)
     @commands.bot_has_permissions(manage_channels=True, manage_messages=True)
-    @commands.has_permissions(manage_channels=True, manage_messages=True)
+    @commands.has_permissions(manage_channels=True, manage_messages=True) # change to admin maybe
     @commands.guild_only()
     async def twitch(self, ctx: DwelloContext):
         async with ctx.typing(ephemeral=True):

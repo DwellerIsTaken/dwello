@@ -3,9 +3,9 @@ from __future__ import annotations
 import discord, asyncpg
 from discord.ext import commands
 
-from bot import Dwello
+from bot import Dwello, DwelloContext
 from typing import Any
-from utils import BaseCog, DwelloContext
+from utils import BaseCog
 
 class Events(BaseCog):
 

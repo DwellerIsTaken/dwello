@@ -1,13 +1,15 @@
 from __future__ import annotations
 
+import os
 import difflib
+import discord
+import inspect
 import itertools
 import traceback
 
-from discord.ext import commands
 from discord import Interaction
-from discord.ui import select, Select, button
-import discord
+from discord.ext import commands
+from discord.ui import Select, button, select
 
 from typing import (Optional, 
                     Union, 
@@ -15,11 +17,12 @@ from typing import (Optional,
                     List, 
                     Dict, 
                     TYPE_CHECKING,
-                )
+)
+from typing_extensions import Self
 
-from utils import BaseCog, DwelloContext
+from utils import BaseCog
 import text_variables as tv
-from bot import Dwello
+from bot import Dwello, DwelloContext
 
 newline = "\n"
 
@@ -570,6 +573,40 @@ class About(BaseCog):
         bot.help_command = help_command
         self.select_emoji = '<:info:895407958035431434>'
         self.select_brief = "Bot Information commands."
+
+    @commands.hybrid_command(name = 'source', description="Returns command's source.", with_app_command=True)
+    async def source(self: Self, ctx: DwelloContext, *, command_name: Optional[str]) -> Optional[discord.Message]:
+
+        git = tv.GITHUB
+        if not command_name:
+            return await ctx.reply(git)
+
+        command = self.bot.get_command(command_name)
+        target = command.callback
+        if not command:
+            return await ctx.reply("That command doesn't exist!")
+        
+        if command_name == "help":
+            target = type(self.bot.help_command)
+
+        source: str = inspect.getsource(target)
+        file: str = inspect.getsourcefile(target)
+        lines: tuple = inspect.getsourcelines(target)
+        git_lines = f"#L{lines[1]}-L{len(lines[0])+lines[1]}"
+        path = os.path.relpath(file)
+
+        source_link = f"> [**Source**]({git}tree/main/{path}{git_lines}) <:github:1100906448030011503>\n> **{path}{git_lines}**\n"
+
+        embed: discord.Embed = discord.Embed(
+            title = f"Source for `{command.name}`",
+            description = (source_link + await ctx.create_codeblock(source)),
+        )
+        try:
+            return await ctx.reply(embed=embed)
+        
+        except discord.errors.HTTPException:
+            embed.description = source_link
+            return await ctx.reply(embed=embed)
 
 '''class About(commands.Cog):
     """

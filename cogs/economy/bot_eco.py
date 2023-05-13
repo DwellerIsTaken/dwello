@@ -8,9 +8,9 @@ from .shared import SharedEcoUtils
 
 from typing import Any, Optional
 
-from utils import BaseCog, DwelloContext
+from utils import BaseCog
 import text_variables as tv
-from bot import Dwello
+from bot import Dwello, DwelloContext
 
 class BotEcoUtils:
 

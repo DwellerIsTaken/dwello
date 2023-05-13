@@ -10,18 +10,18 @@ import discord
 
 from typing import Optional, Any
 
-from bot import Dwello
+from bot import Dwello, DwelloContext
 import text_variables as tv
-from utils import BaseCog, DwelloContext
+from utils import BaseCog
 
 class Weather(BaseCog):
 
     def __init__(self, bot: Dwello, *args: Any, **kwargs: Any):
         super().__init__(bot, *args, **kwargs)
 
-    # THINK OF A NEW FOLDER WHERE TO ADD ALL THIS
-    @commands.hybrid_command(name="hello",with_app_command=True)
-    async def ping_command(self, ctx: DwelloContext) -> None:
+    # THINK OF A NEW FOLDER WHERE TO ADD ALL THIS (?)
+    @commands.hybrid_command(name="hello", with_app_command=True)
+    async def ping_command(self, ctx: DwelloContext) -> Optional[discord.Message]:
 
         return await ctx.send("Hello!") # display more info about bot
 

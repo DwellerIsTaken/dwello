@@ -40,6 +40,12 @@ CREATE TABLE IF NOT EXISTS server_data(
     PRIMARY KEY (guild_id, event_type, counter_name)
 );
 
+CREATE TABLE IF NOT EXISTS prefixes(
+    guild_id BIGINT,
+    prefix VARCHAR(10),
+    PRIMARY KEY (prefix, guild_id)
+);
+
 CREATE TABLE IF NOT EXISTS jobs(
     guild_id BIGINT,
     name TEXT,

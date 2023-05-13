@@ -7,8 +7,8 @@ import discord, asyncpg
 from discord.ext import commands
 
 from typing import Any, Optional, Literal
-from utils import BaseCog, DwelloContext
-from bot import Dwello
+from utils import BaseCog
+from bot import Dwello, DwelloContext
 
 class OwnerCommands(BaseCog):
 
@@ -19,19 +19,20 @@ class OwnerCommands(BaseCog):
     @commands.is_owner()
     @commands.guild_only()
     async def sync(
-    self, ctx: commands.Context, guilds: commands.Greedy[discord.Object], spec: Optional[Literal["~", "*", "^"]] = None) -> None:
+    self, ctx: DwelloContext, guilds: commands.Greedy[discord.Object], spec: Optional[Literal["~", "*", "^"]] = None) -> None:
+        bot = self.bot
         if not guilds:
             if spec == "~":
-                synced = await ctx.bot.tree.sync(guild=ctx.guild)
+                synced = await bot.tree.sync(guild=ctx.guild)
             elif spec == "*":
-                ctx.bot.tree.copy_global_to(guild=ctx.guild)
-                synced = await ctx.bot.tree.sync(guild=ctx.guild)
+                bot.tree.copy_global_to(guild=ctx.guild)
+                synced = await bot.tree.sync(guild=ctx.guild)
             elif spec == "^":
-                ctx.bot.tree.clear_commands(guild=ctx.guild)
-                await ctx.bot.tree.sync(guild=ctx.guild)
+                bot.tree.clear_commands(guild=ctx.guild)
+                await bot.tree.sync(guild=ctx.guild)
                 synced = []
             else:
-                synced = await ctx.bot.tree.sync()
+                synced = await bot.tree.sync()
 
             await ctx.send(
                 f"Synced {len(synced)} commands {'globally' if spec is None else 'to the current guild.'}"
@@ -41,7 +42,7 @@ class OwnerCommands(BaseCog):
         ret = 0
         for guild in guilds:
             try:
-                await ctx.bot.tree.sync(guild=guild)
+                await bot.tree.sync(guild=guild)
                 
             except discord.HTTPException:
                 pass

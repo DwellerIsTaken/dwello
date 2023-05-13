@@ -13,8 +13,8 @@ import io
 from cogs.economy.guild_eco import GuildEcoUtils
 import text_variables as tv
 from typing import Optional, Union, Any
-from utils import get_avatar_dominant_color, BaseCog, DwelloContext
-from bot import Dwello
+from utils import get_avatar_dominant_color, BaseCog
+from bot import Dwello, DwelloContext
 
 class UserInfo(BaseCog):
 

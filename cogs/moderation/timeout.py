@@ -7,9 +7,9 @@ import discord, datetime
 
 from contextlib import suppress
 
-from utils import BaseCog, member_check, HandleHTTPException, DwelloContext
+from utils import BaseCog, member_check, HandleHTTPException
 from typing import Optional, Any, List
-from bot import Dwello
+from bot import Dwello, DwelloContext
 
 async def tempmute(self, ctx: DwelloContext, member: discord.Member, duration: int, period: Optional[str] = None, reason: Optional[str] = None) -> Optional[discord.Embed]:
 

@@ -1,8 +1,6 @@
 from __future__ import annotations
 
-import asyncpg, discord, string, os
-from contextlib import suppress
-from discord.ext import commands
+import asyncpg, discord, string
 from typing import List, Dict, Any, Optional, TYPE_CHECKING
 
 import text_variables as tv

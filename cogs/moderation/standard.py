@@ -5,9 +5,9 @@ import discord
 
 from contextlib import suppress
 
-from utils import BaseCog, member_check, HandleHTTPException, DwelloContext
+from utils import BaseCog, member_check, HandleHTTPException
 from typing import Optional, Union, Any
-from bot import Dwello
+from bot import Dwello, DwelloContext
 
 class StandardModeration(BaseCog):
 

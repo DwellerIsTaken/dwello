@@ -1,8 +1,8 @@
 import discord
 import traceback
 import sys
+from utils.context import DwelloContext
 from discord.ext import commands
-
 
 class CommandErrorHandler(commands.Cog):
 
@@ -10,7 +10,7 @@ class CommandErrorHandler(commands.Cog):
         self.bot = bot
 
     @commands.Cog.listener()
-    async def on_command_error(self, ctx, error):
+    async def on_command_error(self, ctx: DwelloContext, error):
         """The event triggered when an error is raised while invoking a command.
         Parameters
         ------------
@@ -39,6 +39,10 @@ class CommandErrorHandler(commands.Cog):
         # Anything in ignored will return and prevent anything happening.
         if isinstance(error, ignored):
             return
+        
+        if isinstance(error, commands.errors.MissingRequiredArgument):
+            if ctx.prefix:
+                await ctx.reply(error, user_mistake=True)
 
         if isinstance(error, commands.DisabledCommand):
             await ctx.send(f'{ctx.command} has been disabled.')

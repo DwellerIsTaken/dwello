@@ -1,8 +1,7 @@
-import asyncpg, os
-import text_variables as tv
-from discord.ext import commands
+import asyncpg
+import re
 
-from typing import Literal, List, Dict, Any, TYPE_CHECKING
+from typing import Union, Literal, List, Dict, Any, TYPE_CHECKING
 
 if TYPE_CHECKING:
     from bot import Dwello 
@@ -15,55 +14,47 @@ class DB_Operations:
     def __init__(self, bot: Dwello):
         self.bot = bot
     
-    async def create_tables(self) -> None:
+    async def create_tables(self) -> List[str]:
         async with self.bot.pool.acquire() as conn:
             conn: asyncpg.Connection
-            async with conn.transaction():
+            async with conn.transaction():  
                 with open("schema.sql", "r") as f:
                     tables = f.read()
 
-                return await conn.execute(tables)
+                table_names = re.findall(r"CREATE TABLE IF NOT EXISTS (\w+)", tables)
+
+                await conn.execute(tables)
+                return table_names
     
-    async def fetch_data(self) -> dict:
+    async def fetch_table_data(self, *tables) -> Dict[str, Union[Any, list]]:
         async with self.bot.pool.acquire() as conn:
             conn: asyncpg.Connection
-            async with conn.transaction():
-                
-                # Fetch data from users table
-                data_users = await conn.fetch("SELECT * FROM users")
+            async with conn.transaction():           
+                try:
+                    data = self.bot.db_data
 
-                # Fetch data from twitch_users table
-                data_twitch_users = await conn.fetch("SELECT * FROM twitch_users")
+                except AttributeError:
+                    data: Dict[str, Union[Any, list]] = {}
 
-                # Fetch data from warnings table
-                data_warnings = await conn.fetch("SELECT * FROM warnings")
+                if not tables:
+                    tables: List[str] = self.bot.tables
 
-                # Fetch data from server_data table
-                data_server_data = await conn.fetch("SELECT * FROM server_data")
-
-                # Fetch data from jobs table
-                data_jobs = await conn.fetch("SELECT * FROM jobs")
-
-                all_data = {
-                'users': data_users,
-                'twitch_users': data_twitch_users,
-                'warnings': data_warnings,
-                'server_data': data_server_data,
-                'jobs': data_jobs
-                }
-
-        return all_data
-    
-    async def fetch_table_data(self, *tables: Literal["jobs", "users", "warnings", "server_data", "twitch_users"]) -> List[Dict[str, Any]]: # not sure annotation is correct
-        async with self.bot.pool.acquire() as conn:
-            conn: asyncpg.Connection
-            async with conn.transaction():
                 for table in tables:
                     query = "SELECT * FROM " + table
-                    data = await conn.fetch(query)
-                    self.bot.db_data[table] = data
-        
-        return [].extend(data)
+                    table_data = await conn.fetch(query)
+                    data[table] = table_data
+                    
+                    if table == "prefixes":
+                        prefixes_by_guild = {}
+                        for record in table_data:
+                            guild_id = record['guild_id']
+                            prefix = record['prefix']
+
+                            if guild_id not in prefixes_by_guild:
+                                prefixes_by_guild[guild_id] = []
+
+                            prefixes_by_guild[guild_id].append(prefix)
+        return data
 
     async def fetch_job_data(self) -> dict: # remove later
         async with self.bot.pool.acquire() as conn:

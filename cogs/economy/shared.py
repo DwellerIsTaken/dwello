@@ -9,8 +9,7 @@ from typing import Optional, Tuple, Union
 
 import text_variables as tv
 
-from utils import DwelloContext
-from bot import Dwello
+from bot import Dwello, DwelloContext
 
 class SharedEcoUtils:
 

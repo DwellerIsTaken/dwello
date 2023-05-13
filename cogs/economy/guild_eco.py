@@ -8,8 +8,8 @@ import discord, asyncpg
 from .shared import SharedEcoUtils
 
 from typing import Optional, Any, Union, Literal, Tuple
-from utils import BaseCog, DwelloContext
-from bot import Dwello
+from utils import BaseCog
+from bot import Dwello, DwelloContext
 
 class GuildEcoUtils:
 

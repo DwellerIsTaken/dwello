@@ -3,22 +3,18 @@ load_dotenv()
 
 import aiohttp
 import asyncpg
-import sys, typing, os
-import asyncio, discord, logging
-from discord.ext import commands
+import asyncio
+
+import logging
 
 from utils.context import DwelloContext
-from utils.bases.bot_base import DwelloBase
+from utils.bases.bot_base import DwelloBase, get_or_fail
 
-cogs = {
-    "cogs.economy",
-    "cogs.information",
-    "cogs.moderation", 
-    "cogs.guild", 
-    "cogs.other",
-    "utils.debugging.error_handler",
-    "jishaku"
-}
+logging.basicConfig(
+    format='%(asctime)s [%(levelname)s] - %(name)s: %(message)s',
+    level=logging.INFO,
+    datefmt='%Y-%m-%d %H:%M:%S %Z%z',  # CET timezone format
+)
 
 class Dwello(DwelloBase):
     """Bot definition class."""
@@ -26,22 +22,17 @@ class Dwello(DwelloBase):
 if __name__ == "__main__":
 
     credentials = {
-        "user": f"{os.getenv('pg_username')}",
-        "password": f"{os.getenv('pg_password')}",
-        "database": f"{os.getenv('pg_name')}",
-        "host": f"{os.getenv('pg_host')}",
-        "port": f"{os.getenv('pg_port')}",
+        "user": get_or_fail('pg_username'),
+        "password": get_or_fail('pg_password'),
+        "database": get_or_fail('pg_name'),
+        "host": get_or_fail('pg_host'),
+        "port": get_or_fail('pg_port'),
     }
 
     async def main(): # ADD SSH KEY CONNECTION
         async with asyncpg.create_pool(**credentials) as pool, aiohttp.ClientSession() as session, Dwello(pool, session) as bot:
 
-            for cog in cogs:
-                await bot.load_extension(cog)
-
-            logging.basicConfig(level=logging.INFO)
-
-            token = os.getenv('token')
+            token = get_or_fail('token')
             await bot.start(token)
 
     asyncio.run(main())
@@ -82,4 +73,8 @@ asyncio.run(main())"""
 # make cooldowns
 # PUT ALL ERROR HANDLER IN ONE FILE | fucking organize it already
 # from easypil to PIL
+# custom guild module: https://github.com/irregularunit/bot
 #
+# guild:= discord.get(guild) | non-existend example
+# TYPE_CHECKING where modules used for type-checking
+# from typing_extensions import Self

@@ -4,8 +4,8 @@ import discord, asyncpg
 
 from discord.ui import button, View, Button
 from typing import Optional, Union, Tuple, Literal, Any
-from utils import HandleHTTPException, BaseCog, DwelloContext
-from bot import Dwello
+from utils import HandleHTTPException, BaseCog
+from bot import Dwello, DwelloContext
 
 class ChannelsFunctions:
 

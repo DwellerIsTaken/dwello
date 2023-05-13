@@ -3,8 +3,8 @@ import text_variables as tv
 import discord
 
 from typing import Optional, Any
-from utils import BaseCog, DwelloContext
-from bot import Dwello
+from utils import BaseCog
+from bot import Dwello, DwelloContext
 
 class Messages(BaseCog):
 
@@ -14,21 +14,18 @@ class Messages(BaseCog):
     @commands.hybrid_command(name='clear', help="Purges messages.", with_app_command=True)
     @commands.bot_has_permissions(manage_messages=True)
     @commands.has_permissions(manage_messages=True)
-    async def clear(self, ctx: DwelloContext, limit: int = None, member: discord.Member = None) -> Optional[discord.Message]:
+    async def clear(self, ctx: DwelloContext, limit: int = 5, member: discord.Member = None) -> Optional[discord.Message]:
         async with ctx.typing(ephemeral=True):
 
             msg = []
 
-            if limit is not None:
-                pass
-
-            else:
-                return await ctx.reply("Please pass in an integer as limit!")
+            """else:
+                return await ctx.reply("Please pass in an integer as limit!")"""
 
             if member is None:
 
                 await ctx.channel.purge(limit = limit + 1)
-                print(f"{limit}" + " messages deleted by {0}".format(ctx.message.author))
+                #print(f"{limit}" + " messages deleted by {0}".format(ctx.message.author))
                 
                 return await ctx.send(f"Purged {limit} messages", delete_after=3)
 

@@ -13,3 +13,6 @@
 # IF CHANNEL IS DELETED BY USER CHECK IF ITS IN DB, IF SO: UPDATE TO NULL
 # WHEN YOU REPLY TO SOMEONE WITH BOT COMMAND MAKE BOT REPLY TO THE PERSON YOU REPLIED TO INSTEAD OF YOU
 # contributor command which should only be used by owner that will add contibutor to contributors.txt
+# user mistake return format: either embed with color=warn_color or just a message ctx.reply(user_mistake=True)
+# maybe some kind of ephemeral mode for moderators
+# avoid discord formatting: if smth with '`' or '*' is pushed to db it might cause formatting problems withing embeds and strings

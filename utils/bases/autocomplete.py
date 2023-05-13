@@ -4,14 +4,20 @@ from discord.app_commands import Choice
 from discord.ext import commands
 import discord
 
-from typing import List, Optional, Any
+from typing import List, Optional, Any, TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from bot import Dwello 
+    
+else:
+    from discord.ext.commands import Bot as Dwello
 
 class AutoComplete:
 
-    def __init__(self, bot: commands.Bot):
+    def __init__(self, bot: Dwello):
         self.bot = bot
 
-    async def choice_autocomplete(self, interaction: discord.Interaction, current: str, table: str, name: str, value: Optional[str], all: bool = False) -> List[Choice]: 
+    async def choice_autocomplete(self, interaction: discord.Interaction, current: str, table: str, name: str, value: Optional[str] = None, all: bool = False) -> List[Choice]: 
 
         '''
             :Actually yea. The data type of the value needs to match the annotation
