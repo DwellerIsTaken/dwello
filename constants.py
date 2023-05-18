@@ -1,22 +1,23 @@
 import discord
 
-# RENAME TO CONSTANTS OR SMTH
-
 # __EMBED_ATTRIBUTES__
-# EMBED COLOR:
+# __COLORS__:
 
-# |common|
-color = discord.Colour.random()
+RANDOM_COLOR = discord.Colour.random() # -> MOST USED
+WARNING_COLOR = discord.Colour.red() # -> COLOR FOR WARNINGS
+TWITCH_COLOR = discord.Colour.random() # get color of streamer later & add customize option
 
-# |when being warned|
-warn_color = discord.Colour.red()
+# ___FOOTERS___:
+FOOTER = "https://hitoshi.org"
 
-twitch_color = discord.Colour.random() # get color of streamer later & add customize option
-
-#timestamp = discord.utils.utcnow()
-
+# __SOCIAL MEDIA__
 GITHUB = "https://github.com/DwellerIsTaken/discordbot/"
+DISCORD = "https://discord.gg/8FKNF8pC9u"
 
+# __EMOJIS__
+GITHUB_EMOJI = "<:github:1100906448030011503>"
+
+# MOVE TO FILES THEMSELVES LATER
 server_statistics_help_embed_description = "Below you can see *the accurate description* of how you should be using the counter commands. \n \n **First of all**, choose a type of counter which you want to create. You can choose from: ```all (Member and bot users) \nmembers (Member users) \nbots (Bot users)``` \n**And**, if you want to create a specific category where all your countes will be located, use: ```category```\n**Second of all**, type the command like: ```$add_counter [chosen type of counter/category]``` \n**And last**, but not least, a quick tip: you can go to the channel settings and set things up as you wish to! \n\nAnd __*don`t*__ create a type of counter channel that already exists on your server!\nFor more information about counters see `$add_counter list`."
 server_statistics_deny_again_embed_description = "... if you want to create more counters! ```$add counter [type]```\nYou have denied the creation of the specific counter category. This notification __*won't appear*__ ever again, unless you want it to appear. If you want to create the counter category please take advantage of `$add counter category`. Much obliged!"
 server_statistics_again_embed_description = "```$add_counter [type]```\nYou have accepted the creation of the specific counter category. This notification __*won't appear*__ ever again, unless you want it to appear. If you want to purge the counter category please do it __**yourself**__. For more information use `$add counter list`. My pleasure!"
@@ -25,10 +26,9 @@ on_member_join_help_welcome_embed_description = "Below you can see *the accurate
 on_member_join_help_welcome_help_embed_description = "This embed will precisely explain all the useful features of the *welcome/leave* subcommands. \n \n __*The title*__ of the welcome/leave embed sadly can't be changed, it will always say 'Welcome to [guild name]!' and 'Goodbye [member name]!' accordingly.\n\n**The welcome channel** setup isn't that hard, but it's __*optional*__. You just need to type\n\n > ```channel (sets the channel wherein the command is typed as the welcome channel)```\n\n**or** type this instead:\n\n > ```channel #mention-channel (sets the mentioned channel as the welcome channel)```\n\n**A welcome message** is something you can write and 'customize' by yourself, however it is truly nice to be able to use some of the features which will make the welcome message look more professional and beautiful. __**The features**__ being: ```$mention (mentions the newcomer)\n$user (the name of the newcomer)\n$guild (the name of the guild)\n$members (the amount/number of members on the server)\n$space (drops you to the next row)```\n'Why would you want to use one of these features instead of just typing them in by hand?' - would you ask. My answer is simple: the value of those variables will be constantly changing. The member count will be changing after someone proceeds to leave or join the server, so you don't want to count all the members and type it in by hand every time, do you? \n \n **All of those** commands/features also work with `$leave` command. So if you want to set the leave channel, for exaple, just use the above example where the welcome channel is being created. Just use `$leave` instead of `$welcome` command.\n\n**An example** might help: ```$welcome message $members $space $user $space $guild $space $mention```\n**Output** being: "
 on_member_leave_help_welcome_embed_description = "Below you can see *the accurate description* of how you should be using the leave subcommands. \n \n**Setting up** the leave channel is pretty easy, like: ```optional: channel | channel #mention-channel```\n**Leave message** is customizable, but if you don't set it up __*the default*__ leave message will be used to farewell the leaving. You can set up the leave message by using: ```message [args]```\n**The command** being: ```$leave```\nIf you need more information about the kind of options you have when using `$leave message` please proceed to use `$leave help`. Cheers!"
 
-# ___FOOTERS___
-footer = "https://hitoshi.org"
-
 # ___LISTS___
+# MAKE IT A LIST OF SOME RANDOM BOT RESPONSES WHEN COMMAND IS USED WRONG (?)
+# COUPLE OF LIST FOR BOT TO CHOOSE FROM BASED ON A SITUATION
 bot_reply_list = [
 
 "How dare you?",

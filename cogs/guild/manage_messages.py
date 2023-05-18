@@ -1,29 +1,30 @@
-from discord.ext import commands
-import text_variables as tv
+from __future__ import annotations
+
 import discord
 
+from discord.ext import commands
+
 from typing import Optional, Any
+from typing_extensions import Self
+
+import constants as cs
 from utils import BaseCog
 from bot import Dwello, DwelloContext
 
-class Messages(BaseCog):
+class Messages(BaseCog): # RENAME CLASS
 
-    def __init__(self, bot: Dwello, *args: Any, **kwargs: Any):
+    def __init__(self: Self, bot: Dwello, *args: Any, **kwargs: Any):
         super().__init__(bot, *args, **kwargs)
     
     @commands.hybrid_command(name='clear', help="Purges messages.", with_app_command=True)
     @commands.bot_has_permissions(manage_messages=True)
     @commands.has_permissions(manage_messages=True)
-    async def clear(self, ctx: DwelloContext, limit: int = 5, member: discord.Member = None) -> Optional[discord.Message]:
+    async def clear(self: Self, ctx: DwelloContext, limit: int = 5, member: discord.Member = None) -> Optional[discord.Message]:
         async with ctx.typing(ephemeral=True):
 
             msg = []
 
-            """else:
-                return await ctx.reply("Please pass in an integer as limit!")"""
-
             if member is None:
-
                 await ctx.channel.purge(limit = limit + 1)
                 #print(f"{limit}" + " messages deleted by {0}".format(ctx.message.author))
                 

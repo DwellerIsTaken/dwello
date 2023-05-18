@@ -1,9 +1,13 @@
 from __future__ import annotations
 
-import asyncpg, discord, string
-from typing import List, Dict, Any, Optional, TYPE_CHECKING
+import asyncpg
+import discord
+import string
 
-import text_variables as tv
+from typing import List, Dict, Any, Optional, TYPE_CHECKING
+from typing_extensions import Self
+
+import constants as cs
 
 if TYPE_CHECKING:
     from bot import Dwello 
@@ -13,17 +17,17 @@ else:
 
 class LevellingUtils:
 
-    def __init__(self, bot: Dwello):
+    def __init__(self: Self, bot: Dwello):
         self.bot = bot
 
-    async def create_user(self, user_id: Optional[int], guild_id: Optional[int]) -> None:
+    async def create_user(self: Self, user_id: Optional[int], guild_id: Optional[int]) -> None:
         async with self.bot.pool.acquire() as conn:
             conn: asyncpg.Connection
             async with conn.transaction():
 
                 await conn.execute("INSERT INTO users(user_id, guild_id, event_type) VALUES($1, $2, 'server'), ($1, $2, 'bot') ON CONFLICT (user_id, guild_id, event_type) DO NOTHING", user_id, guild_id)
 
-    async def increase_xp(self, message: discord.Message, rate: int = 5) -> None:
+    async def increase_xp(self: Self, message: discord.Message, rate: int = 5) -> None:
         async with self.bot.pool.acquire() as conn:
             conn: asyncpg.Connection
             async with conn.transaction():
@@ -51,7 +55,7 @@ class LevellingUtils:
 
                     level_embed_dis = f"*Your new level is: {new_level}*\n*Xp until your next level: {xp_till_next_level}*" # xp until next level
 
-                    level_embed = discord.Embed(title = "Congratulations with your new level!", description = string.Template(level_embed_dis).safe_substitute(member=message.author.name), color = tv.color)
+                    level_embed = discord.Embed(title = "Congratulations with your new level!", description = string.Template(level_embed_dis).safe_substitute(member=message.author.name), color = cs.RANDOM_COLOR)
 
                     level_embed.set_thumbnail(url=f"{message.author.display_avatar}")
                     level_embed.set_author(name=f"{message.author.name}", icon_url=f"{message.author.display_avatar}")
@@ -76,7 +80,7 @@ class LevellingUtils:
                     xp + rate, total_xp + rate, messages + 1, message.author.id, message.guild.id
                 )
 
-    async def get_user_data(self, user_id: Optional[discord.Member.id] = int, guild_id: Optional[discord.Guild.id] = int) -> List[Dict[str, Any]]:
+    async def get_user_data(self: Self, user_id: Optional[discord.Member.id] = int, guild_id: Optional[discord.Guild.id] = int) -> List[Dict[str, Any]]:
         async with self.bot.pool.acquire() as conn:
             conn: asyncpg.Connection
             async with conn.transaction():
@@ -90,7 +94,7 @@ class LevellingUtils:
 
         return results
 
-    async def get_rank(self, user_id: Optional[discord.Member.id] = int, guild_id: Optional[discord.Guild.id] = int) -> Optional[int]:
+    async def get_rank(self: Self, user_id: Optional[discord.Member.id] = int, guild_id: Optional[discord.Guild.id] = int) -> Optional[int]:
         async with self.bot.pool.acquire() as conn:
             conn: asyncpg.Connection
             async with conn.transaction():

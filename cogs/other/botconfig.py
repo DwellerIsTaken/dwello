@@ -1,20 +1,23 @@
 from __future__ import annotations
 
-import discord, asyncpg
+import asyncpg
+import discord
+
 from discord.ext import commands
 
-from typing import Optional, Any, List, Union, Literal
+from typing import Literal, Optional, Union, Any, List
+from typing_extensions import Self
 
-import text_variables as tv
-from bot import Dwello, DwelloContext
+import constants as cs
 from utils import BaseCog
+from bot import Dwello, DwelloContext
 
 class PrefixCommands:
 
-    def __init__(self, bot: Dwello) -> None:
+    def __init__(self: Self, bot: Dwello) -> None:
         self.bot = bot
 
-    async def set_prefix(self, ctx: DwelloContext, prefix: str) -> Optional[discord.Message]:
+    async def set_prefix(self: Self, ctx: DwelloContext, prefix: str) -> Optional[discord.Message]:
         async with self.bot.pool.acquire() as conn:
             conn: asyncpg.Connection
             async with conn.transaction():
@@ -28,9 +31,9 @@ class PrefixCommands:
                     return await ctx.reply("This prefix is already added!", user_mistake=True)
                 
         await self.bot.db.fetch_table_data("prefixes")
-        return await ctx.reply(embed = discord.Embed(description=f"The prefix is set to `{prefix}`", color=tv.color), permission_cmd=True)
+        return await ctx.reply(embed = discord.Embed(description=f"The prefix is set to `{prefix}`", color=cs.RANDOM_COLOR), permission_cmd=True)
     
-    async def display_prefixes(self, ctx: DwelloContext) -> Optional[discord.Message]:
+    async def display_prefixes(self: Self, ctx: DwelloContext) -> Optional[discord.Message]:
         async with self.bot.pool.acquire() as conn:
             conn: asyncpg.Connection
             async with conn.transaction():
@@ -38,18 +41,22 @@ class PrefixCommands:
                 prefixes = await conn.fetch("SELECT prefix FROM prefixes WHERE guild_id = $1", ctx.guild.id)
                 default_prefixes: List[str] = self.bot.DEFAULT_PREFIXES + [f"<@!{self.bot.user.id}>"]
 
-                embed = discord.Embed(title = "Prefixes", color=tv.color)
+                embed: discord.Embed= discord.Embed(title = "Prefixes", color=cs.RANDOM_COLOR)
                 embed.add_field(
-                name="Guild's prefix(es)", 
-                value=(", ".join(f"`{p['prefix']}`" for p in prefixes) if prefixes else "`None` -> `dw.help prefix`"), inline=False)
+                    name="Guild's prefix(es)", 
+                    value=(", ".join(f"`{p['prefix']}`" for p in prefixes) if prefixes else "`None` -> `dw.help prefix`"),
+                    inline=False,
+                )
                 embed.add_field(
-                name="Default prefixes", 
-                value= ", ".join(p if str(self.bot.user.id) in p else f'`{p}`' for p in default_prefixes), inline=False)
+                    name="Default prefixes", 
+                    value= ", ".join(p if str(self.bot.user.id) in p else f'`{p}`' for p in default_prefixes),
+                inline=False,
+                )
                 embed.set_footer(text=None)
 
         return await ctx.reply(embed=embed, mention_author=False, ephemeral=False)
     
-    async def remove_prefix(self, ctx: DwelloContext, prefix: Union[str, Literal['all']]) -> Optional[discord.Message]:
+    async def remove_prefix(self: Self, ctx: DwelloContext, prefix: Union[str, Literal['all']]) -> Optional[discord.Message]:
         async with self.bot.pool.acquire() as conn:
             conn: asyncpg.Connection
             async with conn.transaction():
@@ -68,18 +75,18 @@ class PrefixCommands:
                     count = 1
 
         await self.bot.db.fetch_table_data("prefixes")
-        return await ctx.reply(embed=discord.Embed(description=f"{'Prefix has' if count == 1 else f'{count} prefixes have'} been removed.", color=tv.color), permission_cmd=True)
+        return await ctx.reply(embed=discord.Embed(description=f"{'Prefix has' if count == 1 else f'{count} prefixes have'} been removed.", color=cs.RANDOM_COLOR), permission_cmd=True)
 
 class BotConfig(BaseCog):
 
-    def __init__(self, bot: Dwello, *args: Any, **kwargs: Any):
+    def __init__(self: Self, bot: Dwello, *args: Any, **kwargs: Any):
         super().__init__(bot, *args, **kwargs)
         self.prefixc: PrefixCommands = PrefixCommands(self.bot)
         
     @commands.hybrid_group(invoke_without_command=True, with_app_command=False)
     @commands.has_permissions(administrator=True)
     @commands.guild_only()
-    async def prefix(self, ctx: DwelloContext):
+    async def prefix(self: Self, ctx: DwelloContext):
         async with ctx.typing():
 
             """if prefix is None:
@@ -89,22 +96,22 @@ class BotConfig(BaseCog):
             return await self.prefixc.display_prefixes(ctx)
 
     @prefix.command(name="add", help="Adds bot prefix to the guild.")
-    async def add_prefix(self, ctx: DwelloContext, prefix: str):
+    async def add_prefix(self: Self, ctx: DwelloContext, prefix: str):
 
         return await self.prefixc.set_prefix(ctx, prefix)
 
     @commands.has_permissions()
     @prefix.command(name="display", help="Displays all prefixes.", aliases=["prefixes"])
-    async def display_prefix(self, ctx: DwelloContext):
+    async def display_prefix(self: Self, ctx: DwelloContext):
 
         return await self.prefixc.display_prefixes(ctx)
     
     @prefix.command(name="remove", description = "Removes guild's prefix(es).")
-    async def delete_prefix(self, ctx: DwelloContext, prefix: str):
+    async def delete_prefix(self: Self, ctx: DwelloContext, prefix: str):
             
         return await self.prefixc.remove_prefix(ctx, prefix)
     
     @delete_prefix.autocomplete('prefix')
-    async def autocomplete_callback_(self, interaction: discord.Interaction, current: str):
+    async def autocomplete_callback_(self: Self, interaction: discord.Interaction, current: str):
         
         return await self.bot.autocomplete.choice_autocomplete(interaction, current, "prefixes", "prefix", None, True)

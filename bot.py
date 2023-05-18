@@ -1,11 +1,12 @@
-from dotenv import load_dotenv
-load_dotenv()
+from __future__ import annotations
 
 import aiohttp
-import asyncpg
 import asyncio
-
+import asyncpg
 import logging
+
+from dotenv import load_dotenv
+load_dotenv()
 
 from utils.context import DwelloContext
 from utils.bases.bot_base import DwelloBase, get_or_fail
@@ -36,28 +37,6 @@ if __name__ == "__main__":
             await bot.start(token)
 
     asyncio.run(main())
-
-"""async def main():
-    '''package_list = [asyncio, 
-                    discord,
-                    matplotlib, 
-                    requests, 
-                    colorthief, 
-                    aiohttp,
-                    asyncpg, 
-                    setuptools
-                    ]
-    add_requirements(*package_list)'''
-
-    async with bot:
-        for cog in cogs:
-            await bot.load_extension(cog)
-
-        logging.basicConfig(level=logging.INFO)
-
-        token = os.getenv('token')
-        await bot.start(token) #log_handler=None
-asyncio.run(main())"""
 
 # This command doesn't exist: function (error handler)
 # Make an info(help) command

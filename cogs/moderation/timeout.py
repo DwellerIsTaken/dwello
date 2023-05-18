@@ -1,17 +1,19 @@
 from __future__ import annotations
 
+import discord
+import datetime
+
 from discord.app_commands import Choice
 from discord.ext import commands
-import text_variables as tv
-import discord, datetime
 
-from contextlib import suppress
+from typing import Optional, Union, Any, Dict, List
+from typing_extensions import Self
 
+import constants as cs
 from utils import BaseCog, member_check, HandleHTTPException
-from typing import Optional, Any, List
 from bot import Dwello, DwelloContext
 
-async def tempmute(self, ctx: DwelloContext, member: discord.Member, duration: int, period: Optional[str] = None, reason: Optional[str] = None) -> Optional[discord.Embed]:
+async def tempmute(bot: Dwello, ctx: DwelloContext, member: discord.Member, duration: int, period: Optional[str] = None, reason: Optional[str] = None) -> Optional[discord.Message]: # remove bot param for member check
 
     time_period_dict = {
         "seconds": "seconds",
@@ -23,33 +25,36 @@ async def tempmute(self, ctx: DwelloContext, member: discord.Member, duration: i
     time_period = next((tp for tp in time_period_dict if tp in str(period)), "hours")
     time_delta = datetime.timedelta(**{time_period_dict[time_period]: duration})
 
-    if not await member_check(ctx, member, self.bot): # ?
+    if not await member_check(ctx, member, bot): # ?
         return
 
     if member.is_timed_out():
         message = "Provided member is already timed out!"
         return await ctx.reply(message, mention_author=True, ephemeral=True)
 
-    ban_embed = discord.Embed(
+    embed: discord.Embed = discord.Embed(
         title="Timed out",
-        description=f"Guten tag! \nYou have been timed out in **{ctx.channel.guild.name}**, in case you were wondering. You must have said something wrong or it's just an administrator whom is playing with his toys. In any way, Make Yourself Great Again.\n \n Reason: **{reason}**\n\nTimed out for: `{time_delta}`",
-        color=tv.warn_color,
-        timestamp=discord.utils.utcnow()
+        description=f"Guten tag! \nYou have been timed out in **{ctx.channel.guild.name}**, in case you were wondering. "
+                    f"You must have said something wrong or it's just an administrator whom is playing with his toys. "
+                    f"In any way, Make Yourself Great Again.\n \n Reason: **{reason}**\n\nTimed out for: `{time_delta}`",
+        color=cs.WARNING_COLOR,
+        timestamp=discord.utils.utcnow(),
     )
-    ban_embed.set_image(url="https://c.tenor.com/vZiLS-HKM90AAAAC/thanos-balance.gif")
-    ban_embed.set_footer(text=tv.footer)
+    embed.set_image(url="https://c.tenor.com/vZiLS-HKM90AAAAC/thanos-balance.gif")
+    embed.set_footer(text=cs.FOOTER)
 
     try:
-        await member.send(embed=ban_embed)
+        await member.send(embed=embed)
 
-    except TypeError as e:
+    except discord.HTTPException as e:
         print(e)
 
-    embed = discord.Embed(
+    embed: discord.Embed = discord.Embed(
         title="User is timed out!",
-        description=f'*Timed out by:* {ctx.author.mention} \n \n**{member}** has been successfully timed out for awhile from this server! \nReason: `{reason}`',
-        color=tv.warn_color,
-        timestamp = discord.utils.utcnow()
+        description=f"*Timed out by:* {ctx.author.mention}\n"
+                    f"\n**{member}** has been successfully timed out for awhile from this server! \nReason: `{reason}`",
+        color=cs.WARNING_COLOR,
+        timestamp = discord.utils.utcnow(),
     )
     embed.set_footer(text=f"Timed out for {time_delta}")
 
@@ -60,7 +65,7 @@ async def tempmute(self, ctx: DwelloContext, member: discord.Member, duration: i
 
 class Timeout(BaseCog):
 
-    def __init__(self, bot: Dwello, *args: Any, **kwargs: Any):
+    def __init__(self: Self, bot: Dwello, *args: Any, **kwargs: Any):
         super().__init__(bot, *args, **kwargs)
 
     @commands.hybrid_command(name='mute', help="Mutes member.", with_app_command = True)
@@ -69,23 +74,23 @@ class Timeout(BaseCog):
         Choice(name="Minutes", value="minutes"), 
         Choice(name="Hours", value="hours"),
         Choice(name="Days", value="days"),
-        Choice(name="Weeks", value="weeks")]
-        )
+        Choice(name="Weeks", value="weeks"),
+    ])
     @commands.bot_has_permissions(moderate_members = True)
     @commands.has_permissions(moderate_members = True)
     @commands.guild_only()
-    async def mute(self, ctx: DwelloContext, member: discord.Member, duration: int, period: Optional[Choice[str]], *, reason=None) -> None:
+    async def mute(self: Self, ctx: DwelloContext, member: discord.Member, duration: int, period: Optional[Choice[str]], *, reason=None) -> None:
         async with ctx.typing(ephemeral=True):
 
-            return await tempmute(self, ctx, member, duration, period, reason)
+            return await tempmute(self.bot, ctx, member, duration, period, reason)
 
     # LOOK INTO THIS:   
     @mute.error
-    async def mute_error(self, ctx, error):
+    async def mute_error(self: Self, ctx: DwelloContext, error: Union[commands.MissingPermissions, commands.BotMissingPermissions, Any]):
         if isinstance(error, commands.MissingPermissions):
-            missing_permissions_embed = discord.Embed(title = "Permission Denied.", description = f"You (or the bot) don't have permission to use this command. It should have __*{error.missing_permissions}*__ permission(s) to be able to use this command.", color = tv.warn_color)
+            missing_permissions_embed = discord.Embed(title = "Permission Denied.", description = f"You (or the bot) don't have permission to use this command. It should have __*{error.missing_permissions}*__ permission(s) to be able to use this command.", color = cs.WARNING_COLOR)
             missing_permissions_embed.set_image(url = '\n https://cdn-images-1.medium.com/max/833/1*kmsuUjqrZUkh_WW-nDFRgQ.gif')
-            missing_permissions_embed.set_footer(text=tv.footer)
+            missing_permissions_embed.set_footer(text=cs.FOOTER)
 
             if ctx.interaction is None:
                 return await ctx.channel.send(embed = missing_permissions_embed)
@@ -112,44 +117,41 @@ class Timeout(BaseCog):
     @commands.bot_has_permissions(moderate_members = True)
     @commands.has_permissions(moderate_members = True)
     @commands.guild_only()
-    async def unmute(self, ctx: DwelloContext, member: discord.Member) -> Optional[discord.Embed]:
+    async def unmute(self: Self, ctx: DwelloContext, member: discord.Member) -> Optional[discord.Message]:
         async with ctx.typing(ephemeral=True):
 
             if member.id == self.bot.user.id:
-                return await ctx.reply(embed= discord.Embed(title="Permission Denied.", description="**I'm no hannibal Lector though, no need to unmute.**", color=tv.color), ephemeral = True)
+                return await ctx.reply(embed= discord.Embed(title="Permission Denied.", description="**I'm no hannibal Lector though, no need to unmute.**", color=cs.WARNING_COLOR), user_mistake=True)
 
             elif member.is_timed_out() is False:
                 return await ctx.reply("The provided member isn't timed out.", ephemeral = True)
 
             elif ctx.author == member:
-                return await ctx.reply(embed = discord.Embed(title="Permission Denied.", description=f"Don't try to unmute yourself if you aren't muted.", color=tv.color), ephemeral = True)
+                return await ctx.reply(embed = discord.Embed(title="Permission Denied.", description=f"Don't try to unmute yourself if you aren't muted.", color=cs.WARNING_COLOR), user_mistake=True)
 
             async with HandleHTTPException(ctx, title=f'Failed to unmute {member}'):
                 await member.timeout(None, reason = "Unmuted")
 
-            return await ctx.reply(embed= discord.Embed(title="Unmuted", description=f"{member} is unmuted.", color=tv.color), ephemeral = True)
+            return await ctx.reply(embed= discord.Embed(title="Unmuted", description=f"{member} is unmuted.", color=cs.RANDOM_COLOR), permission_cmd=True)
 
-    @commands.hybrid_command(name='timed_out', help="Shows everyone whom is timed out.", with_app_command = True) # MODERATION OR MEMBER-FRIENDLY?
+    @commands.hybrid_command(name='timed_out', aliases = ['muted'], help="Shows everyone whom is timed out.", with_app_command = True) # MODERATION OR MEMBER-FRIENDLY (PERMS)?
     @commands.bot_has_permissions(view_audit_log = True)
     #@commands.has_permissions(moderate_members = True)
     @commands.guild_only()
-    async def timed_out(self, ctx: DwelloContext) -> Optional[discord.Embed]:
+    async def timed_out(self: Self, ctx: DwelloContext) -> Optional[discord.Message]:
         async with ctx.typing(ephemeral=True):
 
             timed_out_list: List[discord.Member] = []
-            reason_list = []
+            reason_list: List[str] = []
 
-            member_updates = {}
-
+            member_updates: Dict[Union[int, str], Union[discord.AuditLogEntry, Any]] = {}
             async for entry in ctx.guild.audit_logs(action=discord.AuditLogAction.member_update):
                 if entry.target in ctx.guild.members:
                     member_updates[entry.target.id] = entry
 
-            print(member_updates)
-
             for member in ctx.guild.members:
                 if member.is_timed_out():
-                    entry = member_updates.get(member.id)
+                    entry: discord.AuditLogEntry = member_updates.get(member.id)
                     if entry:
                         if not entry.reason:
                             reason = "Not specified"
@@ -159,7 +161,7 @@ class Timeout(BaseCog):
                         reason_list.append(str(reason))
                     timed_out_list.append(member)
 
-            embed = discord.Embed(title = "Timed out list", color = tv.color)
+            embed: discord.Embed = discord.Embed(title = "Timed out list", color = cs.RANDOM_COLOR)
 
             if len(timed_out_list) == 0:
                 embed.add_field(name = "\u2800", value = "`Nobody is timed out.`")

@@ -4,6 +4,7 @@ from discord.ext import commands
 import discord, asyncpg
 
 from typing import TYPE_CHECKING
+from typing_extensions import Self
 
 if TYPE_CHECKING:
     from bot import Dwello 
@@ -13,10 +14,10 @@ else:
 
 class OtherUtils:
 
-    def __init__(self, bot: Dwello) -> None:
+    def __init__(self: Self, bot: Dwello) -> None:
         self.bot = bot
 
-    async def exe_sql(self, guild: discord.Guild) -> None:
+    async def exe_sql(self: Self, guild: discord.Guild) -> None:
         async with self.bot.pool.acquire() as conn:
             conn: asyncpg.Connection
             async with conn.transaction():

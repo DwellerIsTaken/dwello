@@ -1,36 +1,33 @@
 from __future__ import annotations
 
+import asyncio
+import asyncpg
+
 from discord.ext import tasks
 from datetime import datetime
 from pytz import timezone
-import asyncpg, asyncio
 
-import text_variables as tv
-
-from bot import Dwello
 from typing import Any
+from typing_extensions import Self
+
 from utils import BaseCog
+from bot import Dwello
 
 class Tasks(BaseCog):
 
-    def __init__(self, bot: Dwello, *args: Any, **kwargs: Any):
+    def __init__(self: Self, bot: Dwello, *args: Any, **kwargs: Any):
         super().__init__(bot, *args, **kwargs)
         self.stats_loop.start()
         self.eco_loop.start() # maybe start it in bot_base.py instead
 
     @tasks.loop(minutes = 10)
-    async def stats_loop(self):
+    async def stats_loop(self: Self) -> None:
 
         for guild in self.bot.guilds:
             await self.bot.otherutils.exe_sql(guild) # in case join/leave won't work because of rate limitations
 
-    @stats_loop.before_loop
-    async def before_stats(self):
-        await asyncio.sleep(10)
-        await self.bot.wait_until_ready()
-
     @tasks.loop(seconds = 1)
-    async def eco_loop(self):
+    async def eco_loop(self: Self) -> None:
         cet = timezone("Europe/Amsterdam")
         now = datetime.now(cet)
 
@@ -40,6 +37,11 @@ class Tasks(BaseCog):
                 async with conn.transaction():
                     await conn.execute("UPDATE users SET worked = 0")
 
+    @stats_loop.before_loop
+    async def before_stats(self: Self):
+        await asyncio.sleep(10)
+        await self.bot.wait_until_ready()
+
     @eco_loop.before_loop
-    async def before_curr(self):
+    async def before_curr(self: Self):
         await self.bot.wait_until_ready()

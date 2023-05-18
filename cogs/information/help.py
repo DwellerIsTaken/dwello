@@ -11,17 +11,18 @@ from discord import Interaction
 from discord.ext import commands
 from discord.ui import Select, button, select
 
-from typing import (Optional, 
-                    Union, 
-                    Any, 
-                    List, 
-                    Dict, 
-                    TYPE_CHECKING,
+from typing import (
+    Optional, 
+    Union, 
+    Any, 
+    List, 
+    Dict, 
+    TYPE_CHECKING,
 )
-from typing_extensions import Self
+from typing_extensions import Self, override
 
+import constants as cs
 from utils import BaseCog
-import text_variables as tv
 from bot import Dwello, DwelloContext
 
 newline = "\n"
@@ -31,9 +32,9 @@ async def setup(bot: Dwello):
 
 class HelpCentre(discord.ui.View):
     def __init__(
-        self,
+        self: Self,
         ctx: DwelloContext, 
-        other_view: discord.ui.View
+        other_view: discord.ui.View,
     ):
         super().__init__()
         self.embed = None
@@ -42,16 +43,16 @@ class HelpCentre(discord.ui.View):
         self.other_view = other_view
 
     @discord.ui.button(emoji="🏠", label="Go Back", style=discord.ButtonStyle.blurple)
-    async def go_back(self, interaction: discord.Interaction, _):
+    async def go_back(self: Self, interaction: discord.Interaction, _):
         await interaction.response.edit_message(embed=self.embed, view=self.other_view)
         self.stop()
 
-    async def start(self, interaction: discord.Interaction):
+    async def start(self: Self, interaction: discord.Interaction):
         embed = discord.Embed(
             title="Here is a guide on how to understand this help command",
             description="\n__**Do not not include these brackets when running a command!**__"
             "\n__**They are only there to indicate the argument type**__",
-            color=tv.color,
+            color=cs.RANDOM_COLOR,
         )
         embed.add_field(
             name="`<argument>`",
@@ -99,7 +100,7 @@ class HelpCentre(discord.ui.View):
         )''' # Later
         await interaction.response.edit_message(embed=embed, view=self)
 
-    async def interaction_check(self, interaction: Interaction) -> bool:
+    async def interaction_check(self: Self, interaction: Interaction) -> bool:
         if interaction.user and interaction.user == self.ctx.author:
             return True
         await interaction.response.defer()
@@ -108,7 +109,7 @@ class HelpCentre(discord.ui.View):
 class HelpView(discord.ui.View):
 
     def __init__(
-        self,
+        self: Self,
         ctx: DwelloContext,
         data: Dict[commands.Cog, List[commands.Command]], 
         help_command: commands.HelpCommand,
@@ -124,7 +125,7 @@ class HelpView(discord.ui.View):
         self.embeds: List[discord.Embed] = [self.main_embed]
 
     @select(placeholder="Select a category", row=0)
-    async def category_select(self, interaction: Interaction, select: Select):
+    async def category_select(self: Self, interaction: Interaction, select: Select):
         if select.values[0] == "index":
             self.current_page = 0
             self.embeds = [self.main_embed]
@@ -141,7 +142,7 @@ class HelpView(discord.ui.View):
             self._update_buttons()
             return await interaction.response.edit_message(embed=self.embeds[self.current_page], view=self)
 
-    def build_embeds(self, cog: commands.Cog) -> List[discord.Embed]:
+    def build_embeds(self: Self, cog: commands.Cog) -> List[discord.Embed]:
         embeds = []
         #comm = cog.get_commands()
 
@@ -149,9 +150,9 @@ class HelpView(discord.ui.View):
             if cog_ != cog:
                 continue
 
-            embed = discord.Embed(
+            embed: discord.Embed = discord.Embed(
                 title=f"{cog.qualified_name} commands [{len(comm)}]",
-                color=tv.color,
+                color=cs.RANDOM_COLOR,
                 description=cog.description or "No description provided",
             )
 
@@ -173,7 +174,7 @@ class HelpView(discord.ui.View):
                     embeds.append(embed)
                     embed = discord.Embed(
                         title=f"{cog.qualified_name} commands [{len(comm)}]",
-                        color=tv.color,
+                        color=cs.RANDOM_COLOR,
                         description= (cog.description or "No description provided"),
                     )
             if len(embed.fields) > 0:
@@ -181,7 +182,7 @@ class HelpView(discord.ui.View):
 
             return embeds
 
-    def build_select(self) -> None:
+    def build_select(self: Self) -> None:
         self.category_select.options = []
         self.category_select.add_option(label="Main Page", value="index", emoji="🏠")
         for cog, comm in self.data.items():
@@ -192,9 +193,9 @@ class HelpView(discord.ui.View):
             brief = getattr(cog, "select_brief", None)
             self.category_select.add_option(label=label, value=cog.qualified_name, emoji=emoji, description=brief)
 
-    def build_main_page(self) -> discord.Embed:
-        embed = discord.Embed(
-            color=tv.color,
+    def build_main_page(self: Self) -> discord.Embed:
+        embed: discord.Embed = discord.Embed(
+            color=cs.RANDOM_COLOR,
             title="Dwello Help Menu",
             description="Hello, I'm Dwello! I'm still in development, but you can use me.",
         )
@@ -235,24 +236,24 @@ class HelpView(discord.ui.View):
         return embed
 
     @button(emoji="❓", label="help", row=1, style=discord.ButtonStyle.green)
-    async def help(self, interaction: Interaction, _):
+    async def help(self: Self, interaction: Interaction, _):
         view = HelpCentre(self.ctx, self)
-        await view.start(interaction)
+        await view.start(interaction) # make better buttons later
 
     @button(label="<", row=1)
-    async def previous(self, interaction: Interaction, _):
+    async def previous(self: Self, interaction: Interaction, _):
         self.current_page -= 1
         self._update_buttons()
         await interaction.response.edit_message(embed=self.embeds[self.current_page], view=self)
 
     @button(emoji="🗑", row=1, style=discord.ButtonStyle.red)
-    async def _end(self, interaction: Interaction, _):
+    async def _end(self: Self, interaction: Interaction, _):
         await interaction.message.delete(delay=0)
         """if self.ctx.channel.permissions_for(self.ctx.me).add_reactions:
             await self.ctx.message.add_reaction(random.choice(constants.DONE))"""
 
     @button(label=">", row=1) # emoji
-    async def next(self, interaction: Interaction, _):
+    async def next(self: Self, interaction: Interaction, _):
         self.current_page += 1
         self._update_buttons()
         await interaction.response.edit_message(embed=self.embeds[self.current_page], view=self)
@@ -262,7 +263,7 @@ class HelpView(discord.ui.View):
         view = NewsMenu(self.ctx, other_view=self)
         await view.start(interaction)"""
 
-    def _update_buttons(self) -> None:
+    def _update_buttons(self: Self) -> None:
         styles = {True: discord.ButtonStyle.gray, False: discord.ButtonStyle.blurple}
         page = self.current_page
         total = len(self.embeds) - 1
@@ -271,17 +272,17 @@ class HelpView(discord.ui.View):
         self.next.style = styles[page == total]
         self.previous.style = styles[page == 0]
 
-    async def interaction_check(self, interaction: discord.Interaction) -> bool:
+    async def interaction_check(self: Self, interaction: discord.Interaction) -> bool:
         if interaction.user and interaction.user == self.ctx.author:
             return True
         await interaction.response.defer()
         return False
 
-    async def on_timeout(self) -> None:
+    async def on_timeout(self: Self) -> None:
         self.clear_items()
         await self.message.edit(view=self)
 
-    async def start(self) -> Optional[discord.Message]:
+    async def start(self: Self) -> Optional[discord.Message]:
         self.build_select()
         self._update_buttons()
         self.message = await self.ctx.send(embed=self.main_embed, view=self)
@@ -291,6 +292,7 @@ class MyHelp(commands.HelpCommand):
         super().__init__(**options)
         self.context: DwelloContext = None
 
+    @override
     def get_bot_mapping(self):
         """Retrieves the bot mapping passed to :meth:`send_bot_help`."""
         bot = self.context.bot
@@ -337,11 +339,13 @@ class MyHelp(commands.HelpCommand):
         )
 
     # !help
+    @override
     async def send_bot_help(self, mapping):
         view = HelpView(self.context, data=mapping, help_command=self)
         await view.start()
 
     # !help <command>
+    @override
     async def send_command_help(self, command: commands.Command):
         embed = discord.Embed(
             title=f"information about: `{self.context.clean_prefix}{command}`",
@@ -416,6 +420,7 @@ class MyHelp(commands.HelpCommand):
         finally:
             await self.context.send(embed=embed)
 
+    @override
     async def send_cog_help(self, cog: commands.Cog):
         entries = cog.get_commands()
         if entries:
@@ -433,6 +438,7 @@ class MyHelp(commands.HelpCommand):
         else:
             await self.context.send(f"No commands found in {cog.qualified_name}")
 
+    @override
     async def send_group_help(self, group: commands.Group):
         embed = discord.Embed(
             title=f"information about: `{self.context.clean_prefix}{group}`",
@@ -494,14 +500,17 @@ class MyHelp(commands.HelpCommand):
         finally:
             await self.context.send(embed=embed)
 
+    @override
     def command_not_found(self, string):
         return string
 
+    @override
     def subcommand_not_found(self, command, string):
         if isinstance(command, commands.Group) and len(command.all_commands) > 0:
             return command.qualified_name + string
         return command.qualified_name
 
+    @override
     async def send_error_message(self, error):
         matches = difflib.get_close_matches(error, self.context.bot.cogs.keys())
         if matches:
@@ -553,13 +562,14 @@ class MyHelp(commands.HelpCommand):
             f"\nDo `{self.context.clean_prefix}help` for a list of available commands! 💞"
         )
 
+    @override
     async def on_help_command_error(self, ctx, error):
         if isinstance(error, commands.CommandInvokeError):
             await ctx.send(embed=discord.Embed(title=str(error.original),description=''.join(traceback.format_exception(error.__class__, error, error.__traceback__))))
 
 class About(BaseCog):
 
-    def __init__(self, bot: Dwello, *args: Any, **kwargs: Any):
+    def __init__(self: Self, bot: Dwello, *args: Any, **kwargs: Any):
         super().__init__(bot, *args, **kwargs)
         
         help_command = MyHelp()
@@ -577,15 +587,15 @@ class About(BaseCog):
     @commands.hybrid_command(name = 'source', description="Returns command's source.", with_app_command=True)
     async def source(self: Self, ctx: DwelloContext, *, command_name: Optional[str]) -> Optional[discord.Message]:
 
-        git = tv.GITHUB
+        git = cs.GITHUB
         if not command_name:
             return await ctx.reply(git)
 
         command = self.bot.get_command(command_name)
-        target = command.callback
         if not command:
             return await ctx.reply("That command doesn't exist!")
         
+        target = command.callback 
         if command_name == "help":
             target = type(self.bot.help_command)
 
@@ -595,7 +605,7 @@ class About(BaseCog):
         git_lines = f"#L{lines[1]}-L{len(lines[0])+lines[1]}"
         path = os.path.relpath(file)
 
-        source_link = f"> [**Source**]({git}tree/main/{path}{git_lines}) <:github:1100906448030011503>\n> **{path}{git_lines}**\n"
+        source_link = f"> [**Source**]({git}tree/main/{path}{git_lines}) {cs.GITHUB_EMOJI}\n> **{path}{git_lines}**\n"
 
         embed: discord.Embed = discord.Embed(
             title = f"Source for `{command.name}`",
@@ -628,6 +638,7 @@ class About(BaseCog):
         self.select_brief = "Bot Information commands."
         print(' yyyyyyyyyyyyyyyyyyyyyyyyYYYYYYY')'''
 
+# SOME USELESS PIECE OF SHIT
 class ManualHelp:
 
     def __init__(self, bot: Dwello = None):

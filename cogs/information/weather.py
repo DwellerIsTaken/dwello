@@ -2,31 +2,31 @@ from __future__ import annotations
 
 import os
 import json
-import aiohttp
+import discord
 import difflib
 
 from discord.ext import commands
-import discord
 
 from typing import Optional, Any
+from typing_extensions import Self
 
-from bot import Dwello, DwelloContext
-import text_variables as tv
+import constants as cs
 from utils import BaseCog
+from bot import Dwello, DwelloContext
 
 class Weather(BaseCog):
 
-    def __init__(self, bot: Dwello, *args: Any, **kwargs: Any):
+    def __init__(self: Self, bot: Dwello, *args: Any, **kwargs: Any):
         super().__init__(bot, *args, **kwargs)
 
     # THINK OF A NEW FOLDER WHERE TO ADD ALL THIS (?)
     @commands.hybrid_command(name="hello", with_app_command=True)
-    async def ping_command(self, ctx: DwelloContext) -> Optional[discord.Message]:
+    async def ping_command(self: Self, ctx: DwelloContext) -> Optional[discord.Message]:
 
         return await ctx.send("Hello!") # display more info about bot
 
     @commands.hybrid_command(name='weather', help="Shows you the temparature in the city you've typed in.", with_app_command=True)
-    async def weather(self, ctx: DwelloContext, *, city: str) -> Optional[discord.Message]:
+    async def weather(self: Self, ctx: DwelloContext, *, city: str) -> Optional[discord.Message]:
         if not city:
             return await ctx.reply("Please provide a city or a contry.", mention_author=True)
 
@@ -58,13 +58,12 @@ class Weather(BaseCog):
                 for match in clean_matches:
                     description += f"\n{match}"
 
-            matches_embed = (
-            discord.Embed(
+            matches_embed: discord.Embed = discord.Embed(
                 description=
                 f"Sorry, but I couldn't recognise the city **{args.title()}**."
                 f"\n{description}",
-                color=tv.warn_color))
-
+                color=cs.WARNING_COLOR,
+            )
             return await ctx.reply(embed=matches_embed, mention_author = True)
                                     
         curr_temp_celsius = data['main']['temp']

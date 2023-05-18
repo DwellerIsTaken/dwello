@@ -3,23 +3,25 @@
 
 from __future__ import annotations
 
-import discord, asyncpg
+import discord
 from discord.ext import commands
 
 from typing import Any, Optional, Literal
+from typing_extensions import Self
+
 from utils import BaseCog
 from bot import Dwello, DwelloContext
 
 class OwnerCommands(BaseCog):
 
-    def __init__(self, bot: Dwello, *args: Any, **kwargs: Any):
+    def __init__(self: Self, bot: Dwello, *args: Any, **kwargs: Any):
         super().__init__(bot, *args, **kwargs)
 
     @commands.command()
     @commands.is_owner()
     @commands.guild_only()
     async def sync(
-    self, ctx: DwelloContext, guilds: commands.Greedy[discord.Object], spec: Optional[Literal["~", "*", "^"]] = None) -> None:
+    self: Self, ctx: DwelloContext, guilds: commands.Greedy[discord.Object], spec: Optional[Literal["~", "*", "^"]] = None) -> Optional[discord.Message]:
         bot = self.bot
         if not guilds:
             if spec == "~":
@@ -54,13 +56,13 @@ class OwnerCommands(BaseCog):
     @commands.command()
     @commands.is_owner()
     @commands.guild_only()
-    async def list_eventsubs(self, ctx: DwelloContext):
+    async def list_eventsubs(self: Self, ctx: DwelloContext):
 
         return self.bot.twitch.event_subscription_list()
 
     @commands.command()
     @commands.is_owner()
     @commands.guild_only()
-    async def wipe_all_eventsubs(self, ctx: DwelloContext):
+    async def wipe_all_eventsubs(self: Self, ctx: DwelloContext):
 
         return self.bot.twitch.unsubscribe_from_all_eventsubs()

@@ -1,10 +1,16 @@
-import requests, discord, os, asyncpg
+from __future__ import annotations
 
-from typing import Optional, Union, Tuple, Literal, TYPE_CHECKING
+import asyncio
+import aiohttp
+import asyncpg
+import discord
+import os
+#import requests
 
-from discord.ext import commands
+from typing import Optional, Union, Tuple, Literal, Any, Dict, TYPE_CHECKING
+from typing_extensions import Self, Type
 
-import text_variables as tv
+import constants as cs
 from utils.context import DwelloContext
 
 if TYPE_CHECKING:
@@ -15,81 +21,93 @@ else:
 
 CLIENT_ID = os.getenv('TWITCH_CLIENT_ID')
 CLIENT_SECRET = os.getenv('TWITCH_CLIENT_SECRET')
+HELIX_URL = 'https://api.twitch.tv/helix/eventsub/subscriptions'
 
-helix_url = 'https://api.twitch.tv/helix/eventsub/subscriptions'
-
-def get_access_token():
-
+async def get_access_token(bot: Dwello):
     body = {
-                "client_id": CLIENT_ID,
-                "client_secret": CLIENT_SECRET,
-                "grant_type": 'client_credentials'
+        "client_id": CLIENT_ID,
+        "client_secret": CLIENT_SECRET,
+        "grant_type": 'client_credentials'
     }
-
-    r = requests.post('https://id.twitch.tv/oauth2/token', body)
-    keys = r.json()
+    request: aiohttp.ClientResponse = await bot.session.post('https://id.twitch.tv/oauth2/token', data=body)
+    keys = await request.json()
     access_token = keys['access_token']
+    expires_in = keys['expires_in']
 
-    headers = {
-        "Client-ID": CLIENT_ID,
-        "Authorization": f"Bearer {access_token}"
-    }
-
-    return access_token, headers
+    return access_token
 
 class Twitch:
 
-    def __init__(self, bot: Dwello):
+    # FIX ACCESS TOKEN ISSUE. CREATE LOOP BASED ON EXPIRATION DATE AND REQUEST NEW ONE WHENEVER ONE EXPIRES
+    def __init__(self: Self, access_token: str, bot: Dwello) -> None:
+
         self.bot = bot
-        self.access_token, self.headers = get_access_token()
+        self.session = bot.session
+        self.access_token = access_token
+        
+    @classmethod
+    async def create_access_token(cls: Type[Self], bot: Dwello) -> Self:
+        access_token = await get_access_token(bot)
+        return cls(access_token, bot)
+    
+    @property
+    def headers(self: Self) -> Dict[str, Any]:
+        _headers = {
+            "Client-ID": CLIENT_ID,
+            "Authorization": f"Bearer {self.access_token}"
+        }
+        return _headers
+    
+    async def username_to_id(self: Self, username: str) -> Optional[str]:
 
-    async def username_to_id(self, username: str) -> Optional[str]:
-            
-        username = username.lower()
+        url = f'https://api.twitch.tv/helix/users?login={username.lower()}'
 
-        url = f'https://api.twitch.tv/helix/users?login={username}'
-        response = requests.get(url, headers=self.headers).json()
+        response: aiohttp.ClientResponse = await self.session.get(url, headers=self.headers)
+        data = await response.json()
 
         # The Twitch user ID to subscribe to
-        if "data" in response and len(response["data"]) > 0:
-            user_id_ = response["data"][0]["id"]
-            #print(f"The user ID for {username} is {user_id_}")
-
-        else:
-            raise Exception(f"Could not find user {username}")
+        if "data" in data and len(data["data"]) > 0:
+            _user_id = data["data"][0]["id"]
+            print(type(_user_id))
         
-        return user_id_
+        else:
+            raise Exception(f"Could not find user {username}") # incorrect check ?
+        
+        return _user_id
     
-    async def id_to_username(self, user_id: int) -> Optional[str]:
+    async def id_to_username(self: Self, user_id: int) -> Optional[str]:
 
         url = f'https://api.twitch.tv/helix/users?id={user_id}'
-        response = requests.get(url, headers=self.headers).json()
+
+        response: aiohttp.ClientResponse = await self.session.get(url, headers=self.headers)
+        data = await response.json()
 
         # The Twitch username to subscribe to
-        if "data" in response and len(response["data"]) > 0:
-            username = response["data"][0]["login"]
-            print(f"The username for user ID {user_id} is {username}")
+        if "data" in data and len(data["data"]) > 0:
+            _username = data["data"][0]["login"]
 
         else:
             raise Exception(f"Could not find user with ID {user_id}")
         
-        return username
+        return _username
 
-    async def event_subscription(self, ctx: DwelloContext, type_: str, username: str) -> Optional[Tuple[discord.Message, dict]]:
+    async def event_subscription(self: Self, ctx: DwelloContext, type_: str, username: str) -> Union[Tuple[discord.Message, dict], Any]:
         async with self.bot.pool.acquire() as conn:
             conn: asyncpg.Connection
             async with conn.transaction():
+                
+                session = self.bot.session
 
                 try:
                     user_id = await self.username_to_id(username)
 
                 except:
-                    return await ctx.reply(embed=discord.Embed(description= f"Could not find user **{username}**.", color = tv.color), ephemeral=True)
+                    return await ctx.reply(embed=discord.Embed(description= f"Could not find user **{username}**.", color = cs.RANDOM_COLOR), ephemeral=True)
 
                 broadcaster_check_dict = {}
 
                 # List of subscriptions
-                response_ = requests.get(helix_url, headers=self.headers).json()
+                response_ = session.get(HELIX_URL, headers=self.headers).json()
                 
                 # FIX THE CHECK
                 for i in response_['data']:
@@ -128,7 +146,7 @@ class Twitch:
                     "Content-Type": "application/json"
                 }
 
-                response = requests.post(helix_url, headers=headers, json=body)
+                response = session.post(HELIX_URL, headers=headers, json=body)
 
                 # add some extra checks here
                 # one user now; update later
@@ -142,13 +160,13 @@ class Twitch:
                 # type_ = stream.online
 
     # return a list of users the guild is subscribed to
-    async def guild_twitch_subscriptions(self, ctx: DwelloContext) -> Optional[discord.Message]:
+    async def guild_twitch_subscriptions(self: Self, ctx: DwelloContext) -> Optional[discord.Message]:
         async with self.bot.pool.acquire() as conn:
             conn: asyncpg.Connection
             async with conn.transaction():
 
                 data = await conn.fetch("SELECT username, user_id FROM twitch_users WHERE guild_id = $1", ctx.guild.id)
-                twitch_embed = discord.Embed(title="Twitch subscriptions", color = tv.color)
+                twitch_embed = discord.Embed(title="Twitch subscriptions", color = cs.RANDOM_COLOR)
                 twitch_embed.set_thumbnail(url="https://mlpnk72yciwc.i.optimole.com/cqhiHA-5_fN-hee/w:350/h:350/q:90/rt:fill/g:ce/https://bleedingcool.com/wp-content/uploads/2019/09/twitch-logo-icon-2019.jpg")
 
                 if data:
@@ -159,19 +177,21 @@ class Twitch:
                         twitch_embed.add_field(name=twitch_name, value=twitch_id, inline=False)
 
                 elif not (data[0] if data else None):
-                    return await ctx.reply(embed=discord.Embed(description="The guild isn't subscribed to any twitch streamers.", color = tv.color))
+                    return await ctx.reply(embed=discord.Embed(description="The guild isn't subscribed to any twitch streamers.", color = cs.RANDOM_COLOR))
                 
         return await ctx.reply(embed=twitch_embed)
 
-    async def twitch_unsubscribe_from_streamer(self, ctx: DwelloContext, username: Union[str, Literal['all']]) -> Optional[discord.Message]: # IF ALL: GET ALL TWITCH USERS THAT GUILD IS SUBSCRIBED TO AND UNSUB (what if the same user for multiple guilds)
+    async def twitch_unsubscribe_from_streamer(self: Self, ctx: DwelloContext, username: Union[str, Literal['all']]) -> Optional[discord.Message]: # IF ALL: GET ALL TWITCH USERS THAT GUILD IS SUBSCRIBED TO AND UNSUB (what if the same user for multiple guilds)
         async with self.bot.pool.acquire() as conn:
             conn: asyncpg.Connection
             async with conn.transaction():
+                
+                session = self.bot.session
 
-                response = requests.get(helix_url, headers=self.headers).json()
+                response = session.get(HELIX_URL, headers=self.headers).json()
 
                 if not response['data']:
-                    return await ctx.reply(embed=discord.Embed(description="No events to unsubscribe from.", color=tv.color), ephemeral=True)
+                    return await ctx.reply(embed=discord.Embed(description="No events to unsubscribe from.", color=cs.RANDOM_COLOR), ephemeral=True)
                 
                 done = 0
                 count = 0
@@ -181,7 +201,7 @@ class Twitch:
                     url = f'https://api.twitch.tv/helix/eventsub/subscriptions?id={subscription_id}'
 
                     if username == "all":
-                        response = requests.delete(url, headers=self.headers)
+                        response = session.delete(url, headers=self.headers)
                         if not done:
                             await conn.execute("DELETE FROM twitch_users WHERE guild_id = $1", ctx.guild.id)
                             done = 1
@@ -191,20 +211,21 @@ class Twitch:
                         user_id = int(await conn.fetchval("SELECT user_id FROM twitch_users WHERE username = $1 AND guild_id = $2", username, ctx.guild.id))
 
                         if user_id and broadcaster_id == user_id:
-                            response = requests.delete(url, headers=self.headers)
+                            response = session.delete(url, headers=self.headers)
                             await conn.execute("DELETE FROM twitch_users WHERE user_id = $1 AND guild_id = $2", user_id, ctx.guild.id)
                             break
 
         await self.bot.db.fetch_table_data("twitch_users")
         return await ctx.reply(f"Unsubscribed from {f'{count} streamer(s)' if count != 0 else username}.", ephemeral=True)
 
-    async def twitch_to_discord(self, data) -> Optional[discord.Message]: # LET MEMBERS CUSTOMISE EVERYTHING (thumbnail, title, description, footer, timestamp...)
+    async def twitch_to_discord(self: Self, data) -> Optional[discord.Message]: # LET MEMBERS CUSTOMISE EVERYTHING (thumbnail, title, description, footer, timestamp...)
         async with self.bot.pool.acquire() as conn:
             conn: asyncpg.Connection
             async with conn.transaction():
 
                 twitch_id: int = int(data['subscription']['condition']['broadcaster_user_id'])
-                username = await self.id_to_username(twitch_id)
+                broadcaster_user_login: str = data['event']['broadcaster_user_login']
+                username: str = data['event']['broadcaster_user_name']
 
                 guilds = await conn.fetch("SELECT * FROM twitch_users WHERE user_id = $1", twitch_id)
                 for guild in guilds:
@@ -212,7 +233,10 @@ class Twitch:
                         result = await conn.fetchrow("SELECT message_text, channel_id FROM server_data WHERE guild_id = $1 AND event_type = 'twitch'", guild['guild_id'])
                         message_text, channel_id = result[0], result[1] # SEND DEFAULT STREAM MESSAGE INSTEAD IF NOT message_text
 
-                        twitch_embed = discord.Embed(title= f"{username} started streaming", description= f"{message_text}\n\nhttps://www.twitch.tv/{username}", color= tv.twitch_color)
+                        if message_text is None:
+                            message_text = f"Hey there! {username} just started the stream."
+
+                        twitch_embed = discord.Embed(title= f"{username} started streaming", description= f"{message_text}\n\nhttps://www.twitch.tv/{broadcaster_user_login}", color= cs.TWITCH_COLOR)
                         twitch_embed.set_thumbnail(url="https://mlpnk72yciwc.i.optimole.com/cqhiHA-5_fN-hee/w:350/h:350/q:90/rt:fill/g:ce/https://bleedingcool.com/wp-content/uploads/2019/09/twitch-logo-icon-2019.jpg")
 
                         channel: discord.TextChannel = self.bot.get_channel(int(channel_id)) if channel_id else None
@@ -227,19 +251,23 @@ class Twitch:
                     #message_text = row['message_text']
                     #channel_id = row['channel_id']
 
-    def event_subscription_list(self): # RETURNS ALL SUBSCRIPTIONS FOR A CERTAIN CLIENT_ID (?)
-        response = requests.get(helix_url, headers=self.headers).json()
+    async def event_subscription_list(self: Self): # RETURNS ALL SUBSCRIPTIONS FOR A CERTAIN CLIENT_ID (?)
+        response: aiohttp.ClientResponse = await self.session.get(HELIX_URL, headers=self.headers)
+        data = await response.json()
+        
+        #return data['data'] -> make it a property?
 
         # Print the response to show the list of subscriptions
-        for i in response['data']:
+        for i in data['data']:
             print(i['condition']['broadcaster_user_id'])
             print(i['type'])
         print(response['data'])
 
     # UNSUBSCRIBE FROM ALL (OWNER)
-    def unsubscribe_from_all_eventsubs(self):
+    async def unsubscribe_from_all_eventsubs(self: Self):
 
-        response = requests.get(helix_url, headers=self.headers).json()
+        response: aiohttp.ClientResponse = await self.session.get(HELIX_URL, headers=self.headers)
+        data = response.json()
 
         count = 0
         if not response['data']:
@@ -249,7 +277,7 @@ class Twitch:
         for subscription in response['data']:
             subscription_id = subscription['id']
             url = f'https://api.twitch.tv/helix/eventsub/subscriptions?id={subscription_id}'
-            response = requests.delete(url, headers=self.headers)
+            response = self.bot.session.delete(url, headers=self.headers)
             count += 1
 
         print(f"Unsubscribed from {count} event(s).")

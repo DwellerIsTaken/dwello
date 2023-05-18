@@ -1,5 +1,3 @@
-from discord.ext.commands import AutoShardedBot
-from discord.ext import commands
 import discord
 import logging
 import aiohttp
@@ -7,9 +5,11 @@ import asyncio
 import asyncpg
 import sys
 import os
-import re
 
-from typing import ClassVar, Optional, Union, Literal, List, Dict, Any
+from discord.ext.commands import AutoShardedBot
+from discord.ext import commands
+
+from typing import ClassVar, Optional, Any, List
 from typing_extensions import Self, override
 
 from utils.web import AiohttpWeb
@@ -88,7 +88,7 @@ class DwelloBase(AutoShardedBot):
         self.db: DB_Operations = DB_Operations(self)
         self.listeners = ListenersFunctions(self)
         self.web: AiohttpWeb = AiohttpWeb(self)
-        self.twitch: Twitch = Twitch(self)
+        #self.twitch: Twitch = Twitch(self)
 
     @override
     async def setup_hook(self: Self) -> None:
@@ -99,6 +99,8 @@ class DwelloBase(AutoShardedBot):
         for ext in extensions:
             await self.load_extension(ext, _raise=False)
 
+        self.instance = await Twitch.create_access_token(self)
+        print(self.instance, await self.instance.headers, self.instance.access_token)
         self.tables = await self.db.create_tables()
         self.db_data = await self.db.fetch_table_data()
         asyncio.create_task(self.web.run(port=8081))

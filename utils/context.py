@@ -1,13 +1,14 @@
-import asyncio
-import contextlib
-import io
-import logging
-import re
+from __future__ import annotations
 
+import contextlib
+import asyncio
 import asyncpg
 import discord
+import logging
 import typing
 import random
+import io
+import re
 
 from discord import Interaction
 from discord.ext import commands

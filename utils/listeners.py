@@ -2,12 +2,13 @@ from __future__ import annotations
 
 #from .levelling import LevellingUtils as levelling
 from discord.ext import commands
-import text_variables as tv
 import asyncpg, discord, os
 
 from typing import Optional, Literal, TYPE_CHECKING
+from typing_extensions import Self
 from string import Template
 
+import constants as cs
 if TYPE_CHECKING:
     from bot import Dwello 
     
@@ -15,10 +16,10 @@ else:
     from discord.ext.commands import Bot as Dwello
 
 class ListenersFunctions:
-    def __init__(self, bot: Dwello):
+    def __init__(self: Self, bot: Dwello):
         self.bot = bot
 
-    async def bot_join(self, guild: discord.Guild) -> None:
+    async def bot_join(self: Self, guild: discord.Guild) -> None:
         async with self.bot.pool.acquire() as conn:
             conn: asyncpg.Connection
             async with conn.transaction():
@@ -30,7 +31,7 @@ class ListenersFunctions:
                 return await conn.executemany("INSERT INTO server_data(guild_id, counter_name, event_type) VALUES($1, $2, $3)", [(guild.id, counter, 'counter') for counter in counter_names])
                 # ADD SOME WELCOME MESSAGE FROM BOT OR SMTH
 
-    async def join_leave_event(self, member: discord.Member, name: Literal["welcome", "leave"]) -> Optional[discord.Message]:
+    async def join_leave_event(self: Self, member: discord.Member, name: Literal["welcome", "leave"]) -> Optional[discord.Message]:
         async with self.bot.pool.acquire() as conn:
             conn: asyncpg.Connection
             async with conn.transaction():
@@ -54,7 +55,7 @@ class ListenersFunctions:
                     member_welcome_embed = discord.Embed(title = "You have successfully joined the guild!", description = f"```Guild joined: {guild.name}\nMember joined: {member}\nGuild id: {guild.id}\nMember id: {member.id}```", color = discord.Color.random())
                     member_welcome_embed.set_thumbnail(url=guild.icon.url if guild.icon else self.bot.user.display_avatar.url)
                     member_welcome_embed.set_author(name=member.name, icon_url=member.display_avatar.url if member.display_avatar else self.bot.user.display_avatar.url)
-                    member_welcome_embed.set_footer(text=tv.footer)
+                    member_welcome_embed.set_footer(text=cs.FOOTER)
                     member_welcome_embed.timestamp = discord.utils.utcnow()
 
                     try:
@@ -80,7 +81,7 @@ class ListenersFunctions:
                 _embed = discord.Embed(title = _title, description =  _message, color = discord.Color.random())
                 _embed.set_thumbnail(url= member.display_avatar.url if member.display_avatar else self.bot.user.display_avatar.url)
                 _embed.set_author(name= member.name, icon_url= member.display_avatar.url if member.display_avatar else self.bot.user.display_avatar.url)
-                _embed.set_footer(text=tv.footer)
+                _embed.set_footer(text=cs.FOOTER)
                 _embed.timestamp = discord.utils.utcnow()
 
         return await send_channel.send(embed=_embed)

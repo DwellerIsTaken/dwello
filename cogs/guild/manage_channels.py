@@ -1,18 +1,24 @@
-from discord.ext import commands
-import text_variables as tv
-import discord, asyncpg
+from __future__ import annotations
 
-from discord.ui import button, View, Button
-from typing import Optional, Union, Tuple, Literal, Any
+import asyncpg
+import discord
+
+from discord.ext import commands
+from discord.ui import Button, View, button
+
+from typing import Optional, Union, Literal, Any
+from typing_extensions import Self
+
+import constants as cs
 from utils import HandleHTTPException, BaseCog
 from bot import Dwello, DwelloContext
 
 class ChannelsFunctions:
 
-    def __init__(self, bot: Dwello):
+    def __init__(self: Self, bot: Dwello):
         self.bot = bot
 
-    async def counter_func(self, ctx: DwelloContext, name: Literal["all","member","bot","category"]) -> Optional[Union[discord.VoiceChannel, discord.CategoryChannel]]: #Optional[Tuple[discord.Message, Union[discord.VoiceChannel, discord.CategoryChannel]]]
+    async def counter_func(self: Self, ctx: DwelloContext, name: Literal["all","member","bot","category"]) -> Optional[Union[discord.VoiceChannel, discord.CategoryChannel]]: #Optional[Tuple[discord.Message, Union[discord.VoiceChannel, discord.CategoryChannel]]]
         async with self.bot.pool.acquire() as conn:
             conn: asyncpg.Connection
             async with conn.transaction():
@@ -63,11 +69,13 @@ class ChannelsFunctions:
                     counter_category = None'''
                 
                 if channel_id:       
-                    return await ctx.reply("This counter already exists! Please provide another type of counter if you need to, otherwise __**please don`t create a counter that already exists**__.", mention_author=True, ephemeral=True)
+                    return await ctx.reply("This counter already exists! Please provide another type of counter if you need to, otherwise __**please don`t create a counter that already exists**__.", user_mistake=True) # return embed instead (?)
 
                 if not deny_result and not counter_category_id:
-                    return await ctx.reply(embed = discord.Embed(description="**Do you want to create a category for your counters?**", color = tv.color).set_footer(text=tv.footer), 
-                                           view = Stats_View(self.bot, ctx, name), ephemeral = True, mention_author=True)
+                    embed: discord.Embed = discord.Embed(
+                        description="**Do you want to create a category for your counters?**", 
+                        color = cs.RANDOM_COLOR).set_footer(text=cs.FOOTER)
+                    return await ctx.reply(embed=embed, view = Stats_View(self.bot, ctx, name), user_mistake=True)
 
                 #elif deny_result is None and counter_category is not None: # ?
                     #await conn.execute("UPDATE server_data SET deny_clicked = $1 WHERE guild_id = $2", 1, ctx.guild.id)
@@ -77,10 +85,10 @@ class ChannelsFunctions:
                     counter_channel = await ctx.guild.create_voice_channel(f"📊 {name.capitalize()} counter: {count}", reason=None, category=counter_category)
                     await conn.execute(f"UPDATE server_data SET channel_id = $1 WHERE event_type = 'counter' AND counter_name = $2 AND guild_id = $3", counter_channel.id, name, ctx.guild.id)
                 
-        await ctx.reply(embed=discord.Embed(description=f"**{counter_channel.name}** is successfully created!", color=tv.color), mention_author=False)
+        await ctx.reply(embed=discord.Embed(description=f"**{counter_channel.name}** is successfully created!", color=cs.RANDOM_COLOR), permission_cmd=True) # DISPLAEYD IN DISCORD LOGS
         return counter_channel
 
-    async def move_channel(self, ctx: DwelloContext, category: discord.CategoryChannel, *args: str) -> None:
+    async def move_channel(self: Self, ctx: DwelloContext, category: discord.CategoryChannel, *args: str) -> None:
         async with self.bot.pool.acquire() as conn:
             conn: asyncpg.Connection
             async with conn.transaction():
@@ -94,10 +102,11 @@ class ChannelsFunctions:
                     channel = ctx.guild.get_channel(row[0])
                     async with HandleHTTPException(ctx, title=f"Failed to move {channel} into {category}"):
                         await channel.move(category=category, beginning=True)
+        return
 
 class Stats_View(View):
 
-    def __init__(self, bot: Dwello, ctx: DwelloContext, name: str, *, timeout: int = None):
+    def __init__(self: Self, bot: Dwello, ctx: DwelloContext, name: str, *, timeout: int = None):
         super().__init__(timeout=timeout)
         self.bot = bot
         self.ctx = ctx
@@ -105,32 +114,28 @@ class Stats_View(View):
 
         self.cf_: ChannelsFunctions = ChannelsFunctions(self.bot)
     
-    async def interaction_check(self, interaction: discord.Interaction) -> Optional[discord.Message]:
+    # DO A MORE USER-FRIENDLY INTERACTION CHECK
+    async def interaction_check(self: Self, interaction: discord.Interaction) -> Optional[discord.Message]:
         if interaction.user.id == self.ctx.author.id:
             return True
 
         else:
-            missing_permissions_embed = discord.Embed(title = "Permission Denied.", description = f"You can't interact with someone else's buttons.", color = tv.color)
-            missing_permissions_embed.set_footer(text=tv.footer)
+            missing_permissions_embed = discord.Embed(title = "Permission Denied.", description = f"You can't interact with someone else's buttons.", color = cs.RANDOM_COLOR)
+            missing_permissions_embed.set_footer(text=cs.FOOTER)
             return await interaction.response.send_message(embed=missing_permissions_embed, ephemeral=True)
     
     @button(style = discord.ButtonStyle.green, label="Approve", disabled=False, custom_id="approve_button")
-    async def approve(self, interaction: discord.interactions.Interaction, button: Button) -> Optional[discord.Message]:
+    async def approve(self: Self, interaction: discord.interactions.Interaction, button: Button) -> Optional[discord.Message]:
         async with self.bot.pool.acquire() as conn:
             conn: asyncpg.Connection
             async with conn.transaction():
 
-                #await conn.execute("UPDATE server_data SET deny_clicked = $1 WHERE guild_id = $2", 0, interaction.guild.id)
                 counter_category = await self.cf_.counter_func(self.ctx, "category")
-                print(counter_category)
                 await self.cf_.counter_func(self.ctx, self.name)
-                #await move_channel(interaction, counter_category)
-                #await interaction.message.edit(embed=again_embed,view = None)
-
                 return await interaction.response.edit_message(embed=None, content=f"The **{counter_category.name}** is successfully created by **{interaction.user}**!", view=None)
 
     @button(style = discord.ButtonStyle.red, label="Deny", disabled=False, custom_id="deny_button")
-    async def deny(self, interaction: discord.interactions.Interaction, button: Button) -> None:
+    async def deny(self: Self, interaction: discord.interactions.Interaction, button: Button) -> None:
         async with self.bot.pool.acquire() as conn:
             conn: asyncpg.Connection
             async with conn.transaction():
@@ -141,7 +146,7 @@ class Stats_View(View):
 
 class Channels(BaseCog):
 
-    def __init__(self, bot: Dwello, *args: Any, **kwargs: Any):
+    def __init__(self: Self, bot: Dwello, *args: Any, **kwargs: Any):
         super().__init__(bot, *args, **kwargs)
         self.cf: ChannelsFunctions = ChannelsFunctions(self.bot)
 
@@ -149,36 +154,40 @@ class Channels(BaseCog):
     @commands.bot_has_permissions(manage_channels=True)
     @commands.has_permissions(manage_channels=True)
     @commands.guild_only()
-    async def counter(self, ctx: DwelloContext):
+    async def counter(self: Self, ctx: DwelloContext):
         async with ctx.typing(ephemeral=True):
 
-            embed = discord.Embed(description="```$counter [counter type]```", color=tv.warn_color)
-            return await ctx.reply(embed=embed, ephemeral=True, mention_author=True)
+            embed: discord.Embed = discord.Embed(description="```$counter [counter type]```", color=cs.WARNING_COLOR)
+            return await ctx.reply(embed=embed, user_mistake=True)
 
     @counter.command(name='all', help="Creates a [voice] channel with all-user (bots included) count on this server.")
-    async def all(self, ctx: DwelloContext):
+    async def all(self: Self, ctx: DwelloContext):
 
         return await self.cf.counter_func(ctx, "all")
 
     @counter.command(name='members', help="Creating a [voice] channel with all-member count on this specific server.")
-    async def members(self, ctx: DwelloContext):
+    async def members(self: Self, ctx: DwelloContext):
         
         return await self.cf.counter_func(ctx, "member")
 
     @counter.command(name='bots', help="Creating a [voice] channel with all-bot count on this specific server.")
-    async def bots(self, ctx: DwelloContext):
+    async def bots(self: Self, ctx: DwelloContext):
         
         return await self.cf.counter_func(ctx, "bot")
 
     @counter.command(name='category', help="Creates a category where your counter(s) will be stored.")
-    async def category(self, ctx: DwelloContext):
+    async def category(self: Self, ctx: DwelloContext):
 
         category = await self.cf.counter_func(ctx, "category")
         return await self.cf.move_channel(ctx, category[1], "all", "member", "bot")
 
     @counter.command(name='list', help="Shows a list of counters you can create.")
-    async def list(self, ctx: DwelloContext):
+    async def list(self: Self, ctx: DwelloContext):
         async with ctx.typing(ephemeral=True):
 
-            help_embed = discord.Embed(title = ":bar_chart: AVAILABLE COUNTERS :bar_chart:", description =  tv.server_statistics_list_help_embed_description, color = tv.color).set_footer(text=tv.footer)
-            return await ctx.reply(embed = help_embed, ephemeral = True)
+            embed: discord.Embed = discord.Embed(
+                title = ":bar_chart: AVAILABLE COUNTERS :bar_chart:",
+                description =  cs.server_statistics_list_help_embed_description, 
+                color = cs.WARNING_COLOR
+            ).set_footer(text=cs.FOOTER)
+            return await ctx.reply(embed = embed, ephemeral = True, mention_author=False)

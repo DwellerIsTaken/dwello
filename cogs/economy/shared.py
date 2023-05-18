@@ -1,22 +1,22 @@
 from __future__ import annotations
 
-import datetime
+import re
 import discord
 import asyncpg
-import re
+import datetime
 
 from typing import Optional, Tuple, Union
+from typing_extensions import Self
 
-import text_variables as tv
-
+import constants as cs
 from bot import Dwello, DwelloContext
 
 class SharedEcoUtils:
 
-    def __init__(self, bot: Dwello):
+    def __init__(self: Self, bot: Dwello):
         self.bot = bot
 
-    async def fetch_basic_job_data_by_username(self, ctx: DwelloContext, member: discord.Member = None) -> Optional[Tuple[Optional[str], Optional[int], Union[str, None], Optional[int]]]:
+    async def fetch_basic_job_data_by_username(self: Self, ctx: DwelloContext, member: discord.Member = None) -> Optional[Tuple[Optional[str], Optional[int], Union[str, None], Optional[int]]]:
         async with self.bot.pool.acquire() as conn:
             conn: asyncpg.Connection
             async with conn.transaction():
@@ -27,7 +27,10 @@ class SharedEcoUtils:
                 record = await conn.fetchrow("SELECT job_id FROM users WHERE user_id = $1 AND guild_id = $2 AND event_type = 'server'", member.id, member.guild.id)
 
                 if not (record[0] if record else None):
-                    return await ctx.reply(embed=discord.Embed(description="The job isn't yet set.", color=tv.color), ephemeral = True) # ephemeral:  if member == ctx.author else False
+                    return await ctx.reply(embed=
+                        discord.Embed(description="The job isn't yet set.", color=cs.RANDOM_COLOR), 
+                        ephemeral = True,
+                    )
 
                 data = await conn.fetchrow("SELECT name, salary, description FROM jobs WHERE id = $1 AND guild_id = $2", record[0], member.guild.id)
 
@@ -38,7 +41,7 @@ class SharedEcoUtils:
 
         return name, salary, description, job_id
     
-    async def add_currency(self, member: discord.Member, amount: int, name: str) -> Optional[int]:
+    async def add_currency(self: Self, member: discord.Member, amount: int, name: str) -> Optional[int]:
         async with self.bot.pool.acquire() as conn:
             conn: asyncpg.Connection
             async with conn.transaction():
@@ -53,7 +56,7 @@ class SharedEcoUtils:
 
                 return balance
 
-    async def work(self, ctx: DwelloContext, name: str) -> Optional[discord.Message]:
+    async def work(self: Self, ctx: DwelloContext, name: str) -> Optional[discord.Message]:
         async with self.bot.pool.acquire() as conn:
             conn: asyncpg.Connection
             async with conn.transaction():
@@ -66,12 +69,17 @@ class SharedEcoUtils:
 
                 my_datetime = datetime.datetime(int(date[0]), int(date[1]), int(date[2]) + 1, 10, 00, tzinfo = None) # UTC tzinfo = pytz.utc 9, 00
                 
-                limit_embed = discord.Embed(title = "→ \U0001d5e6\U0001d5fc\U0001d5ff\U0001d5ff\U0001d606 ←", description=f"Your have already worked{' *on this server* ' if str(name) == 'server' else ' '}today!\nYour next workday begins {discord.utils.format_dt(my_datetime, style ='R')}",color=tv.color)
                 #limit_embed.set_footer(text = "Your next workday begins in")
                 #limit_embed.timestamp = discord.utils.format_dt(my_datetime) # loop.EcoLoop.my_datetime1
 
-                if worked == True:
-                    return await ctx.reply(embed = limit_embed)
+                if worked is True:
+                    embed: discord.Embed = discord.Embed(
+                        title = "→ \U0001d5e6\U0001d5fc\U0001d5ff\U0001d5ff\U0001d606 ←", 
+                        description=f"Your have already worked{' *on this server* ' if str(name) == 'server' else ' '}today!"
+                                    f"\nYour next workday begins {discord.utils.format_dt(my_datetime, style ='R')}",
+                        color=cs.RANDOM_COLOR,
+                    )
+                    return await ctx.reply(embed=embed)
 
                 try:
                     job_name, salary, description, job_id = await self.fetch_basic_job_data_by_username(ctx)
@@ -85,11 +93,13 @@ class SharedEcoUtils:
 
                 balance = await self.add_currency(ctx.author, amount, name)
 
-                string = f"Your current balance: {balance}"
-
-                embed = discord.Embed(title="→ \U0001d5e6\U0001d5ee\U0001d5f9\U0001d5ee\U0001d5ff\U0001d606 ←", description = f"Your day was very successful. Your salary for today is *{amount}*.",color=tv.color) # 𝗦𝗮𝗹𝗮𝗿𝘆
+                embed: discord.Embed = discord.Embed(
+                    title="→ \U0001d5e6\U0001d5ee\U0001d5f9\U0001d5ee\U0001d5ff\U0001d606 ←", # 𝗦𝗮𝗹𝗮𝗿𝘆
+                    description = f"Your day was very successful. Your salary for today is *{amount}*.",
+                    color=cs.RANDOM_COLOR,
+                )
                 embed.timestamp = discord.utils.utcnow()
-                embed.set_footer(text=string)
+                embed.set_footer(text=f"Your current balance: {balance}", icon_url=ctx.author.display_avatar.url)
 
                 await conn.execute("UPDATE users SET worked = $1 WHERE user_id = $2 AND event_type = $3", 1, ctx.author.id, name)
 
