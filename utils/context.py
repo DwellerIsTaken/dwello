@@ -34,7 +34,6 @@ def cleanup_code(content):
     # remove `foo`
     return content.strip("` \n")
 
-
 class ConfirmButton(discord.ui.Button):
     def __init__(self, label: str, emoji: str, button_style: discord.ButtonStyle):
         super().__init__(
@@ -49,7 +48,6 @@ class ConfirmButton(discord.ui.Button):
         view.value = True
         view.stop()
 
-
 class CancelButton(discord.ui.Button):
     def __init__(self, label: str, emoji: str, button_style: discord.ButtonStyle):
         super().__init__(style=button_style, label=label, emoji=emoji)
@@ -59,7 +57,6 @@ class CancelButton(discord.ui.Button):
         view: Confirm = self.view
         view.value = False
         view.stop()
-
 
 class Confirm(discord.ui.View):
     def __init__(self, buttons: typing.Tuple[typing.Tuple[str]], timeout: int = 30):

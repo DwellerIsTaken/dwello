@@ -4,7 +4,7 @@ import discord
 # __COLORS__:
 
 RANDOM_COLOR = discord.Colour.random() # -> MOST USED
-WARNING_COLOR = discord.Colour.red() # -> COLOR FOR WARNINGS
+WARNING_COLOR = 0xFF0000 # -> COLOR FOR WARNINGS
 TWITCH_COLOR = discord.Colour.random() # get color of streamer later & add customize option
 
 # ___FOOTERS___:
@@ -16,6 +16,34 @@ DISCORD = "https://discord.gg/8FKNF8pC9u"
 
 # __EMOJIS__
 GITHUB_EMOJI = "<:github:1100906448030011503>"
+
+HELLO_ALIASES = [
+    "salutations",
+    "greetings",
+    "hey",
+    "hi",
+    "sup",
+    "wassup",
+    "howdy",
+    "aloha",
+    "bonjour",
+    "ciao",
+    "hola",
+    "nihao",
+    "namaste",
+    "salaam",
+    "shalom",
+    "konnichiwa",
+    "merhaba",
+    "hallo",
+    "hej",
+    "szia",
+    "privet",
+    "sveiki",
+    "sawubona",
+    "zdravo",
+    "salam",
+]
 
 # MOVE TO FILES THEMSELVES LATER
 server_statistics_help_embed_description = "Below you can see *the accurate description* of how you should be using the counter commands. \n \n **First of all**, choose a type of counter which you want to create. You can choose from: ```all (Member and bot users) \nmembers (Member users) \nbots (Bot users)``` \n**And**, if you want to create a specific category where all your countes will be located, use: ```category```\n**Second of all**, type the command like: ```$add_counter [chosen type of counter/category]``` \n**And last**, but not least, a quick tip: you can go to the channel settings and set things up as you wish to! \n\nAnd __*don`t*__ create a type of counter channel that already exists on your server!\nFor more information about counters see `$add_counter list`."

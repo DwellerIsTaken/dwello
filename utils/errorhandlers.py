@@ -10,6 +10,8 @@ import discord
 #copy Leos latest
 #__all__: Tuple[str, ...] = ('HandleHTTPException')
 
+# transfer to error.py
+# get full code again from repo 
 class HandleHTTPException(AbstractAsyncContextManager, AbstractContextManager):
 
     """

@@ -39,7 +39,6 @@ if __name__ == "__main__":
     asyncio.run(main())
 
 # This command doesn't exist: function (error handler)
-# Make an info(help) command
 # REDO Economy
 # Conversational AI ("I don't want to understand you") (wtf?)
 # Bot`s irritations
@@ -57,3 +56,5 @@ if __name__ == "__main__":
 # guild:= discord.get(guild) | non-existend example
 # TYPE_CHECKING where modules used for type-checking
 # from typing_extensions import Self
+#
+# for members' names discord.utils.escape_markdown(member)

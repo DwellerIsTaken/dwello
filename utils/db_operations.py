@@ -12,6 +12,7 @@ if TYPE_CHECKING:
 else:
     from discord.ext.commands import Bot as Dwello
 
+# RENAME FILE
 # MAYBE RENAME CLASS
 class DB_Operations:
 
@@ -41,23 +42,15 @@ class DB_Operations:
                     data: Dict[str, Union[Any, list]] = {}
 
                 if not tables:
-                    tables: List[str] = self.bot.tables
+                    tables: List[str] = self.bot.tables.copy()
+                    tables.remove("prefixes")
 
                 for table in tables:
+                    if table == "prefixes":
+                        continue
                     query = "SELECT * FROM " + table
                     table_data = await conn.fetch(query)
                     data[table] = table_data
-                    
-                    if table == "prefixes":
-                        prefixes_by_guild = {}
-                        for record in table_data:
-                            guild_id = record['guild_id']
-                            prefix = record['prefix']
-
-                            if guild_id not in prefixes_by_guild:
-                                prefixes_by_guild[guild_id] = []
-
-                            prefixes_by_guild[guild_id].append(prefix)
         return data
 
     async def fetch_job_data(self: Self) -> dict: # remove later

@@ -19,12 +19,6 @@ class Weather(BaseCog):
     def __init__(self: Self, bot: Dwello, *args: Any, **kwargs: Any):
         super().__init__(bot, *args, **kwargs)
 
-    # THINK OF A NEW FOLDER WHERE TO ADD ALL THIS (?)
-    @commands.hybrid_command(name="hello", with_app_command=True)
-    async def ping_command(self: Self, ctx: DwelloContext) -> Optional[discord.Message]:
-
-        return await ctx.send("Hello!") # display more info about bot
-
     @commands.hybrid_command(name='weather', help="Shows you the temparature in the city you've typed in.", with_app_command=True)
     async def weather(self: Self, ctx: DwelloContext, *, city: str) -> Optional[discord.Message]:
         if not city:

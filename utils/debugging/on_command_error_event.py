@@ -30,3 +30,5 @@ class on_command_error():
             embed = discord.Embed(title='Error Occurred', description=f'```py\n{trace}\n{error}```', color=discord.Color.red())
             await ctx.send(embed=embed)
             raise error'''
+            
+# transfer to error.py

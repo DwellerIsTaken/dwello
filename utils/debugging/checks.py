@@ -4,6 +4,7 @@ import constants as cs
 from discord.ext import commands
 
 # REMOVE THIS FILE prbpl
+# remove debugging dir
 
 async def member_check(ctx: commands.Context, member: discord.Member, bot: commands.Bot) -> Union[discord.Message, bool]:
 

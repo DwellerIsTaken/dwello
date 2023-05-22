@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 import discord
 import logging
 import aiohttp
@@ -9,7 +11,7 @@ import os
 from discord.ext.commands import AutoShardedBot
 from discord.ext import commands
 
-from typing import ClassVar, Optional, Any, List
+from typing import ClassVar, Optional, Any, Dict, List
 from typing_extensions import Self, override
 
 from utils.web import AiohttpWeb
@@ -25,8 +27,10 @@ initial_extensions = ("jishaku",)
 
 extensions = [
     "cogs.economy",
+    "cogs.entertainment",
     "cogs.information",
     "cogs.moderation", 
+    "cogs.information.help",
     "cogs.guild", 
     "cogs.other",
     "utils.debugging.error_handler",
@@ -81,6 +85,13 @@ class DwelloBase(AutoShardedBot):
 
         self.pool = pool
         self.session = session
+        
+        self.blacklisted_users: Dict[int, str] = {}
+        self.bypass_cooldown_users: List[int] = []
+        
+        self.cooldown: commands.CooldownMapping[discord.Message] = commands.CooldownMapping.from_cooldown(
+            1, 1.5, commands.BucketType.member,
+        )
 
         self.levelling: LevellingUtils = LevellingUtils(self)
         self.autocomplete: AutoComplete = AutoComplete(self)
@@ -99,12 +110,16 @@ class DwelloBase(AutoShardedBot):
         for ext in extensions:
             await self.load_extension(ext, _raise=False)
 
-        self.instance = await Twitch.create_access_token(self)
-        print(self.instance, await self.instance.headers, self.instance.access_token)
+        self.twitch = await Twitch.create_access_token(self)
+        
         self.tables = await self.db.create_tables()
         self.db_data = await self.db.fetch_table_data()
-        asyncio.create_task(self.web.run(port=8081))
+        
+        records: List[Any] = await self.pool.fetch("SELECT guild_id, array_agg(prefix) FROM prefixes GROUP BY guild_id")
+        self.guild_prefixes = {guild_id: prefix for guild_id, prefix in records}
 
+        asyncio.create_task(self.web.run(port=8081))
+        
         await self.tree.sync(guild=discord.Object(822162578653577336))
 
     async def on_ready(self: Self):
@@ -113,15 +128,17 @@ class DwelloBase(AutoShardedBot):
         self.logger.info(f"{col()}Python Version: {sys.version} {col()}")
         self.logger.info(f"{col()}Discord Version: {discord.__version__} {col()}")
         self.logger.info(f"{col(2, bg=True)}Logged in as {self.user} {col()}")
+        
     @override
     async def get_prefix(self: Self, message: discord.Message, /) -> List[str]:
 
         prefixes: List[str] = self.DEFAULT_PREFIXES.copy()
+        guild_prefixes: List[str] | None = self.guild_prefixes.get(message.guild.id)
+        
+        if guild_prefixes:
+            prefixes.extend(guild_prefixes)
 
         #Disable default prefix when custom enabled? add checks to make sure custom prefix isnt the default one. make sure you cant remove prefix if default one is disabled
-        for prefix in self.db_data['prefixes']:
-            if prefix['guild_id'] == message.guild.id:
-                prefixes.append(prefix['prefix'])
 
         return commands.when_mentioned_or(*prefixes)(self, message)
 

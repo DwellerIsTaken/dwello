@@ -1,8 +1,10 @@
 from __future__ import annotations
 
+from .fun import Fun
+
 from bot import Dwello
 
-class Entertainment(name="Entertainment"):
+class Entertainment(Fun, name="Entertainment"):
     """
     🎲 Includes commands and tools for entertainment and recreation purposes, such as games, quizzes, memes, music streaming, and other fun features designed to engage and entertain users within the server.
     """

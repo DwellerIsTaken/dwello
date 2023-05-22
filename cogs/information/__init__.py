@@ -2,11 +2,10 @@ from __future__ import annotations
 
 from bot import Dwello
 
-from .help import About
 from .weather import Weather
 from .user_info import UserInfo
 
-class Information(About, UserInfo, Weather, name="Information"):
+class Information(UserInfo, Weather, name="Information"):
     """
     📚 Includes commands and tools that provide information to users, such as server and user statistics, weather updates, news feeds, and other relevant information.
     """

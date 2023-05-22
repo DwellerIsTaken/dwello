@@ -567,63 +567,12 @@ class MyHelp(commands.HelpCommand):
         if isinstance(error, commands.CommandInvokeError):
             await ctx.send(embed=discord.Embed(title=str(error.original),description=''.join(traceback.format_exception(error.__class__, error, error.__traceback__))))
 
-class About(BaseCog):
-
-    def __init__(self: Self, bot: Dwello, *args: Any, **kwargs: Any):
-        super().__init__(bot, *args, **kwargs)
-        
-        help_command = MyHelp()
-        help_command.command_attrs = {
-            "help": "Shows help about a command or category, it can also display other useful information, such as "
-            "examples on how to use the command, or special syntax that can be used for a command, for example, "
-            "in the `welcome message` command, it shows all available special tags.",
-            "name": "help",
-        }
-        help_command.cog = self
-        bot.help_command = help_command
-        self.select_emoji = '<:info:895407958035431434>'
-        self.select_brief = "Bot Information commands."
-
-    @commands.hybrid_command(name = 'source', description="Returns command's source.", with_app_command=True)
-    async def source(self: Self, ctx: DwelloContext, *, command_name: Optional[str]) -> Optional[discord.Message]:
-
-        git = cs.GITHUB
-        if not command_name:
-            return await ctx.reply(git)
-
-        command = self.bot.get_command(command_name)
-        if not command:
-            return await ctx.reply("That command doesn't exist!")
-        
-        target = command.callback 
-        if command_name == "help":
-            target = type(self.bot.help_command)
-
-        source: str = inspect.getsource(target)
-        file: str = inspect.getsourcefile(target)
-        lines: tuple = inspect.getsourcelines(target)
-        git_lines = f"#L{lines[1]}-L{len(lines[0])+lines[1]}"
-        path = os.path.relpath(file)
-
-        source_link = f"> [**Source**]({git}tree/main/{path}{git_lines}) {cs.GITHUB_EMOJI}\n> **{path}{git_lines}**\n"
-
-        embed: discord.Embed = discord.Embed(
-            title = f"Source for `{command.name}`",
-            description = (source_link + await ctx.create_codeblock(source)),
-        )
-        try:
-            return await ctx.reply(embed=embed)
-        
-        except discord.errors.HTTPException:
-            embed.description = source_link
-            return await ctx.reply(embed=embed)
-
-'''class About(commands.Cog):
+class About(commands.Cog):
     """
     😮 Commands related to the bot itself, that have the only purpose to show information.
     """
 
-    def __init__(self, bot):
+    def __init__(self: Self, bot: Dwello) -> None:
         self.bot: Dwello = bot
         help_command = MyHelp()
         help_command.command_attrs = {
@@ -636,7 +585,143 @@ class About(BaseCog):
         bot.help_command = help_command
         self.select_emoji = '<:info:895407958035431434>'
         self.select_brief = "Bot Information commands."
-        print(' yyyyyyyyyyyyyyyyyyyyyyyyYYYYYYY')'''
+    
+    # make uptime: add here -> trigger on mention in on_message
+    @commands.hybrid_command(name="hello", aliases=cs.HELLO_ALIASES, with_app_command=True)
+    async def ping_cmd(self: Self, ctx: DwelloContext) -> Optional[discord.Message]:
+
+        # make variations for the response
+        content: str = f"Hello there! I'm {self.bot.user.name}. Use `dw.help` for more." # {self.bot.help_command}?
+        return await ctx.send(content=content) # display more info about bot
+    
+    @commands.hybrid_command(name="about", aliases=["botinfo", "info", "bi"], with_app_command=True)
+    async def about(self: Self, ctx: DwelloContext) -> Optional[discord.Message]:
+        
+        information: discord.AppInfo = await self.bot.application_info()
+        
+        embed: discord.Embed = discord.Embed(
+            description= f"{cs.GITHUB_EMOJI} [Source]({cs.GITHUB})",
+            color = cs.RANDOM_COLOR,
+        )
+            #description=f"{constants.GITHUB} [source]({self.bot.repo}) | "
+            #f"{constants.INVITE} [invite me]({self.bot.invite_url}) | "
+            #f"{constants.TOP_GG} [top.gg]({self.bot.vote_top_gg}) | "
+            #f"{constants.BOTS_GG} [bots.gg]({self.bot.vote_bots_gg})"
+            #f"\n_ _╰ Try also `{ctx.prefix}source [command]`"
+            
+        #embed.add_field(name="Latest updates:", value=get_latest_commits(limit=5), inline=False) maybe later
+
+        embed.set_author(
+            name=f"Stolen by {information.owner}",
+            icon_url=information.owner.display_avatar.url,
+        )
+
+        return await ctx.send(information.description)
+
+    @commands.hybrid_command(name = "source", help="Returns command's source.", with_app_command=True)
+    async def source(self: Self, ctx: DwelloContext, *, command_name: Optional[str]) -> Optional[discord.Message]:
+
+        git = cs.GITHUB
+        if not command_name:
+            return await ctx.reply(git)
+        
+        bot_name: str = self.bot.user.name.lower()
+        bot_guild_name: str = self.bot.user.display_name.lower()
+        _bot_guild_name: List[str] = bot_guild_name.split()
+        _bot_name: List[str] = bot_name.split()
+        
+        _base_words: List[str] = [
+            'base',
+            'bot',
+            bot_name,
+            _bot_name[0],
+            f'{bot_name} base',
+            f'{_bot_name[0]} base',
+        ]
+        _matches: List[str] = _base_words.copy()
+        _command_name: str = command_name.lower()
+        
+        if bot_guild_name != bot_name:
+            _matches.append(bot_guild_name)
+            if _bot_guild_name[0] != _bot_name[0]:
+                _matches.append(_bot_guild_name[0])
+            
+        """_members = []
+        for cog in self.bot.cogs.values():
+            if cog.qualified_name == "Jishaku":
+                continue
+            print(cog.qualified_name)
+            members = inspect.getmembers(cog)
+            _members.append(members)
+        for _cog in _members:
+            for name, member in _cog:
+                # Exclude built-in methods from the module where the cog or class is defined
+                if inspect.isfunction(member) and member.__module__ != "discord.ext.commands.cog":
+                    print(name, member)
+                elif inspect.isclass(member):
+                    objects = inspect.getmembers(member)
+                    for _name, obj in objects:
+                        # Exclude built-in methods from the module where the class is defined
+                        if inspect.isfunction(obj) and obj.__module__ != "discord.ext.commands.cog":
+                            print(_name, obj)"""
+        
+        for command in self.bot.walk_commands():
+            _matches.append(command.qualified_name.lower())
+            
+        for cog in self.bot.cogs.values():
+            if cog.qualified_name == "Jishaku":
+                continue
+            _matches.append(cog.qualified_name.lower())
+            
+        # ADD A CHECK FOR BOT.PY TO DISPLAY WHOLE FILE
+        
+        if _command_name == "help":
+            target = type(self.bot.help_command)
+            
+        elif _command_name in _base_words:
+            target = self.bot.__class__.__base__
+            
+        else:
+            command = self.bot.get_command(command_name)
+            cog = self.bot.get_cog(command_name)
+            if not command and not cog:
+                matches = difflib.get_close_matches(command_name, _matches, 5)
+                if not matches:
+                    return await ctx.reply("That command doesn't exist!")
+                
+                description = "Perhaps you meant one of these:"
+                for match in matches:
+                    description += f"\n• `{match}`"
+
+                embed: discord.Embed = discord.Embed(
+                    title=f"Doesn't seem like command `{command_name}` exists",
+                    description=f"\n{description}",
+                    color=cs.WARNING_COLOR,
+                )
+                return await ctx.reply(embed=embed)
+            if command:
+                target = command.callback
+            if cog:
+                target = type(cog)
+
+        source: str = inspect.getsource(target)
+        file: str = inspect.getsourcefile(target)
+        lines: tuple = inspect.getsourcelines(target)
+        git_lines = f"#L{lines[1]}-L{len(lines[0])+lines[1]}"
+        path = os.path.relpath(file)
+
+        source_link = f"> [**Source**]({git}tree/main/{path}{git_lines}) {cs.GITHUB_EMOJI}\n> **{path}{git_lines}**\n"
+
+        embed: discord.Embed = discord.Embed(
+            title = f"Source for `{command_name}`",
+            description = (source_link + await ctx.create_codeblock(source)),
+        )
+        try:
+            return await ctx.reply(embed=embed)
+        
+        except discord.errors.HTTPException:
+            embed.description = source_link
+            return await ctx.reply(embed=embed)
 
 # SOME USELESS PIECE OF SHIT
 class ManualHelp:
