@@ -16,7 +16,7 @@ class Messages(BaseCog): # RENAME CLASS
     def __init__(self: Self, bot: Dwello, *args: Any, **kwargs: Any):
         super().__init__(bot, *args, **kwargs)
     
-    @commands.hybrid_command(name='clear', help="Purges messages.", with_app_command=True)
+    @commands.hybrid_command(name='clear', help="Purges messages.", aliases=["purge", "cleanup"], with_app_command=True)
     @commands.bot_has_permissions(manage_messages=True)
     @commands.has_permissions(manage_messages=True)
     async def clear(self: Self, ctx: DwelloContext, limit: int = 5, member: discord.Member = None) -> Optional[discord.Message]:

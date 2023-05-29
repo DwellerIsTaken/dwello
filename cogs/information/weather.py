@@ -12,7 +12,7 @@ from typing_extensions import Self
 
 import constants as cs
 from utils import BaseCog
-from bot import Dwello, DwelloContext
+from bot import Dwello, DwelloContext, get_or_fail
 
 class Weather(BaseCog):
 
@@ -24,7 +24,7 @@ class Weather(BaseCog):
         if not city:
             return await ctx.reply("Please provide a city or a contry.", mention_author=True)
 
-        key = os.getenv('weather_key')
+        key = get_or_fail('OPENWEATHERMAP_KEY')
         args = city.lower()
 
         async with self.bot.session.get(f'http://api.openweathermap.org/data/2.5/weather?q={args}&APPID={key}&units=metric') as response:  

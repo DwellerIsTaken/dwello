@@ -108,7 +108,7 @@ class StandardModeration(BaseCog):
 
         return choices
 
-    @commands.hybrid_command(name='kick', help="Kick a member for bad behaviour.", with_app_command = True)
+    @commands.hybrid_command(name='kick', help="Kick a member for bad behaviour.", aliases=["rename"], with_app_command = True)
     @commands.bot_has_permissions(send_messages=True, kick_members=True)
     @commands.has_permissions(kick_members=True)
     @commands.guild_only()

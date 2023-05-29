@@ -12,6 +12,7 @@ from discord.ext import commands
 from discord.ui import Select, button, select
 
 from typing import (
+    Tuple,
     Optional, 
     Union, 
     Any, 
@@ -594,6 +595,9 @@ class About(commands.Cog):
         content: str = f"Hello there! I'm {self.bot.user.name}. Use `dw.help` for more." # {self.bot.help_command}?
         return await ctx.send(content=content) # display more info about bot
     
+    # uptime cmd
+    # add some latency too or smth
+    # get available bot info i guess
     @commands.hybrid_command(name="about", aliases=["botinfo", "info", "bi"], with_app_command=True)
     async def about(self: Self, ctx: DwelloContext) -> Optional[discord.Message]:
         
@@ -610,6 +614,8 @@ class About(commands.Cog):
             #f"\n_ _╰ Try also `{ctx.prefix}source [command]`"
             
         #embed.add_field(name="Latest updates:", value=get_latest_commits(limit=5), inline=False) maybe later
+        
+        #discord.ui.Button(label="Source", url="")
 
         embed.set_author(
             name=f"Stolen by {information.owner}",
@@ -706,7 +712,7 @@ class About(commands.Cog):
 
         source: str = inspect.getsource(target)
         file: str = inspect.getsourcefile(target)
-        lines: tuple = inspect.getsourcelines(target)
+        lines: Tuple[List[str], int] = inspect.getsourcelines(target)
         git_lines = f"#L{lines[1]}-L{len(lines[0])+lines[1]}"
         path = os.path.relpath(file)
 

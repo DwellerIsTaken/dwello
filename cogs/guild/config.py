@@ -43,11 +43,13 @@ class PrefixConfig:
                 default_prefixes: List[str] = self.bot.DEFAULT_PREFIXES + [f"<@!{self.bot.user.id}>"]
 
                 embed: discord.Embed= discord.Embed(title = "Prefixes", color=cs.RANDOM_COLOR)
-                embed.add_field(
-                    name="Guild's prefix(es)", 
-                    value=(", ".join(f"`{p['prefix']}`" for p in prefixes) if prefixes else "`None` -> `dw.help prefix`"),
-                    inline=False,
-                )
+                
+                if ctx.guild:
+                    embed.add_field(
+                        name="Guild's prefix(es)", 
+                        value=(", ".join(f"`{p['prefix']}`" for p in prefixes) if prefixes else "`None` -> `dw.help prefix`"),
+                        inline=False,
+                    )
                 embed.add_field(
                     name="Default prefixes", 
                     value= ", ".join(p if str(self.bot.user.id) in p else f'`{p}`' for p in default_prefixes),
@@ -171,18 +173,15 @@ class Config(BaseCog):
         self._prefix: PrefixConfig = PrefixConfig(self.bot)
         
     # set perms per command instead
-    @commands.hybrid_group(invoke_without_command=True, with_app_command=False)
+    @commands.hybrid_group(aliases=["prefixes"], invoke_without_command=True, with_app_command=False)
     @commands.guild_only()
     async def prefix(self: Self, ctx: DwelloContext):
         async with ctx.typing():
-
-            """if prefix is None:
-                embed = discord.Embed(description="```$help prefix```", color=tv.warn_color)
-                return await ctx.reply(embed=embed, user_mistake=True)"""
             
             return await self._prefix.display_prefixes(ctx)
         
     @commands.check_any(commands.is_owner(), commands.has_permissions(administrator=True))
+    @commands.guild_only()
     @prefix.command(name="add", help="Adds bot prefix to the guild.")
     async def add_prefix(self: Self, ctx: DwelloContext, *, prefix: str):
         _prefix: List[str] = prefix.split()
@@ -197,6 +196,7 @@ class Config(BaseCog):
         return await self._prefix.display_prefixes(ctx)
     
     @commands.check_any(commands.is_owner(), commands.has_permissions(administrator=True))
+    @commands.guild_only()
     @prefix.command(name="remove", description = "Removes guild's prefix(es).")
     async def delete_prefix(self: Self, ctx: DwelloContext, prefix: str):
             
@@ -206,11 +206,6 @@ class Config(BaseCog):
     async def autocomplete_callback_(self: Self, interaction: discord.Interaction, current: str):
         
         return await self.bot.autocomplete.choice_autocomplete(interaction, current, "prefixes", "prefix", None, True)
-    
-    @commands.hybrid_command(name="prefixes", help="Displays all prefixes.")
-    async def display_prefix(self: Self, ctx: DwelloContext):
-
-        return await self._prefix.display_prefixes(ctx)
 
     @commands.hybrid_group(invoke_without_command=True,with_app_command=True)
     @commands.bot_has_permissions(manage_channels=True,manage_messages=True)

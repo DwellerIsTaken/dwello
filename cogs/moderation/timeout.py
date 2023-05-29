@@ -134,7 +134,7 @@ class Timeout(BaseCog):
 
             return await ctx.reply(embed= discord.Embed(title="Unmuted", description=f"{member} is unmuted.", color=cs.RANDOM_COLOR), permission_cmd=True)
 
-    @commands.hybrid_command(name='timed_out', aliases = ['muted'], help="Shows everyone whom is timed out.", with_app_command = True) # MODERATION OR MEMBER-FRIENDLY (PERMS)?
+    @commands.hybrid_command(name='muted', aliases = ['timed_out', 'to'], help="Shows everyone who is timed out.", with_app_command = True) # MODERATION OR MEMBER-FRIENDLY (PERMS)?
     @commands.bot_has_permissions(view_audit_log = True)
     #@commands.has_permissions(moderate_members = True)
     @commands.guild_only()

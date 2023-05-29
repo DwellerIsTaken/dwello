@@ -33,7 +33,7 @@ extensions = [
     "cogs.information.help",
     "cogs.guild", 
     "cogs.other",
-    "utils.debugging.error_handler",
+    "utils.error",
 ]
 
 def col(color=None, /, *, fmt=0, bg=False):
@@ -59,7 +59,7 @@ def get_or_fail(var: str) -> str:
 
 class DwelloBase(AutoShardedBot):
 
-    DEFAULT_PREFIXES: ClassVar[List[str]] = ["dw.", "dwello.", "Dwello."]
+    DEFAULT_PREFIXES: ClassVar[List[str]] = ["dw.", "Dw.", "dwello.", "Dwello."]
 
     user: discord.ClientUser
 

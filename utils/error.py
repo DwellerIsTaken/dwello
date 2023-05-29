@@ -1,6 +1,8 @@
 from __future__ import annotations
 
+import traceback
 import discord
+import sys
 
 from discord.ext import commands
 
@@ -35,7 +37,9 @@ class CommandErrorHandler(commands.Cog):
         error: commands.CommandError
             The Exception raised.
         """
-
+         
+        perm_url = "https://discordpy.readthedocs.io/en/stable/api.html#discord.Permissions"
+        
         # This prevents any commands with local handlers being handled here in on_command_error.
         if hasattr(ctx.command, 'on_error'):
             return
@@ -81,11 +85,11 @@ class CommandErrorHandler(commands.Cog):
             
         elif isinstance(error, commands.MissingPermissions):
             description = (
-                "You don't have permission to use this command."
+                "You don't have permission to use this command.\n"
                 "You should have the following permission(s) to use this command:\n"
             )
             for perm in error.missing_permissions:
-                description += f"\n• `{perm}`"
+                description += f"\n• [`{perm}`]({perm_url}.{perm})"
                 
             embed: discord.Embed = discord.Embed(
                 title = "Permission Denied.",
@@ -93,18 +97,22 @@ class CommandErrorHandler(commands.Cog):
                 color = cs.WARNING_COLOR,
             )
             embed.set_image(url='https://media.tenor.com/bIJa2uRURiQAAAAd/lord-of-the-rings-you-shall-not-pass.gif')
-            #missing_permissions_embed.set_footer()
-            return await ctx.reply(embed=embed)
+            return await ctx.reply(embed=embed, user_mistake=True)
             
         elif isinstance(error, commands.BotMissingPermissions):
+            description = (
+                f"{self.bot.user.name} doesn't have the necessary permissions to use this command.\n"
+                "It should have the following permission(s) to use this command:\n"
+            )
+            for perm in error.missing_permissions:
+                description += f"\n• [`{perm}`]({perm_url}.{perm})"
+                
             embed: discord.Embed = discord.Embed(
                 title = "Permission Denied.",
-                description=f"{self.bot.user.name} doesn't have the necessary permissions to use this command."
-                            "It should have the following permission(s) to use this command:\n"
-                            "\n •".join(error.missing_permissions),
+                description=description,
                 color = cs.WARNING_COLOR,
             )
-            return await ctx.reply(embed=embed)
+            return await ctx.reply(embed=embed, user_mistake=True)
             
         else:
             # All other Errors not returned come here. And we can just print the default TraceBack.
@@ -131,6 +139,7 @@ class CommandErrorHandler(commands.Cog):
                 f"This error came from {ctx.author} using {ctx.command} in {ctx.guild}.",
                 embed=embed,
             )"""
+            traceback.print_exception(type(error), error, error.__traceback__, file=sys.stderr)
             return await ctx.reply(embed=embed)
 
     """Below is an example of a Local Error Handler for our command do_repeat"""

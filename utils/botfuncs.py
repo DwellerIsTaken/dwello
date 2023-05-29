@@ -4,6 +4,7 @@ import pkg_resources
 import discord
 import PIL
 import sys
+import re
 
 from typing import Optional
 from io import BytesIO
@@ -16,6 +17,16 @@ def apostrophize(word: str) -> str:
         return word + "'"
     else:
         return word + "'s"
+            
+def capitalize_greek_numbers(text):
+    pattern = r'\b(?=[MDCLXVIΙΙ]+)\b(M{0,4}(CM|CD|D?C{0,3})(XC|XL|L?X{0,3})(IX|IV|V?I{0,2})(?!\S))\b'
+    return re.sub(pattern, lambda match: match.group().upper(), text, flags=re.IGNORECASE)
+    
+def find_greek_numbers(text):
+    pattern = r'\b(?=[MDCLXVIΙΙ]+)\b(M{0,4}(CM|CD|D?C{0,3})(XC|XL|L?X{0,3})(IX|IV|V?I{0,3}))\b'
+    matches = re.findall(pattern, text, re.IGNORECASE)
+    greek_numbers = [match[0] for match in matches]
+    return greek_numbers
     
 async def get_avatar_dominant_color(member: Optional[discord.Member]) -> Optional[discord.Colour]:
     image = PIL.Image.open(BytesIO(await member.display_avatar.read()))
