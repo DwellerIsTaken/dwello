@@ -28,6 +28,13 @@ class Events(BaseCog):
     async def on_message(self: Self, message: discord.Message) -> None:
         await self.bot.levelling.increase_xp(message)
 
+        if message.content == f"<@{self.bot.user.id}>" and not message.author.bot:
+            content: str = f"Hello there! I'm {self.bot.user.name}. Use `dw.help` for more."
+            await message.reply(content=content)
+
+        if message.author == self.bot.user:
+            self.bot.reply_count += 1
+
         #await levelling.get_user_data(message.author.id, message.guild.id)
 
         '''if message.content.startswith('+'):

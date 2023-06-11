@@ -3,6 +3,7 @@ from __future__ import annotations
 import wikipediaapi
 import datetime
 import discord
+import time
 import re
 
 from yarl import URL
@@ -31,28 +32,72 @@ from utils import BaseCog, capitalize_greek_numbers
 from bot import Dwello, DwelloContext, get_or_fail
 
 TMDB_KEY = get_or_fail('TMDB_API_TOKEN')
+STEAM_KEY = get_or_fail('STEAM_API_KEY')
 SPOTIFY_CLIENT_ID = get_or_fail('SPOTIFY_CLIENT_ID')
 SPOTIFY_CLIENT_SECRET = get_or_fail('SPOTIFY_CLIENT_SECRET')
 
+# create simple response handler class
+
+class GameNotFound(Exception): # <- look into it
+    def __init__(self, game_id: Union[int, str] = None):
+        self.game_id = game_id
+        error_message = "Game not found"
+        if game_id is not None:
+            error_message += " with ID: %s" % game_id
+        super().__init__(error_message)
+
+class OptionSelectView(discord.ui.View):
+
+    def __init__(
+        self: Self,
+        ctx: DwelloContext,
+        options: List[Tuple[str, discord.Embed]],
+    ):    
+        super().__init__()
+        self.ctx = ctx
+        self.options = options
+        self.embeds: List[discord.Embed] = [embed[1] for embed in options]
+
+        self.main_embed = self.embeds[0]
+        print(self.embeds)
+        print("\n\n",self.main_embed)
+
+    @discord.ui.select(placeholder="Select a category", row=0)
+    async def category_select(self: Self, interaction: discord.Interaction, select: discord.ui.Select):
+        print(select.values)
+        return await interaction.response.edit_message(embed=select.values[0], view=self)
+
+    def build_select(self: Self) -> None:
+        self.category_select.options = []
+
+        for label, embed in self.options:
+            self.category_select.add_option(label=label, value=embed, emoji="🏠")
+
+    async def interaction_check(self: Self, interaction: discord.Interaction) -> bool:
+        if interaction.user and interaction.user == self.ctx.author:
+            return True
+        await interaction.response.defer()
+        return False
+
+    async def on_timeout(self: Self) -> None:
+        self.clear_items()
+        await self.message.edit(view=self)
+
+    async def start(self: Self) -> Optional[discord.Message]:
+        self.build_select()
+        self.message = await self.ctx.send(embed=self.main_embed, view=self)
+
+    
 class Scraping(BaseCog):
 
     def __init__(self: Self, bot: Dwello, *args: Any, **kwargs: Any):
         super().__init__(bot, *args, **kwargs)
-        
-        #self.session = self.bot.session
         
         self.spotify_client: SpotifyClient = SpotifyClient(
             SPOTIFY_CLIENT_ID,
             SPOTIFY_CLIENT_SECRET,
             session=self.bot.session,
         )
-        
-        """base: route.Base = route.Base(
-            session=self.bot.session,
-            language="en",
-            region="US",    
-        )
-        base.key = TMDB_KEY"""
         
     @property
     def tmdb_key(self: Self) -> str:
@@ -117,6 +162,47 @@ class Scraping(BaseCog):
             return f'<t:{int(_seconds)}>'
         return f'<t:{int(_seconds)}:{style}>'
     
+
+    @commands.hybrid_command(name="image", help="Returns an image.", aliases=["images"], with_app_command=True)
+    async def image(self: Self, ctx: DwelloContext, *, image: str) -> Optional[discord.Message]:
+
+        access_key = get_or_fail('UNSPLASH_DEMO_ACCESS_KEY')
+        url: URL = "https://api.unsplash.com/photos/random"
+
+        headers = {
+            "Authorization": f"Client-ID {access_key}",
+        }
+
+        params = {
+            "query": image,
+        }
+
+        async with self.bot.session.get(url, headers=headers, params=params) as response:  
+
+            if response.status == 200:
+                data = await response.json()
+            
+            elif response.status == 401:
+                print("Unauthorized: Please check your Unsplash access key.")
+
+            elif response.status == 403:
+                print("Rate limited: Please try again later.")
+
+            else:
+                print("Bad request: Unable to retrieve image.")
+        
+        description = f"Photo by [{data['user']['name']}]({data['user']['links']['html']}) on [Unsplash](https://unsplash.com)"
+        embed: discord.Embed = discord.Embed(
+            title=data["alt_description"].capitalize(),
+            url=data["links"]["download"],
+            description=description,
+            color=cs.RANDOM_COLOR,
+        )
+        embed.set_image(url=data['urls']['regular'])
+
+        return await ctx.reply(embed=embed)
+
+    
     @commands.hybrid_command(name="album", help="Returns an album.", aliases=["albums"], with_app_command=True)
     async def album(self: Self, ctx: DwelloContext, *, album: str) -> Optional[discord.Message]:
         
@@ -126,37 +212,107 @@ class Scraping(BaseCog):
         if not albums:
             return await ctx.reply(f"Can't find any albums by the name of *{discord.utils.escape_markdown(album, as_needed=False)}*", user_mistake=True)
         
-        album: Dict[str, Any] = albums[0]
-        
-        _id = album['id']
-        name = album['name']
-        release_date = album['release_date']
-        link = album['external_urls']['spotify']
-        image_url = album['images'][1]['url'] if album['images'] else None
-        
-        artists = [(artist['name'], artist['external_urls']['spotify']) for artist in album['artists']][:2]
-        
-        embed: discord.Embed = discord.Embed(
-            title=name,
-            url=link,
-            color=cs.RANDOM_COLOR,
-        )
-        embed.set_thumbnail(url=image_url)
-        embed.add_field(name="Release Date", value=self.get_unix_timestamp(release_date, "%Y-%m-%d", style="d"), inline=False)
-        
-        tracks_data: Dict[str, Any] = await self.spotify_http_client.get_album_tracks(id=_id, market="US", limit=5)
-        
-        tracks: List[Dict[str, Any]] = tracks_data['items']
-        if tracks:
-            embed.add_field(name="Tracks", value="\n".join([f"> [{track['name']}]({track['external_urls']['spotify']})" for track in tracks]))
+        embeds = []
+        for album in albums:
+
+            album: Dict[str, Any] #= albums[0]
             
-        embed.add_field(
-            name="Artist" if len(artists) == 1 else "Artists",
-            value="\n".join([f"> [{i[0].title()}]({i[1]})" for i in artists]),
-        )
+            _id = album['id']
+            name = album['name']
+            release_date = album['release_date']
+            link = album['external_urls']['spotify']
+            image_url = album['images'][1]['url'] if album['images'] else None
             
-        return await ctx.reply(embed=embed)
+            artists = [(artist['name'], artist['external_urls']['spotify']) for artist in album['artists']][:2]
+        
+            embed: discord.Embed = discord.Embed(
+                title=name,
+                url=link,
+                color=cs.RANDOM_COLOR,
+            )
+            embed.set_thumbnail(url=image_url)
+
+            try:
+                timestamp = self.get_unix_timestamp(release_date, "%Y-%m-%d", style="d")
+            except ValueError:
+                timestamp = release_date
+
+            embed.add_field(name="Release Date", value=timestamp, inline=False)
+            
+            tracks_data: Dict[str, Any] = await self.spotify_http_client.get_album_tracks(id=_id, market="US", limit=5)
+            
+            tracks: List[Dict[str, Any]] = tracks_data['items']
+            if tracks:
+                embed.add_field(name="Tracks", value="\n".join([f"> [{track['name']}]({track['external_urls']['spotify']})" for track in tracks]))
+                
+            embed.add_field(
+                name="Artist" if len(artists) == 1 else "Artists",
+                value="\n".join([f"> [{i[0].title()}]({i[1]})" for i in artists]),
+            )
+
+        embeds.append((name, embed))
+        #await ctx.send(embeds)
+        #view = OptionSelectView(ctx, embeds)
+        #await view.start()
+        return await ctx.reply(embed=embeds[0][1])
     
+    """not_found = f"Can't find any albums by the name of *{discord.utils.escape_markdown(album, as_needed=False)}*"
+        
+        try:
+            data: SearchResult = await self.spotify_client.search(query=album, types=[ObjectType.Album], limit=5)
+        
+        except NotFound:
+            return await ctx.reply(not_found, user_mistake=True)
+            
+        albums: List[Dict[str, Any]] = data._data['albums']['items']
+        if not albums:
+            return await ctx.reply(not_found, user_mistake=True)
+        
+        embeds: List[Tuple[str, discord.Embed]] = []
+        
+        for album in albums:
+
+            album: Dict[str, Any]
+            
+            _id = album['id']
+            name = album['name']
+            release_date = album['release_date']
+            link = album['external_urls']['spotify']
+            image_url = album['images'][1]['url'] if album['images'] else None
+            
+            artists = [(artist['name'], artist['external_urls']['spotify']) for artist in album['artists']][:2]
+        
+            embed: discord.Embed = discord.Embed(
+                title=name,
+                url=link,
+                color=cs.RANDOM_COLOR,
+            )
+            embed.set_thumbnail(url=image_url)
+
+            try:
+                timestamp = self.get_unix_timestamp(release_date, "%Y-%m-%d", style="d")
+            except ValueError:
+                timestamp = release_date
+
+            embed.add_field(name="Release Date", value=timestamp, inline=False)
+            
+            tracks_data: Dict[str, Any] = await self.spotify_http_client.get_album_tracks(id=_id, market="US", limit=5)
+            
+            tracks: List[Dict[str, Any]] = tracks_data['items']
+            if tracks:
+                embed.add_field(name="Tracks", value="\n".join([f"> [{track['name']}]({track['external_urls']['spotify']})" for track in tracks]))
+                
+            embed.add_field(
+                name="Artist" if len(artists) == 1 else "Artists",
+                value="\n".join([f"> [{i[0].title()}]({i[1]})" for i in artists]),
+            )
+
+            embeds.append((name, embed))
+    
+        view = OptionSelectView(ctx, embeds)
+        return await view.start()"""
+    
+
     @commands.hybrid_command(name="artist", help="Returns an artist.", aliases=["artists"], with_app_command=True)
     async def artist(self: Self, ctx: DwelloContext, *, artist: str) -> Optional[discord.Message]:
         
@@ -201,6 +357,7 @@ class Scraping(BaseCog):
         
         return await ctx.reply(embed=embed)
     
+
     @commands.hybrid_command(name="playlist", help="Returns a playlist.", aliases=["playlists"], with_app_command=True)
     async def playlist(self: Self, ctx: DwelloContext, *, playlist: str) -> Optional[discord.Message]:
         
@@ -233,6 +390,7 @@ class Scraping(BaseCog):
         
         return await ctx.reply(embed=embed)
     
+
     @commands.hybrid_command(name="track", help="Returns a track.", aliases=["tracks"], with_app_command=True)
     async def track(self: Self, ctx: DwelloContext, *, track: str) -> Optional[discord.Message]:
         
@@ -249,7 +407,13 @@ class Scraping(BaseCog):
         duration_in_minutes = _track.duration / 1000 / 60
         
         duration_str = f"**Duration**: {'{:.2f}'.format(duration_in_minutes)} min" if duration_in_minutes >= 1 else '{:.2f}'.format(_track.duration / 1000) + " sec"
-        release_str = f"\n**Release Date**: " + self.get_unix_timestamp(_album.release_date.date, '%Y-%m-%d', style='d')
+
+        release_str = "\n**Release Date**: "
+        try:
+            release_str += self.get_unix_timestamp(_album.release_date.date, '%Y-%m-%d', style='d')
+        except ValueError:
+            release_str += _album.release_date.date
+
         embed: discord.Embed = discord.Embed(
             title=_track.name,
             url=f"https://open.spotify.com/track/{_track.id}",
@@ -266,7 +430,81 @@ class Scraping(BaseCog):
         embed.add_field(name="Album", value=f"[{_album.name}]({_album.external_urls.spotify})")
         
         return await ctx.reply(embed=embed)
+    
+    
+    async def get_game_by_name(self: Self, name: str) -> int:
+
+        url: URL = "http://api.steampowered.com/ISteamApps/GetAppList/v2/"
+        async with self.bot.session.get(url=url) as response:  
+            data = await response.json()
+
+        # await with ResponseHandler(response.status):
+        # etc
+
+        if response.status != 200:
+            raise discord.HTTPException
+            print("Couldn't connect to the API.")
+
+        game_list = data["applist"]["apps"]
+
+        for game in game_list:
+            if game["name"].lower() == name.lower():
+                return game["appid"]
+
+        raise GameNotFound(name)
+
+
+    @commands.hybrid_command(name="game", help="Returns a game.", aliases=["games"], with_app_command=True)
+    async def game(self: Self, ctx: DwelloContext, *, game: str) -> Optional[discord.Message]:
+
+        #start = time.time()
+        #end = time.time()
+        #await ctx.send(f"Executed in: {end-start}") # Idea for a time per func to calculate overall latency/response time?
+
+        try:
+            game_id = await self.get_game_by_name(game)
+        except GameNotFound:
+            return await ctx.reply(f"Couldn't find a game by the name *{discord.utils.escape_markdown(game)}*", user_mistake=True)
         
+        url: URL = "https://store.steampowered.com/api/appdetails?appids=%s&l=en" % (game_id)
+        async with self.bot.session.get(url=url) as response:  
+            data = await response.json()
+
+        if response.status != 200:
+            return await ctx.reply("Couldn't connect to the API.", user_mistake=True)
+
+        data = data[str(game_id)]['data']
+
+        name = data['name']
+        devs = data['developers']
+        website = data['website']
+        thumbnail = data['header_image']
+        metaurl = data['metacritic']['url']
+        metascore = data['metacritic']['score']
+        short_description = data['short_description']
+        price = data['price_overview']['final_formatted']
+
+        #minimum_pc_requirements = data['pc_requirements']['minimum']
+        #recommended_pc_requirements = data['pc_requirements']['recommended']
+        #publishers = data['publishers']
+        #price_overview = data['price_overview']
+        #genres = [genre['description'] for genre in data['genres']]
+
+        embed: discord.Embed = discord.Embed(
+            title=name,
+            url=website,
+            description=short_description,
+            color=cs.RANDOM_COLOR,
+        )
+        embed.set_thumbnail(url=thumbnail)
+
+        embed.add_field(name="Metascore", value=f"[{metascore}]({metaurl})")
+        embed.add_field(name="Price", value=f"[{price}](https://store.steampowered.com/app/{game_id})")
+        embed.add_field(name="Developed by", value=", ".join(devs[:3]), inline=False)
+
+        return await ctx.reply(embed=embed)
+     
+
     @commands.hybrid_command(name="actor", help="Returns a person who's known in the movie industry.", aliases=["actors", "actress", "actresses"], with_app_command=True) # amybe people alias, but later if there are no other ppl aliases
     async def movie_person(self: Self, ctx: DwelloContext, *, person: str) -> Optional[discord.Message]:
         
@@ -320,6 +558,7 @@ class Scraping(BaseCog):
 
         return await ctx.reply(embed=embed)
         
+
     @commands.command(name="movie", help="Returns a movie by its title.", aliases=["film", "films", "movies"])
     async def movie(self: Self, ctx: DwelloContext, *, movie: str) -> Optional[discord.Message]:
         #Docs: https://developer.themoviedb.org/reference/intro/getting-started
@@ -355,6 +594,7 @@ class Scraping(BaseCog):
 
         return await ctx.reply(embed=embed)     
     
+
     @app_commands.command(name="movie", description="Returns a movie by its title.")
     async def _movie(self: Self, ctx: DwelloContext, *, movie: str, year: int = None) -> Optional[discord.Message]:
         
@@ -394,6 +634,7 @@ class Scraping(BaseCog):
 
         return await ctx.reply(embed=embed)
     
+
     @commands.command(name="show", help="Returns a TV show by its title.", aliases=["series", "shows"])
     async def show(self: Self, ctx: DwelloContext, *, show: str) -> Optional[discord.Message]:
         
@@ -428,6 +669,7 @@ class Scraping(BaseCog):
 
         return await ctx.reply(embed=embed)    
     
+
     @app_commands.command(name="show", description="Returns a TV show by its title.")
     async def _show(self: Self, ctx: DwelloContext, *, show: str, year: int = None) -> Optional[discord.Message]:
         

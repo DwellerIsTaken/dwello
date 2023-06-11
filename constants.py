@@ -21,6 +21,7 @@ HELLO_ALIASES = [
     "salutations",
     "greetings",
     "hey",
+    "ola",
     "hi",
     "sup",
     "wassup",

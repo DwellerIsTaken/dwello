@@ -1,9 +1,12 @@
 from __future__ import annotations
 
 import os
+import time
+import asyncio
 import difflib
 import discord
 import inspect
+import datetime
 import itertools
 import traceback
 
@@ -586,10 +589,43 @@ class About(commands.Cog):
         bot.help_command = help_command
         self.select_emoji = '<:info:895407958035431434>'
         self.select_brief = "Bot Information commands."
+
+    def get_uptime(self: Self) -> Tuple[int, int, int, int]:
+        """Return format: days, hours, minutes, seconds."""
+
+        uptime = datetime.datetime.utcnow() - self.bot.launch_time
+
+        hours, remainder = divmod(int(uptime.total_seconds()), 3600)
+        minutes, seconds = divmod(remainder, 60)
+        days, hours = divmod(hours, 24)
+
+        return days, hours, minutes, seconds
+    
+    
+    def get_startup_timestamp(self: Self, style: discord.utils.TimestampStyle = None) -> str:
+
+        return discord.utils.format_dt(self.bot.launch_time, style = style if style else 'F')
+
+
+    def get_average_latency(self: Self, *latencies: float) -> Union[Any, float]:
+        if not latencies:
+            raise TypeError("Missing required argument: 'latencies'")
+        
+        pings = []
+        number = 0
+        
+        for latency in latencies:
+            pings.append(latency)
+
+        for ms in pings:
+            number += ms
+
+        return number / len(pings)
+
     
     # make uptime: add here -> trigger on mention in on_message
     @commands.hybrid_command(name="hello", aliases=cs.HELLO_ALIASES, with_app_command=True)
-    async def ping_cmd(self: Self, ctx: DwelloContext) -> Optional[discord.Message]:
+    async def hello(self: Self, ctx: DwelloContext) -> Optional[discord.Message]:
 
         # make variations for the response
         content: str = f"Hello there! I'm {self.bot.user.name}. Use `dw.help` for more." # {self.bot.help_command}?
@@ -602,10 +638,16 @@ class About(commands.Cog):
     async def about(self: Self, ctx: DwelloContext) -> Optional[discord.Message]:
         
         information: discord.AppInfo = await self.bot.application_info()
+        print(information)
         
         embed: discord.Embed = discord.Embed(
             description= f"{cs.GITHUB_EMOJI} [Source]({cs.GITHUB})",
             color = cs.RANDOM_COLOR,
+        )
+        embed.set_thumbnail(url=self.bot.user.display_avatar.url)
+        embed.set_author(
+            name=f"Stolen by {information.owner}",
+            icon_url=information.owner.display_avatar.url,
         )
             #description=f"{constants.GITHUB} [source]({self.bot.repo}) | "
             #f"{constants.INVITE} [invite me]({self.bot.invite_url}) | "
@@ -617,12 +659,97 @@ class About(commands.Cog):
         
         #discord.ui.Button(label="Source", url="")
 
-        embed.set_author(
-            name=f"Stolen by {information.owner}",
-            icon_url=information.owner.display_avatar.url,
+        return await ctx.send(embed=embed)
+    
+
+    @commands.hybrid_command(name="uptime", help="Returns bot's uptime.", with_app_command=True)
+    async def uptime(self: Self, ctx: DwelloContext) -> Optional[discord.Message]:
+
+        days, hours, minutes, seconds = self.get_uptime()
+        timestamp = self.get_startup_timestamp()
+
+        embed: discord.Embed = discord.Embed(
+            title="Current Uptime",
+            description=
+                f"Uptime: {days}d, {hours}h, {minutes}m, {seconds}s\n"
+                f"\nStartup Time: {timestamp}",
+            color=cs.RANDOM_COLOR,
+        )
+        return await ctx.reply(embed=embed)
+    
+
+    @commands.hybrid_command(name="ping", aliases=["latency", "latencies"], help="Pong.", with_app_command=True)
+    async def ping(self: Self, ctx: DwelloContext) -> Optional[discord.Message]: # work on return design?
+
+        typing_start = time.monotonic()
+        await ctx.typing()
+        typing_end = time.monotonic()
+        typing_ms = (typing_end - typing_start) * 1000
+
+        start = time.perf_counter()
+        message = await ctx.send("🏓 pong!")
+        end = time.perf_counter()
+        message_ms = (end - start) * 1000
+
+        latency_ms = self.bot.latency * 1000
+
+        postgres_start = time.perf_counter()
+        await self.bot.pool.fetch("SELECT 1")
+        postgres_end = time.perf_counter()
+        postgres_ms = (postgres_end - postgres_start) * 1000
+
+        average = self.get_average_latency(typing_ms, message_ms, latency_ms, postgres_ms)
+
+        await asyncio.sleep(0.7)
+
+        return await message.edit(
+            content=None,
+            embed = discord.Embed(
+                color=cs.RANDOM_COLOR,
+                description=(
+                    f"**`Websocket -> {round(latency_ms, 3)}ms{' ' * (9 - len(str(round(latency_ms, 3))))}`**\n"
+                    f"**`Typing    -> {round(typing_ms, 3)}ms{' ' * (9 - len(str(round(typing_ms, 3))))}`**\n"
+                    f"**`Message   -> {round(message_ms, 3)}ms{' ' * (9 - len(str(round(message_ms, 3))))}`**\n"
+                    f"**`Database  -> {round(postgres_ms, 3)}ms{' ' * (9 - len(str(round(postgres_ms, 3))))}`**\n"
+                    f"**`Average   -> {round(average, 3)}ms{' ' * (9 - len(str(round(average, 3))))}`**\n"
+                ),
+            )
         )
 
-        return await ctx.send(information.description)
+
+    @commands.hybrid_command(name="stats", help="Returns some of the bot's stats", with_app_command=True)
+    async def stats(self: Self, ctx: DwelloContext) -> Optional[discord.Message]:
+
+        typing_start = time.monotonic()
+        await ctx.typing()
+        typing_end = time.monotonic()
+        typing_ms = (typing_end - typing_start) * 1000
+
+        latency_ms = self.bot.latency * 1000
+
+        postgres_start = time.perf_counter()
+        await self.bot.pool.fetch("SELECT 1")
+        postgres_end = time.perf_counter()
+        postgres_ms = (postgres_end - postgres_start) * 1000
+
+        average = self.get_average_latency(typing_ms, latency_ms, postgres_ms)
+
+        embed: discord.Embed = discord.Embed(
+            title="Dwello Statistics since launch",
+            color=cs.RANDOM_COLOR,
+        )
+        embed.set_thumbnail(url=self.bot.user.display_avatar.url)
+
+        embed.add_field(name="Guilds", value=len(self.bot.guilds), inline=False)
+        embed.add_field(name="Messages", value=self.bot.reply_count if self.bot.reply_count else 1, inline=False)
+        embed.add_field(name="Total Commands", value=len(self.bot.commands), inline=False)
+        embed.add_field(name="Average Latency", value=f"**`{round(average, 3)}ms{' ' * (9 - len(str(round(average, 3))))}`**", inline=False)
+        embed.add_field(name="Websocket Latency", value=f"**`{round(latency_ms, 3)}ms{' ' * (9 - len(str(round(latency_ms, 3))))}`**")
+        embed.add_field(name="Typing Latency", value=f"**`{round(typing_ms, 3)}ms{' ' * (9 - len(str(round(typing_ms, 3))))}`**")
+        embed.add_field(name="Database Latency", value=f"**`{round(postgres_ms, 3)}ms{' ' * (9 - len(str(round(postgres_ms, 3))))}`**")
+
+        return await ctx.reply(embed=embed)
+    
 
     @commands.hybrid_command(name = "source", help="Returns command's source.", with_app_command=True)
     async def source(self: Self, ctx: DwelloContext, *, command_name: Optional[str]) -> Optional[discord.Message]:

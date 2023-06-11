@@ -25,7 +25,7 @@ class UserInfo(BaseCog):
     def __init__(self, bot: Dwello, *args: Any, **kwargs: Any):
         super().__init__(bot, *args, **kwargs)
 
-    @commands.hybrid_command(name = 'stats', description="Shows personal information and rank statistics",with_app_command=True) 
+    """@commands.hybrid_command(name = 'stats', description="Shows personal information and rank statistics",with_app_command=True) 
     async def stats(self, ctx: DwelloContext, member: Optional[Union[discord.Member, discord.User]] = commands.Author) -> Optional[discord.Message]:
         async with ctx.typing(ephemeral=True):
             async with self.bot.pool.acquire() as conn:
@@ -97,7 +97,7 @@ class UserInfo(BaseCog):
 
                     embed.set_footer(text=cs.footer)
 
-            return await ctx.reply(embed=embed, mention_author = False)
+            return await ctx.reply(embed=embed, mention_author = False)"""
 
     # OPTIMIZE | TO PIL
     '''@commands.hybrid_command(name = 'rank', description="Shows your rank or another member's rank.",with_app_command=True) 

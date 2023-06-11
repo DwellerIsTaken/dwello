@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import datetime
 import discord
 import logging
 import aiohttp
@@ -66,7 +67,15 @@ class DwelloBase(AutoShardedBot):
     logger = logging.getLogger("logging")
     _ext_log = logging.getLogger("extensions")
 
-    def __init__(self: Self, pool: asyncpg.Pool, session: aiohttp.ClientSession, *args: Any, **kwargs: Any) -> None:
+    def __init__(
+        self: Self,
+        pool: asyncpg.Pool,
+        session: aiohttp.ClientSession,
+        /,
+        *args: Any,
+        **kwargs: Any,
+    ) -> None:
+
         intents = discord.Intents.all()
         intents.typing = False
 
@@ -85,9 +94,13 @@ class DwelloBase(AutoShardedBot):
 
         self.pool = pool
         self.session = session
+
+        self.reply_count: int = 0
         
         self.blacklisted_users: Dict[int, str] = {}
         self.bypass_cooldown_users: List[int] = []
+
+        self.launch_time: datetime.datetime = datetime.datetime.utcnow()
         
         self.cooldown: commands.CooldownMapping[discord.Message] = commands.CooldownMapping.from_cooldown(
             1, 1.5, commands.BucketType.member,
