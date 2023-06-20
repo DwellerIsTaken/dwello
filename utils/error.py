@@ -79,6 +79,9 @@ class CommandErrorHandler(commands.Cog):
         # For this error example we check to see where it came from...
         elif isinstance(error, commands.BadArgument):
             "Use later."
+
+        elif isinstance(error, commands.errors.CheckFailure):
+            pass # type: ignore
                 
         elif isinstance(error, commands.CommandOnCooldown):
             await ctx.reply(f"You are on cooldown. Try again in {error.retry_after:.2f}s")

@@ -54,6 +54,18 @@ CREATE TABLE IF NOT EXISTS jobs(
     description TEXT
 );
 
+CREATE TABLE IF NOT EXISTS news(
+    title TEXT,
+    message_id BIGINT,
+    channel_id BIGINT,
+    news_id SERIAL PRIMARY KEY
+);
+
+CREATE TABLE IF NOT EXISTS blacklist(
+    user_id BIGINT PRIMARY KEY,
+    reason TEXT
+);
+
 ALTER SEQUENCE jobs_id_seq START 10000000 INCREMENT BY 1;
 ALTER SEQUENCE warnings_warn_id_seq START 10000000 INCREMENT BY 1;
 

@@ -2,7 +2,9 @@ from __future__ import annotations
 
 import wikipediaapi
 import datetime
+import difflib
 import discord
+import json
 import time
 import re
 
@@ -28,11 +30,14 @@ from typing import Any, List, Dict, Tuple, Optional, Literal, Union
 from typing_extensions import Self
 
 import constants as cs
-from utils import BaseCog, capitalize_greek_numbers
 from bot import Dwello, DwelloContext, get_or_fail
+from utils import BaseCog, capitalize_greek_numbers, get_unix_timestamp
+
+mk = discord.utils.escape_markdown
 
 TMDB_KEY = get_or_fail('TMDB_API_TOKEN')
 STEAM_KEY = get_or_fail('STEAM_API_KEY')
+WEATHER_KEY = get_or_fail('OPENWEATHERMAP_KEY')
 SPOTIFY_CLIENT_ID = get_or_fail('SPOTIFY_CLIENT_ID')
 SPOTIFY_CLIENT_SECRET = get_or_fail('SPOTIFY_CLIENT_SECRET')
 
@@ -153,15 +158,10 @@ class Scraping(BaseCog):
         self.spotify_token = _token
         return _token, _expires"""
     
-    def get_unix_timestamp(self: Self, _date_string: str, _format: str, /, style: discord.utils.TimestampStyle) -> str:
-        
-        _date = datetime.datetime.strptime(_date_string, _format)
-        _seconds = (_date - datetime.datetime(1970, 1, 1)).total_seconds()
-    
-        if style is None:
-            return f'<t:{int(_seconds)}>'
-        return f'<t:{int(_seconds)}:{style}>'
-    
+    @commands.command()
+    async def test(self, ctx: DwelloContext):
+        message = await ctx.author.fetch_message(1119035015842504744)
+        return await ctx.reply(message.content)
 
     @commands.hybrid_command(name="image", help="Returns an image.", aliases=["images"], with_app_command=True)
     async def image(self: Self, ctx: DwelloContext, *, image: str) -> Optional[discord.Message]:
@@ -210,7 +210,7 @@ class Scraping(BaseCog):
             
         albums: List[Dict[str, Any]] = data._data['albums']['items']
         if not albums:
-            return await ctx.reply(f"Can't find any albums by the name of *{discord.utils.escape_markdown(album, as_needed=False)}*", user_mistake=True)
+            return await ctx.reply(f"Can't find any albums by the name of *{mk(album, as_needed=False)}*", user_mistake=True)
         
         embeds = []
         for album in albums:
@@ -233,7 +233,7 @@ class Scraping(BaseCog):
             embed.set_thumbnail(url=image_url)
 
             try:
-                timestamp = self.get_unix_timestamp(release_date, "%Y-%m-%d", style="d")
+                timestamp = get_unix_timestamp(release_date, "%Y-%m-%d", style="d")
             except ValueError:
                 timestamp = release_date
 
@@ -320,7 +320,7 @@ class Scraping(BaseCog):
             
         artists: List[Artist] = data.artists.items
         if not artists:
-            return await ctx.reply(f"Can't find any artists by the name of *{discord.utils.escape_markdown(artist, as_needed=False)}*", user_mistake=True)
+            return await ctx.reply(f"Can't find any artists by the name of *{mk(artist, as_needed=False)}*", user_mistake=True)
 
         artist: Artist = artists[0]
         
@@ -365,7 +365,7 @@ class Scraping(BaseCog):
             
         playlists: List[Dict[str, Any]] = data._data['playlists']['items']
         if not playlists:
-            return await ctx.reply(f"Can't find any playlists by the name of *{discord.utils.escape_markdown(playlist, as_needed=False)}*", user_mistake=True)
+            return await ctx.reply(f"Can't find any playlists by the name of *{mk(playlist, as_needed=False)}*", user_mistake=True)
         
         playlist: Dict[str, Any] = playlists[0]
         
@@ -398,7 +398,7 @@ class Scraping(BaseCog):
             
         tracks: List[Track] = data.tracks.items
         if not tracks:
-            return await ctx.reply(f"Can't find any tracks by the name of *{discord.utils.escape_markdown(track, as_needed=False)}*", user_mistake=True)
+            return await ctx.reply(f"Can't find any tracks by the name of *{mk(track, as_needed=False)}*", user_mistake=True)
         
         _track: Track = tracks[0]
         _album: PartialAlbum = _track.album
@@ -410,7 +410,7 @@ class Scraping(BaseCog):
 
         release_str = "\n**Release Date**: "
         try:
-            release_str += self.get_unix_timestamp(_album.release_date.date, '%Y-%m-%d', style='d')
+            release_str += get_unix_timestamp(_album.release_date.date, '%Y-%m-%d', style='d')
         except ValueError:
             release_str += _album.release_date.date
 
@@ -464,7 +464,7 @@ class Scraping(BaseCog):
         try:
             game_id = await self.get_game_by_name(game)
         except GameNotFound:
-            return await ctx.reply(f"Couldn't find a game by the name *{discord.utils.escape_markdown(game)}*", user_mistake=True)
+            return await ctx.reply(f"Couldn't find a game by the name *{mk(game)}*", user_mistake=True)
         
         url: URL = "https://store.steampowered.com/api/appdetails?appids=%s&l=en" % (game_id)
         async with self.bot.session.get(url=url) as response:  
@@ -583,7 +583,7 @@ class Scraping(BaseCog):
             url=f"https://www.themoviedb.org/movie/{movie['id']}",
             color=cs.RANDOM_COLOR,
         )
-        embed.add_field(name='Release Date', value=self.get_unix_timestamp(movie['release_date'], "%Y-%m-%d", style="d"))
+        embed.add_field(name='Release Date', value=get_unix_timestamp(movie['release_date'], "%Y-%m-%d", style="d"))
         embed.add_field(name='Vote Average', value=f"{str(movie['vote_average'])[:3]} / 10")
         embed.add_field(name='Vote Count', value=movie['vote_count'])
 
@@ -623,7 +623,7 @@ class Scraping(BaseCog):
             url=f"https://www.themoviedb.org/movie/{movie['id']}",
             color=cs.RANDOM_COLOR,
         )   
-        embed.add_field(name='Release Date', value=self.get_unix_timestamp(movie['release_date'], "%Y-%m-%d", style="d"))
+        embed.add_field(name='Release Date', value=get_unix_timestamp(movie['release_date'], "%Y-%m-%d", style="d"))
         embed.add_field(name='Vote Average', value=f"{str(movie['vote_average'])[:3]} / 10")
         embed.add_field(name='Vote Count', value=movie['vote_count'])
 
@@ -658,7 +658,7 @@ class Scraping(BaseCog):
             url=f"https://www.themoviedb.org/tv/{show['id']}",
             color=cs.RANDOM_COLOR,
         )   
-        embed.add_field(name='Release Date', value=self.get_unix_timestamp(show['first_air_date'], "%Y-%m-%d", style="d"))
+        embed.add_field(name='Release Date', value=get_unix_timestamp(show['first_air_date'], "%Y-%m-%d", style="d"))
         embed.add_field(name='Vote Average', value=f"{str(show['vote_average'])[:3]} / 10")
         embed.add_field(name='Vote Count', value=show['vote_count'])
 
@@ -698,7 +698,7 @@ class Scraping(BaseCog):
             url=f"https://www.themoviedb.org/tv/{show['id']}",
             color=cs.RANDOM_COLOR,
         )
-        embed.add_field(name='Release Date', value=self.get_unix_timestamp(show['first_air_date'], "%Y-%m-%d", style="d"))
+        embed.add_field(name='Release Date', value=get_unix_timestamp(show['first_air_date'], "%Y-%m-%d", style="d"))
         embed.add_field(name='Vote Average', value=f"{str(show['vote_average'])[:3]} / 10")
         embed.add_field(name='Vote Count', value=show['vote_count'])
 
@@ -708,3 +708,79 @@ class Scraping(BaseCog):
         embed.set_footer(text=f"Popularity: {show['popularity']}")
 
         return await ctx.reply(embed=embed)
+    
+
+    @commands.hybrid_command(name='weather', help="Shows you the temparature in the city you've typed in.", with_app_command=True)
+    async def weather(self: Self, ctx: DwelloContext, *, city: str) -> Optional[discord.Message]:
+        if not city:
+            return await ctx.reply("Please provide a city or a contry.", mention_author=True)
+
+        args = city.lower()
+
+        async with self.bot.session.get(f'http://api.openweathermap.org/data/2.5/weather?q={args}&APPID={WEATHER_KEY}&units=metric') as response:  
+            data = await response.json()
+
+        if data['cod'] == '404':
+            with open('datasets/countries.json', 'r') as file:
+                data: dict = json.load(file)
+
+            matches = []
+            for key, value in data.items():
+                country_match = difflib.get_close_matches(args, [key])
+                if country_match:
+                    matches.append(country_match[0])
+                else:
+                    city_matches = difflib.get_close_matches(args, value)
+                    if city_matches:
+                        matches.append(city_matches[0])
+
+            clean_matches = difflib.get_close_matches(args, matches, 5)
+            
+            description = "Please check the spelling and try again."
+            if clean_matches:
+                description = "**Did you mean...**\n"
+                for match in clean_matches:
+                    description += f"\n{match}"
+
+            matches_embed: discord.Embed = discord.Embed(
+                description=
+                f"Sorry, but I couldn't recognise the city **{args.title()}**."
+                f"\n{description}",
+                color=cs.WARNING_COLOR,
+            )
+            return await ctx.reply(embed=matches_embed, mention_author = True)
+                                    
+        curr_temp_celsius = data['main']['temp']
+        curr_feels_like_celsius = data['main']['feels_like']
+                                        
+        if curr_feels_like_celsius < 14:
+            dress_code = "warm"
+
+        else:
+            dress_code = "light"
+
+        curr_temp_fahrenheit = (curr_temp_celsius * 9/5) + 32
+        curr_feels_like_fahrenheit = (curr_feels_like_celsius * 9/5) + 32
+
+        payload = (
+        f"Right now it is **{curr_temp_celsius} °C** / **{curr_temp_fahrenheit:.2f} °F**.\n"
+        f"But it feels like **{curr_feels_like_celsius} °C** / **{curr_feels_like_fahrenheit:.2f} °F**.\n"
+        #f"I recommend wearing {dress_code} clothes outside."
+        )
+
+        weather_embed = discord.Embed(
+            title=f"Current weather in {data['name']}",
+            description=payload,
+            color=discord.Colour.blurple()
+        )
+
+        weather_embed.set_footer(text="Powered by OpenWeatherMap")
+        weather_embed.set_thumbnail(url=f"http://openweathermap.org/img/w/{data['weather'][0]['icon']}.png")
+
+        weather_embed.add_field(name="Location", value=f"{data['name']}, {data['sys']['country']}", inline=False)
+        weather_embed.add_field(name="Weather", value=data['weather'][0]['description'].title(), inline=False)
+        weather_embed.add_field(name="Humidity", value=f"{data['main']['humidity']}%", inline=True)
+        weather_embed.add_field(name="Wind", value=f"{data['wind']['speed']} m/s", inline=True)
+        weather_embed.add_field(name="Pressure", value=f"{data['main']['pressure']} hPa", inline=True)
+
+        return await ctx.reply(embed = weather_embed, ephemeral=False)

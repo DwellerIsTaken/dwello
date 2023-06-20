@@ -12,7 +12,16 @@ import os
 from discord.ext.commands import AutoShardedBot
 from discord.ext import commands
 
-from typing import ClassVar, Optional, Any, Dict, List
+from typing import (
+    TYPE_CHECKING, 
+    Any, 
+    Dict, 
+    List, 
+    ClassVar, 
+    Optional, 
+    TypeVar,
+    Tuple,
+)
 from typing_extensions import Self, override
 
 from utils.web import AiohttpWeb
@@ -57,6 +66,13 @@ def get_or_fail(var: str) -> str:
     if v is None:
         raise Exception(f"{var!r} is not set in the .env file")
     return v
+
+# <---CHECKS--->
+
+def blacklist_check(ctx: DwelloContext) -> bool:
+    if ctx.bot.is_blacklisted(ctx.author.id):
+        return False
+    return True
 
 class DwelloBase(AutoShardedBot):
 
@@ -111,7 +127,7 @@ class DwelloBase(AutoShardedBot):
         self.otherutils: OtherUtils = OtherUtils(self)
         self.db: DB_Operations = DB_Operations(self)
         self.listeners = ListenersFunctions(self)
-        self.web: AiohttpWeb = AiohttpWeb(self)
+        self.web: AiohttpWeb = AiohttpWeb(self) # redo all -> maybe class methods instead
         #self.twitch: Twitch = Twitch(self)
 
     @override
@@ -130,6 +146,12 @@ class DwelloBase(AutoShardedBot):
         
         records: List[Any] = await self.pool.fetch("SELECT guild_id, array_agg(prefix) FROM prefixes GROUP BY guild_id")
         self.guild_prefixes = {guild_id: prefix for guild_id, prefix in records}
+
+        blacklist: List[asyncpg.Record] = await self.pool.fetch("SELECT * FROM blacklist")
+        for record in blacklist:
+            self.blacklisted_users[record['user_id']] = record['reason']
+
+        self.add_check(blacklist_check)
 
         asyncio.create_task(self.web.run(port=8081))
         
@@ -194,3 +216,6 @@ class DwelloBase(AutoShardedBot):
             self._ext_log.error(f"Failed to reload extension {name}", exc_info=e)
             if _raise:
                 raise e
+            
+    def is_blacklisted(self: Self, user_id: int) -> bool:
+        return user_id in self.blacklisted_users # rewrite member and user and put it there as a property

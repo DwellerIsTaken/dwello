@@ -25,6 +25,8 @@ from typing import (
 )
 from typing_extensions import Self, override
 
+from .news import NewsViewer
+
 import constants as cs
 from utils import BaseCog
 from bot import Dwello, DwelloContext
@@ -262,10 +264,10 @@ class HelpView(discord.ui.View):
         self._update_buttons()
         await interaction.response.edit_message(embed=self.embeds[self.current_page], view=self)
 
-    """@discord.ui.button(emoji="📰", label="news", row=1, style=discord.ButtonStyle.green)
+    @discord.ui.button(emoji="📰", label="news", row=1, style=discord.ButtonStyle.green)
     async def vote(self, interaction: Interaction, _):
-        view = NewsMenu(self.ctx, other_view=self)
-        await view.start(interaction)"""
+        news = await self.bot.pool.fetch("SELECT * FROM news ORDER BY news_id DESC")
+        await NewsViewer.from_interaction(interaction, news, embed=self.embeds[self.current_page], old_view=self)
 
     def _update_buttons(self: Self) -> None:
         styles = {True: discord.ButtonStyle.gray, False: discord.ButtonStyle.blurple}
@@ -817,6 +819,7 @@ class About(commands.Cog):
         else:
             command = self.bot.get_command(command_name)
             cog = self.bot.get_cog(command_name)
+
             if not command and not cog:
                 matches = difflib.get_close_matches(command_name, _matches, 5)
                 if not matches:

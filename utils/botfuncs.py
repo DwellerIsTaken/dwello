@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import pkg_resources
+import datetime
 import discord
 import PIL
 import sys
@@ -17,6 +18,10 @@ def apostrophize(word: str) -> str:
         return word + "'"
     else:
         return word + "'s"
+    
+def is_discord_link(link: str) -> bool:
+    url_pattern = re.compile(r"^https://discord\.com/.*$")
+    return bool(re.match(url_pattern, link))
             
 def capitalize_greek_numbers(text):
     pattern = r'\b(?=[MDCLXVIΙΙ]+)\b(M{0,4}(CM|CD|D?C{0,3})(XC|XL|L?X{0,3})(IX|IV|V?I{0,2})(?!\S))\b'
@@ -27,6 +32,15 @@ def find_greek_numbers(text):
     matches = re.findall(pattern, text, re.IGNORECASE)
     greek_numbers = [match[0] for match in matches]
     return greek_numbers
+
+def get_unix_timestamp(_date_string: str, _format: str, /, style: discord.utils.TimestampStyle) -> str:
+        
+    _date = datetime.datetime.strptime(_date_string, _format)
+    _seconds = (_date - datetime.datetime(1970, 1, 1)).total_seconds()
+
+    if style is None:
+        return f'<t:{int(_seconds)}>'
+    return f'<t:{int(_seconds)}:{style}>'
     
 async def get_avatar_dominant_color(member: Optional[discord.Member]) -> Optional[discord.Colour]:
     image = PIL.Image.open(BytesIO(await member.display_avatar.read()))

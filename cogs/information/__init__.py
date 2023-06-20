@@ -2,11 +2,11 @@ from __future__ import annotations
 
 from bot import Dwello
 
-from .weather import Weather
+from .news import News
 from .scraping import Scraping
 from .user_info import UserInfo
 
-class Information(Scraping, UserInfo, Weather, name="Information"):
+class Information(Scraping, UserInfo, News, name="Information"):
     """
     📚 Includes commands and tools that provide information to users, such as server and user statistics, weather updates, news feeds, and other relevant information.
     """

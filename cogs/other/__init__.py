@@ -3,12 +3,12 @@ from __future__ import annotations
 
 from bot import Dwello
 
+from .owner import Owner
 from .events import Events
 from .tasks import Tasks
 from .botconfig import BotConfig
-from .owner import OwnerCommands
 
-class Other(Events, Tasks, OwnerCommands, BotConfig):
+class Other(Owner, Events, Tasks, BotConfig):
     '''Other Class'''
 
 async def setup(bot: Dwello):
