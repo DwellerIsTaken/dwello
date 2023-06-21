@@ -1,29 +1,26 @@
 from __future__ import annotations
 
-import contextlib
-import asyncio
-import asyncpg
-import discord
-import logging
-import typing
 import random
-import io
 import re
+import typing
+from typing import TYPE_CHECKING, Any, Optional, Sequence, Union
 
+import discord
 from discord import Interaction
 from discord.ext import commands
 from discord.ext.commands.errors import BadArgument
-
-from typing import Union, Optional, Sequence, Any, TYPE_CHECKING
-from typing_extensions import Self, LiteralString, override
+from typing_extensions import LiteralString, Self, override
 
 if TYPE_CHECKING:
-    from bot import Dwello 
-    
+    from bot import Dwello
+
 else:
     from discord.ext.commands import Bot as Dwello
 
-target_type = Union[discord.Member, discord.User, discord.PartialEmoji, discord.Guild, discord.Invite]
+target_type = Union[
+    discord.Member, discord.User, discord.PartialEmoji, discord.Guild, discord.Invite
+]
+
 
 def cleanup_code(content):
     """Automatically removes code blocks from the code."""
@@ -33,6 +30,7 @@ def cleanup_code(content):
 
     # remove `foo`
     return content.strip("` \n")
+
 
 class ConfirmButton(discord.ui.Button):
     def __init__(self, label: str, emoji: str, button_style: discord.ButtonStyle):
@@ -48,6 +46,7 @@ class ConfirmButton(discord.ui.Button):
         view.value = True
         view.stop()
 
+
 class CancelButton(discord.ui.Button):
     def __init__(self, label: str, emoji: str, button_style: discord.ButtonStyle):
         super().__init__(style=button_style, label=label, emoji=emoji)
@@ -57,6 +56,7 @@ class CancelButton(discord.ui.Button):
         view: Confirm = self.view
         view.value = False
         view.stop()
+
 
 class Confirm(discord.ui.View):
     def __init__(self, buttons: typing.Tuple[typing.Tuple[str]], timeout: int = 30):
@@ -101,6 +101,7 @@ class Confirm(discord.ui.View):
 
         return False
 
+
 class DwelloContext(commands.Context):
     bot: Dwello
     guild: discord.Guild
@@ -120,12 +121,13 @@ class DwelloContext(commands.Context):
         embeds: Optional[Sequence[discord.Embed]] = None,
         file: Optional[discord.file.File] = None,
         files: Optional[Sequence[discord.file.File]] = None,
-        reference: Optional[Union[discord.Message, discord.MessageReference, discord.PartialMessage]] = None,
+        reference: Optional[
+            Union[discord.Message, discord.MessageReference, discord.PartialMessage]
+        ] = None,
         mention_author: Optional[bool] = None,
         ephemeral: bool = False,
         **kwargs,
     ) -> discord.Message:
-
         if embed and embeds:
             raise BadArgument("cannot pass both embed and embeds parameter to send()")
 
@@ -135,12 +137,16 @@ class DwelloContext(commands.Context):
                 "",
                 (str(content) or "") + str((embed.to_dict() if embed else "")),
             )
-            if self.bot.http.token in test_string.replace("\u200b", "").replace(" ", ""):
-                raise commands.BadArgument("Could not send message as it contained the bot's token!")
+            if self.bot.http.token in test_string.replace("\u200b", "").replace(
+                " ", ""
+            ):
+                raise commands.BadArgument(
+                    "Could not send message as it contained the bot's token!"
+                )
 
-        '''if embed:
+        """if embed:
             colors = {embed.color} - {discord.Color.default(), None}
-            embed.colour = next(iter(colors), self.color)'''
+            embed.colour = next(iter(colors), self.color)"""
 
         embeds = [embed] if embed else (embeds or [])
 
@@ -152,26 +158,25 @@ class DwelloContext(commands.Context):
             reference=reference,
             mention_author=mention_author,
             ephemeral=ephemeral,
-            **kwargs
+            **kwargs,
         )
-    
-        '''except discord.HTTPException:
+
+        """except discord.HTTPException:
             return await super().send(content=content, embeds=embeds, reference=None, mention_author=mention_author, file=file, **kwargs)
-        '''
+        """
 
     @override
     async def reply(
-        self, 
-        content: Optional[str] = None, 
+        self,
+        content: Optional[str] = None,
         *,
         ephemeral: Optional[bool] = None,
         user_mistake: Optional[bool] = None,
         mention_author: Optional[bool] = None,
         permission_cmd: Optional[bool] = None,
-        mention_reference_author: Optional[bool] = True, 
-        **kwargs: Any
+        mention_reference_author: Optional[bool] = True,
+        **kwargs: Any,
     ) -> discord.Message:
-
         mention: bool = False
         message: discord.Message = self.message
         reference: discord.MessageReference = self.message.reference
@@ -184,23 +189,39 @@ class DwelloContext(commands.Context):
 
         if user_mistake:
             if any((mention_author, ephemeral, permission_cmd)):
-                raise BadArgument("Cannot pass mention_author, ephemeral, or permission_cmd when user_mistake = True.")
+                raise BadArgument(
+                    "Cannot pass mention_author, ephemeral, or permission_cmd when user_mistake = True."
+                )
             mention, ephemeral = True, True
 
         elif permission_cmd:
             if any((mention_author, ephemeral, user_mistake)):
-                raise BadArgument("Cannot pass mention_author, ephemeral, or user_mistake when permission_cmd = True.")
+                raise BadArgument(
+                    "Cannot pass mention_author, ephemeral, or user_mistake when permission_cmd = True."
+                )
             mention, ephemeral = False, True
-            
+
         if not self.interaction:
-            return await self.send(content, reference=message, mention_author=mention, ephemeral=ephemeral, **kwargs)
+            return await self.send(
+                content,
+                reference=message,
+                mention_author=mention,
+                ephemeral=ephemeral,
+                **kwargs,
+            )
         else:
-            return await self.send(content, mention_author=mention, ephemeral=ephemeral, **kwargs)
+            return await self.send(
+                content, mention_author=mention, ephemeral=ephemeral, **kwargs
+            )
 
     async def confirm(
         self,
         message: str = "Do you want to confirm?",
-        buttons: typing.Optional[typing.Tuple[typing.Union[discord.PartialEmoji, str], str, discord.ButtonStyle]] = None,
+        buttons: typing.Optional[
+            typing.Tuple[
+                typing.Union[discord.PartialEmoji, str], str, discord.ButtonStyle
+            ]
+        ] = None,
         timeout: int = 30,
         delete_after_confirm: bool = False,
         delete_after_timeout: bool = False,
@@ -209,7 +230,11 @@ class DwelloContext(commands.Context):
     ) -> typing.Union[bool, typing.Tuple[bool, discord.Message]]:
         """A confirmation menu."""
 
-        delete_after_cancel = delete_after_cancel if delete_after_cancel is not None else delete_after_confirm
+        delete_after_cancel = (
+            delete_after_cancel
+            if delete_after_cancel is not None
+            else delete_after_confirm
+        )
 
         view = Confirm(
             buttons=buttons
@@ -242,27 +267,45 @@ class DwelloContext(commands.Context):
         if view.value is None:
             try:
                 if return_message is False:
-                    (await message.edit(view=view)) if delete_after_timeout is False else (await message.delete())
+                    (
+                        await message.edit(view=view)
+                    ) if delete_after_timeout is False else (await message.delete())
             except (discord.Forbidden, discord.HTTPException):
                 pass
-            return (None, message) if delete_after_timeout is False and return_message is True else None
+            return (
+                (None, message)
+                if delete_after_timeout is False and return_message is True
+                else None
+            )
 
         elif view.value:
             try:
                 if return_message is False:
-                    (await message.edit(view=view)) if delete_after_confirm is False else (await message.delete())
+                    (
+                        await message.edit(view=view)
+                    ) if delete_after_confirm is False else (await message.delete())
             except (discord.Forbidden, discord.HTTPException):
                 pass
-            return (True, message) if delete_after_confirm is False and return_message is True else True
+            return (
+                (True, message)
+                if delete_after_confirm is False and return_message is True
+                else True
+            )
 
         else:
             try:
                 if return_message is False:
-                    (await message.edit(view=view)) if delete_after_cancel is False else (await message.delete())
+                    (
+                        await message.edit(view=view)
+                    ) if delete_after_cancel is False else (await message.delete())
             except (discord.Forbidden, discord.HTTPException):
                 pass
 
-            return (False, message) if delete_after_cancel is False and return_message is True else False
+            return (
+                (False, message)
+                if delete_after_cancel is False and return_message is True
+                else False
+            )
 
     '''@property
     def color(self):
@@ -294,14 +337,14 @@ class DwelloContext(commands.Context):
     @property
     def referenced_user(self) -> typing.Optional[discord.abc.User]:
         return getattr(self.reference, "author", None)
-    
+
     async def create_codeblock(self: Self, content: str) -> str:
         fmt: LiteralString = "`" * 3
         return f"{fmt}py\n{content}{fmt}"
 
-    '''@property
+    """@property
     def db(self) -> asyncpg.Pool:
-        return self.bot.db'''
+        return self.bot.db"""
 
     '''async def prompt(
         self,

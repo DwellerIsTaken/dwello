@@ -1,27 +1,20 @@
 from __future__ import annotations
 
-import asyncpg
-import discord
+# from colorthief import ColorThief
+# import matplotlib.colors as clr
+# from utils.levelling import LevellingUtils
+# from PIL import Image, ImageFont
+# from easy_pil import Editor, Canvas, load_image_async, Font
+# from cogs.economy.guild_eco import GuildEcoUtils
+from typing import Any
 
-from discord.ext import commands
-
-#from colorthief import ColorThief
-#import matplotlib.colors as clr
-#from utils.levelling import LevellingUtils
-#from PIL import Image, ImageFont
-#from easy_pil import Editor, Canvas, load_image_async, Font
-#from cogs.economy.guild_eco import GuildEcoUtils
-from typing import Optional, Union, Any
-from typing_extensions import Self
-
-import constants as cs
-from utils import get_avatar_dominant_color, BaseCog
-from bot import Dwello, DwelloContext
+from bot import Dwello
+from utils import BaseCog
 
 # REFACTOR TO PILLOW
 
-class UserInfo(BaseCog):
 
+class UserInfo(BaseCog):
     def __init__(self, bot: Dwello, *args: Any, **kwargs: Any):
         super().__init__(bot, *args, **kwargs)
 
@@ -100,7 +93,7 @@ class UserInfo(BaseCog):
             return await ctx.reply(embed=embed, mention_author = False)"""
 
     # OPTIMIZE | TO PIL
-    '''@commands.hybrid_command(name = 'rank', description="Shows your rank or another member's rank.",with_app_command=True) 
+    """@commands.hybrid_command(name = 'rank', description="Shows your rank or another member's rank.",with_app_command=True) 
     async def rank(self, ctx: commands.Context, member: Optional[Union[discord.Member, discord.User]] = commands.Author):
         async with ctx.typing():
             async with self.pool.acquire() as conn:
@@ -283,9 +276,9 @@ class UserInfo(BaseCog):
                         image.save("avatar.png")
 
             await ctx.reply(file=file1,mention_author=False)
-        return os.remove("avatar.png")'''
+        return os.remove("avatar.png")"""
 
-    '''@commands.hybrid_command(name = 'leaderboard', description="Shows the level leaderboard.",with_app_command=True) 
+    """@commands.hybrid_command(name = 'leaderboard', description="Shows the level leaderboard.",with_app_command=True) 
     async def leaderboard(self, ctx: commands.Context):
       async with ctx.typing():
         async with asyncpg.create_pool(database=tv.db_name, user=tv.db_username, password=os.getenv('pg_password')) as pool:
@@ -636,5 +629,4 @@ class UserInfo(BaseCog):
                     image.save("avatar_1.png")
 
                 await ctx.reply(file=file1, mention_author=False)
-                return os.remove("avatar_1.png")'''
-    
+                return os.remove("avatar_1.png")"""

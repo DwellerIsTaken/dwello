@@ -1,33 +1,26 @@
 from __future__ import annotations
 
-import wikipediaapi
-import datetime
 import difflib
-import discord
 import json
-import time
 import re
+from typing import Any, Dict, List, Optional, Tuple, Union
 
-from yarl import URL
-from aiospotify import http
+import discord
+import wikipediaapi
 from aiospotify import (
-    Album,
     Artist,
     Image,
     ObjectType,
     PartialAlbum,
-    PartialArtist,
-    PartialTrack,
     SearchResult,
     SpotifyClient,
     Track,
+    http,
 )
-
 from discord import app_commands
-from discord.ext import commands, tasks
-
-from typing import Any, List, Dict, Tuple, Optional, Literal, Union
+from discord.ext import commands
 from typing_extensions import Self
+from yarl import URL
 
 import constants as cs
 from bot import Dwello, DwelloContext, get_or_fail
@@ -35,15 +28,16 @@ from utils import BaseCog, capitalize_greek_numbers, get_unix_timestamp
 
 mk = discord.utils.escape_markdown
 
-TMDB_KEY = get_or_fail('TMDB_API_TOKEN')
-STEAM_KEY = get_or_fail('STEAM_API_KEY')
-WEATHER_KEY = get_or_fail('OPENWEATHERMAP_KEY')
-SPOTIFY_CLIENT_ID = get_or_fail('SPOTIFY_CLIENT_ID')
-SPOTIFY_CLIENT_SECRET = get_or_fail('SPOTIFY_CLIENT_SECRET')
+TMDB_KEY = get_or_fail("TMDB_API_TOKEN")
+STEAM_KEY = get_or_fail("STEAM_API_KEY")
+WEATHER_KEY = get_or_fail("OPENWEATHERMAP_KEY")
+SPOTIFY_CLIENT_ID = get_or_fail("SPOTIFY_CLIENT_ID")
+SPOTIFY_CLIENT_SECRET = get_or_fail("SPOTIFY_CLIENT_SECRET")
 
 # create simple response handler class
 
-class GameNotFound(Exception): # <- look into it
+
+class GameNotFound(Exception):  # <- look into it
     def __init__(self, game_id: Union[int, str] = None):
         self.game_id = game_id
         error_message = "Game not found"
@@ -51,13 +45,13 @@ class GameNotFound(Exception): # <- look into it
             error_message += " with ID: %s" % game_id
         super().__init__(error_message)
 
-class OptionSelectView(discord.ui.View):
 
+class OptionSelectView(discord.ui.View):
     def __init__(
         self: Self,
         ctx: DwelloContext,
         options: List[Tuple[str, discord.Embed]],
-    ):    
+    ):
         super().__init__()
         self.ctx = ctx
         self.options = options
@@ -65,12 +59,16 @@ class OptionSelectView(discord.ui.View):
 
         self.main_embed = self.embeds[0]
         print(self.embeds)
-        print("\n\n",self.main_embed)
+        print("\n\n", self.main_embed)
 
     @discord.ui.select(placeholder="Select a category", row=0)
-    async def category_select(self: Self, interaction: discord.Interaction, select: discord.ui.Select):
+    async def category_select(
+        self: Self, interaction: discord.Interaction, select: discord.ui.Select
+    ):
         print(select.values)
-        return await interaction.response.edit_message(embed=select.values[0], view=self)
+        return await interaction.response.edit_message(
+            embed=select.values[0], view=self
+        )
 
     def build_select(self: Self) -> None:
         self.category_select.options = []
@@ -92,39 +90,38 @@ class OptionSelectView(discord.ui.View):
         self.build_select()
         self.message = await self.ctx.send(embed=self.main_embed, view=self)
 
-    
-class Scraping(BaseCog):
 
+class Scraping(BaseCog):
     def __init__(self: Self, bot: Dwello, *args: Any, **kwargs: Any):
         super().__init__(bot, *args, **kwargs)
-        
+
         self.spotify_client: SpotifyClient = SpotifyClient(
             SPOTIFY_CLIENT_ID,
             SPOTIFY_CLIENT_SECRET,
             session=self.bot.session,
         )
-        
+
     @property
     def tmdb_key(self: Self) -> str:
-        _key: str = get_or_fail('TMDB_API_TOKEN')
+        _key: str = get_or_fail("TMDB_API_TOKEN")
         return _key
-        
+
     @property
     def tmdb_headers(self: Self) -> Dict[str, str]:
         _headers = {
             "accept": "application/json",
-            "Authorization": f"Bearer {self.tmdb_key}"
+            "Authorization": f"Bearer {self.tmdb_key}",
         }
         return _headers
-    
+
     @property
     def spotify_http_client(self: Self) -> http.HTTPClient:
         return self.spotify_client.http
-    
-    '''@property
+
+    """@property
     def spotify_headers(self: Self) -> Dict[str, str]:
-        return {"Authorization": f"Bearer {self.spotify_token}"}'''
-    
+        return {"Authorization": f"Bearer {self.spotify_token}"}"""
+
     """async def get_spotify_access_token(self: Self) -> Tuple[str, int]:
         
         client_id: str = get_or_fail('SPOTIFY_CLIENT_ID')
@@ -157,16 +154,22 @@ class Scraping(BaseCog):
         
         self.spotify_token = _token
         return _token, _expires"""
-    
+
     @commands.command()
     async def test(self, ctx: DwelloContext):
         message = await ctx.author.fetch_message(1119035015842504744)
         return await ctx.reply(message.content)
 
-    @commands.hybrid_command(name="image", help="Returns an image.", aliases=["images"], with_app_command=True)
-    async def image(self: Self, ctx: DwelloContext, *, image: str) -> Optional[discord.Message]:
-
-        access_key = get_or_fail('UNSPLASH_DEMO_ACCESS_KEY')
+    @commands.hybrid_command(
+        name="image",
+        help="Returns an image.",
+        aliases=["images"],
+        with_app_command=True,
+    )
+    async def image(
+        self: Self, ctx: DwelloContext, *, image: str
+    ) -> Optional[discord.Message]:
+        access_key = get_or_fail("UNSPLASH_DEMO_ACCESS_KEY")
         url: URL = "https://api.unsplash.com/photos/random"
 
         headers = {
@@ -177,11 +180,12 @@ class Scraping(BaseCog):
             "query": image,
         }
 
-        async with self.bot.session.get(url, headers=headers, params=params) as response:  
-
+        async with self.bot.session.get(
+            url, headers=headers, params=params
+        ) as response:
             if response.status == 200:
                 data = await response.json()
-            
+
             elif response.status == 401:
                 print("Unauthorized: Please check your Unsplash access key.")
 
@@ -190,7 +194,7 @@ class Scraping(BaseCog):
 
             else:
                 print("Bad request: Unable to retrieve image.")
-        
+
         description = f"Photo by [{data['user']['name']}]({data['user']['links']['html']}) on [Unsplash](https://unsplash.com)"
         embed: discord.Embed = discord.Embed(
             title=data["alt_description"].capitalize(),
@@ -198,33 +202,45 @@ class Scraping(BaseCog):
             description=description,
             color=cs.RANDOM_COLOR,
         )
-        embed.set_image(url=data['urls']['regular'])
+        embed.set_image(url=data["urls"]["regular"])
 
         return await ctx.reply(embed=embed)
 
-    
-    @commands.hybrid_command(name="album", help="Returns an album.", aliases=["albums"], with_app_command=True)
-    async def album(self: Self, ctx: DwelloContext, *, album: str) -> Optional[discord.Message]:
-        
-        data: SearchResult = await self.spotify_client.search(query=album, types=[ObjectType.Album], limit=5)
-            
-        albums: List[Dict[str, Any]] = data._data['albums']['items']
+    @commands.hybrid_command(
+        name="album",
+        help="Returns an album.",
+        aliases=["albums"],
+        with_app_command=True,
+    )
+    async def album(
+        self: Self, ctx: DwelloContext, *, album: str
+    ) -> Optional[discord.Message]:
+        data: SearchResult = await self.spotify_client.search(
+            query=album, types=[ObjectType.Album], limit=5
+        )
+
+        albums: List[Dict[str, Any]] = data._data["albums"]["items"]
         if not albums:
-            return await ctx.reply(f"Can't find any albums by the name of *{mk(album, as_needed=False)}*", user_mistake=True)
-        
+            return await ctx.reply(
+                f"Can't find any albums by the name of *{mk(album, as_needed=False)}*",
+                user_mistake=True,
+            )
+
         embeds = []
         for album in albums:
+            album: Dict[str, Any]  # = albums[0]
 
-            album: Dict[str, Any] #= albums[0]
-            
-            _id = album['id']
-            name = album['name']
-            release_date = album['release_date']
-            link = album['external_urls']['spotify']
-            image_url = album['images'][1]['url'] if album['images'] else None
-            
-            artists = [(artist['name'], artist['external_urls']['spotify']) for artist in album['artists']][:2]
-        
+            _id = album["id"]
+            name = album["name"]
+            release_date = album["release_date"]
+            link = album["external_urls"]["spotify"]
+            image_url = album["images"][1]["url"] if album["images"] else None
+
+            artists = [
+                (artist["name"], artist["external_urls"]["spotify"])
+                for artist in album["artists"]
+            ][:2]
+
             embed: discord.Embed = discord.Embed(
                 title=name,
                 url=link,
@@ -238,24 +254,36 @@ class Scraping(BaseCog):
                 timestamp = release_date
 
             embed.add_field(name="Release Date", value=timestamp, inline=False)
-            
-            tracks_data: Dict[str, Any] = await self.spotify_http_client.get_album_tracks(id=_id, market="US", limit=5)
-            
-            tracks: List[Dict[str, Any]] = tracks_data['items']
+
+            tracks_data: Dict[
+                str, Any
+            ] = await self.spotify_http_client.get_album_tracks(
+                id=_id, market="US", limit=5
+            )
+
+            tracks: List[Dict[str, Any]] = tracks_data["items"]
             if tracks:
-                embed.add_field(name="Tracks", value="\n".join([f"> [{track['name']}]({track['external_urls']['spotify']})" for track in tracks]))
-                
+                embed.add_field(
+                    name="Tracks",
+                    value="\n".join(
+                        [
+                            f"> [{track['name']}]({track['external_urls']['spotify']})"
+                            for track in tracks
+                        ]
+                    ),
+                )
+
             embed.add_field(
                 name="Artist" if len(artists) == 1 else "Artists",
                 value="\n".join([f"> [{i[0].title()}]({i[1]})" for i in artists]),
             )
 
         embeds.append((name, embed))
-        #await ctx.send(embeds)
-        #view = OptionSelectView(ctx, embeds)
-        #await view.start()
+        # await ctx.send(embeds)
+        # view = OptionSelectView(ctx, embeds)
+        # await view.start()
         return await ctx.reply(embed=embeds[0][1])
-    
+
     """not_found = f"Can't find any albums by the name of *{discord.utils.escape_markdown(album, as_needed=False)}*"
         
         try:
@@ -311,38 +339,75 @@ class Scraping(BaseCog):
     
         view = OptionSelectView(ctx, embeds)
         return await view.start()"""
-    
 
-    @commands.hybrid_command(name="artist", help="Returns an artist.", aliases=["artists"], with_app_command=True)
-    async def artist(self: Self, ctx: DwelloContext, *, artist: str) -> Optional[discord.Message]:
-        
-        data: SearchResult = await self.spotify_client.search(query=artist, types=[ObjectType.Artist], limit=5)
-            
+    @commands.hybrid_command(
+        name="artist",
+        help="Returns an artist.",
+        aliases=["artists"],
+        with_app_command=True,
+    )
+    async def artist(
+        self: Self, ctx: DwelloContext, *, artist: str
+    ) -> Optional[discord.Message]:
+        data: SearchResult = await self.spotify_client.search(
+            query=artist, types=[ObjectType.Artist], limit=5
+        )
+
         artists: List[Artist] = data.artists.items
         if not artists:
-            return await ctx.reply(f"Can't find any artists by the name of *{mk(artist, as_needed=False)}*", user_mistake=True)
+            return await ctx.reply(
+                f"Can't find any artists by the name of *{mk(artist, as_needed=False)}*",
+                user_mistake=True,
+            )
 
         artist: Artist = artists[0]
-        
-        album_data: Dict[str, Any] = await self.spotify_http_client.get_artist_albums(id=artist.id, include_groups=["album"], market="US", limit=5)
-        
-        tracks_data: Dict[str, Any] = await self.spotify_http_client.get_artist_top_tracks(id=artist.id, market="US")
-        
-        albums = album_data['items']
-        
-        unique_albums = sorted(albums, key=lambda x: x['name'].split(' (')[0])
-        unique_albums = [album for i, album in enumerate(unique_albums) if not any(album['name'].split(' (')[0].lower() in a['name'].lower() for a in unique_albums[:i])]
-        
-        album_names = [re.sub(r'\([^()]+\)', '', album['name']).strip().lower() for album in unique_albums[:3]]
-        album_names.sort(key=lambda x: len(x))
-        
-        sorted_unique_albums = sorted(unique_albums[:3], key=lambda x: album_names.index(re.sub(r'\([^()]+\)', '', x['name']).strip().lower()))
-        album_tuples = [(capitalize_greek_numbers(name.title()), album['external_urls']['spotify']) for name, album in zip(album_names, sorted_unique_albums)]
-            
-        tracks: List[Dict[str, Any]] = tracks_data['tracks']
-        top_tracks = sorted(tracks, key=lambda x: x['popularity'], reverse=True)
 
-        _description = f"**Followers**: {artist.followers.total:,}\n**Genres**: " + ", ".join([genre for genre in artist.genres[:2]])
+        album_data: Dict[str, Any] = await self.spotify_http_client.get_artist_albums(
+            id=artist.id, include_groups=["album"], market="US", limit=5
+        )
+
+        tracks_data: Dict[
+            str, Any
+        ] = await self.spotify_http_client.get_artist_top_tracks(
+            id=artist.id, market="US"
+        )
+
+        albums = album_data["items"]
+
+        unique_albums = sorted(albums, key=lambda x: x["name"].split(" (")[0])
+        unique_albums = [
+            album
+            for i, album in enumerate(unique_albums)
+            if not any(
+                album["name"].split(" (")[0].lower() in a["name"].lower()
+                for a in unique_albums[:i]
+            )
+        ]
+
+        album_names = [
+            re.sub(r"\([^()]+\)", "", album["name"]).strip().lower()
+            for album in unique_albums[:3]
+        ]
+        album_names.sort(key=lambda x: len(x))
+
+        sorted_unique_albums = sorted(
+            unique_albums[:3],
+            key=lambda x: album_names.index(
+                re.sub(r"\([^()]+\)", "", x["name"]).strip().lower()
+            ),
+        )
+        album_tuples = [
+            (capitalize_greek_numbers(name.title()), album["external_urls"]["spotify"])
+            for name, album in zip(album_names, sorted_unique_albums)
+        ]
+
+        tracks: List[Dict[str, Any]] = tracks_data["tracks"]
+        top_tracks = sorted(tracks, key=lambda x: x["popularity"], reverse=True)
+
+        _description = (
+            f"**Followers**: {artist.followers.total:,}\n**Genres**: "
+            + ", ".join([genre for genre in artist.genres[:2]])
+        )
         embed: discord.Embed = discord.Embed(
             title=artist.name,
             url=artist.external_urls.spotify,
@@ -352,30 +417,49 @@ class Scraping(BaseCog):
         image: Image = artist.images[1] if artist.images else None
         if image:
             embed.set_thumbnail(url=image.url)
-        embed.add_field(name="Top Albums", value="\n".join(f"> [{name}]({url})" for name, url in album_tuples)) # •
-        embed.add_field(name="Top Tracks", value="\n".join(f"> [{track['name']}]({track['external_urls']['spotify']})" for track in top_tracks[:3]))
-        
-        return await ctx.reply(embed=embed)
-    
+        embed.add_field(
+            name="Top Albums",
+            value="\n".join(f"> [{name}]({url})" for name, url in album_tuples),
+        )  # •
+        embed.add_field(
+            name="Top Tracks",
+            value="\n".join(
+                f"> [{track['name']}]({track['external_urls']['spotify']})"
+                for track in top_tracks[:3]
+            ),
+        )
 
-    @commands.hybrid_command(name="playlist", help="Returns a playlist.", aliases=["playlists"], with_app_command=True)
-    async def playlist(self: Self, ctx: DwelloContext, *, playlist: str) -> Optional[discord.Message]:
-        
-        data: SearchResult = await self.spotify_client.search(query=playlist, types=[ObjectType.Playlist], limit=5)
-            
-        playlists: List[Dict[str, Any]] = data._data['playlists']['items']
+        return await ctx.reply(embed=embed)
+
+    @commands.hybrid_command(
+        name="playlist",
+        help="Returns a playlist.",
+        aliases=["playlists"],
+        with_app_command=True,
+    )
+    async def playlist(
+        self: Self, ctx: DwelloContext, *, playlist: str
+    ) -> Optional[discord.Message]:
+        data: SearchResult = await self.spotify_client.search(
+            query=playlist, types=[ObjectType.Playlist], limit=5
+        )
+
+        playlists: List[Dict[str, Any]] = data._data["playlists"]["items"]
         if not playlists:
-            return await ctx.reply(f"Can't find any playlists by the name of *{mk(playlist, as_needed=False)}*", user_mistake=True)
-        
+            return await ctx.reply(
+                f"Can't find any playlists by the name of *{mk(playlist, as_needed=False)}*",
+                user_mistake=True,
+            )
+
         playlist: Dict[str, Any] = playlists[0]
-        
-        name = playlist['name']
-        url = playlist['external_urls']['spotify']
-        total_tracks = playlist['tracks']['total']
-        owner_name = playlist['owner']['display_name']
-        owner_url = playlist['owner']['external_urls']['spotify']
-        image_url = playlist['images'][0]['url'] if playlist['images'] else None
-        description = playlist['description'] if playlist['description'] else None
+
+        name = playlist["name"]
+        url = playlist["external_urls"]["spotify"]
+        total_tracks = playlist["tracks"]["total"]
+        owner_name = playlist["owner"]["display_name"]
+        owner_url = playlist["owner"]["external_urls"]["spotify"]
+        image_url = playlist["images"][0]["url"] if playlist["images"] else None
+        description = playlist["description"] if playlist["description"] else None
 
         embed: discord.Embed = discord.Embed(
             title=name,
@@ -387,37 +471,52 @@ class Scraping(BaseCog):
             embed.set_thumbnail(url=image_url)
         embed.add_field(name="Owner", value=f"[{owner_name}]({owner_url})")
         embed.add_field(name="Total Tracks", value=total_tracks)
-        
-        return await ctx.reply(embed=embed)
-    
 
-    @commands.hybrid_command(name="track", help="Returns a track.", aliases=["tracks"], with_app_command=True)
-    async def track(self: Self, ctx: DwelloContext, *, track: str) -> Optional[discord.Message]:
-        
-        data: SearchResult = await self.spotify_client.search(query=track, types=[ObjectType.Track], limit=5)
-            
+        return await ctx.reply(embed=embed)
+
+    @commands.hybrid_command(
+        name="track", help="Returns a track.", aliases=["tracks"], with_app_command=True
+    )
+    async def track(
+        self: Self, ctx: DwelloContext, *, track: str
+    ) -> Optional[discord.Message]:
+        data: SearchResult = await self.spotify_client.search(
+            query=track, types=[ObjectType.Track], limit=5
+        )
+
         tracks: List[Track] = data.tracks.items
         if not tracks:
-            return await ctx.reply(f"Can't find any tracks by the name of *{mk(track, as_needed=False)}*", user_mistake=True)
-        
+            return await ctx.reply(
+                f"Can't find any tracks by the name of *{mk(track, as_needed=False)}*",
+                user_mistake=True,
+            )
+
         _track: Track = tracks[0]
         _album: PartialAlbum = _track.album
-        _artists: List[Tuple[str, str]] = [(artist.name, artist.external_urls.spotify) for artist in _track.artists][:2]
-        
+        _artists: List[Tuple[str, str]] = [
+            (artist.name, artist.external_urls.spotify) for artist in _track.artists
+        ][:2]
+
         duration_in_minutes = _track.duration / 1000 / 60
-        
-        duration_str = f"**Duration**: {'{:.2f}'.format(duration_in_minutes)} min" if duration_in_minutes >= 1 else '{:.2f}'.format(_track.duration / 1000) + " sec"
+
+        duration_str = (
+            f"**Duration**: {'{:.2f}'.format(duration_in_minutes)} min"
+            if duration_in_minutes >= 1
+            else "{:.2f}".format(_track.duration / 1000) + " sec"
+        )
 
         release_str = "\n**Release Date**: "
         try:
-            release_str += get_unix_timestamp(_album.release_date.date, '%Y-%m-%d', style='d')
+            release_str += get_unix_timestamp(
+                _album.release_date.date, "%Y-%m-%d", style="d"
+            )
         except ValueError:
             release_str += _album.release_date.date
 
         embed: discord.Embed = discord.Embed(
             title=_track.name,
             url=f"https://open.spotify.com/track/{_track.id}",
-            description=duration_str+release_str,
+            description=duration_str + release_str,
             color=cs.RANDOM_COLOR,
         )
         image: Image = _album.images[1] if _album.images else None
@@ -427,15 +526,15 @@ class Scraping(BaseCog):
             name="Artist" if len(_artists) == 1 else "Artists",
             value="\n".join([f"> [{i[0].title()}]({i[1]})" for i in _artists]),
         )
-        embed.add_field(name="Album", value=f"[{_album.name}]({_album.external_urls.spotify})")
-        
-        return await ctx.reply(embed=embed)
-    
-    
-    async def get_game_by_name(self: Self, name: str) -> int:
+        embed.add_field(
+            name="Album", value=f"[{_album.name}]({_album.external_urls.spotify})"
+        )
 
+        return await ctx.reply(embed=embed)
+
+    async def get_game_by_name(self: Self, name: str) -> int:
         url: URL = "http://api.steampowered.com/ISteamApps/GetAppList/v2/"
-        async with self.bot.session.get(url=url) as response:  
+        async with self.bot.session.get(url=url) as response:
             data = await response.json()
 
         # await with ResponseHandler(response.status):
@@ -453,42 +552,48 @@ class Scraping(BaseCog):
 
         raise GameNotFound(name)
 
-
-    @commands.hybrid_command(name="game", help="Returns a game.", aliases=["games"], with_app_command=True)
-    async def game(self: Self, ctx: DwelloContext, *, game: str) -> Optional[discord.Message]:
-
-        #start = time.time()
-        #end = time.time()
-        #await ctx.send(f"Executed in: {end-start}") # Idea for a time per func to calculate overall latency/response time?
+    @commands.hybrid_command(
+        name="game", help="Returns a game.", aliases=["games"], with_app_command=True
+    )
+    async def game(
+        self: Self, ctx: DwelloContext, *, game: str
+    ) -> Optional[discord.Message]:
+        # start = time.time()
+        # end = time.time()
+        # await ctx.send(f"Executed in: {end-start}") # Idea for a time per func to calculate overall latency/response time?
 
         try:
             game_id = await self.get_game_by_name(game)
         except GameNotFound:
-            return await ctx.reply(f"Couldn't find a game by the name *{mk(game)}*", user_mistake=True)
-        
-        url: URL = "https://store.steampowered.com/api/appdetails?appids=%s&l=en" % (game_id)
-        async with self.bot.session.get(url=url) as response:  
+            return await ctx.reply(
+                f"Couldn't find a game by the name *{mk(game)}*", user_mistake=True
+            )
+
+        url: URL = "https://store.steampowered.com/api/appdetails?appids=%s&l=en" % (
+            game_id
+        )
+        async with self.bot.session.get(url=url) as response:
             data = await response.json()
 
         if response.status != 200:
             return await ctx.reply("Couldn't connect to the API.", user_mistake=True)
 
-        data = data[str(game_id)]['data']
+        data = data[str(game_id)]["data"]
 
-        name = data['name']
-        devs = data['developers']
-        website = data['website']
-        thumbnail = data['header_image']
-        metaurl = data['metacritic']['url']
-        metascore = data['metacritic']['score']
-        short_description = data['short_description']
-        price = data['price_overview']['final_formatted']
+        name = data["name"]
+        devs = data["developers"]
+        website = data["website"]
+        thumbnail = data["header_image"]
+        metaurl = data["metacritic"]["url"]
+        metascore = data["metacritic"]["score"]
+        short_description = data["short_description"]
+        price = data["price_overview"]["final_formatted"]
 
-        #minimum_pc_requirements = data['pc_requirements']['minimum']
-        #recommended_pc_requirements = data['pc_requirements']['recommended']
-        #publishers = data['publishers']
-        #price_overview = data['price_overview']
-        #genres = [genre['description'] for genre in data['genres']]
+        # minimum_pc_requirements = data['pc_requirements']['minimum']
+        # recommended_pc_requirements = data['pc_requirements']['recommended']
+        # publishers = data['publishers']
+        # price_overview = data['price_overview']
+        # genres = [genre['description'] for genre in data['genres']]
 
         embed: discord.Embed = discord.Embed(
             title=name,
@@ -499,229 +604,314 @@ class Scraping(BaseCog):
         embed.set_thumbnail(url=thumbnail)
 
         embed.add_field(name="Metascore", value=f"[{metascore}]({metaurl})")
-        embed.add_field(name="Price", value=f"[{price}](https://store.steampowered.com/app/{game_id})")
+        embed.add_field(
+            name="Price",
+            value=f"[{price}](https://store.steampowered.com/app/{game_id})",
+        )
         embed.add_field(name="Developed by", value=", ".join(devs[:3]), inline=False)
 
         return await ctx.reply(embed=embed)
-     
 
-    @commands.hybrid_command(name="actor", help="Returns a person who's known in the movie industry.", aliases=["actors", "actress", "actresses"], with_app_command=True) # amybe people alias, but later if there are no other ppl aliases
-    async def movie_person(self: Self, ctx: DwelloContext, *, person: str) -> Optional[discord.Message]:
-        
+    @commands.hybrid_command(
+        name="actor",
+        help="Returns a person who's known in the movie industry.",
+        aliases=["actors", "actress", "actresses"],
+        with_app_command=True,
+    )  # amybe people alias, but later if there are no other ppl aliases
+    async def movie_person(
+        self: Self, ctx: DwelloContext, *, person: str
+    ) -> Optional[discord.Message]:
         pages: int = 1
-        url: URL = "https://api.themoviedb.org/3/search/person?query=%s&include_adult=%s&language=en-US&page=%s" % (person, True, pages)
-        async with self.bot.session.get(url=url, headers=self.tmdb_headers) as response:  
+        url: URL = (
+            "https://api.themoviedb.org/3/search/person?query=%s&include_adult=%s&language=en-US&page=%s"
+            % (person, True, pages)
+        )
+        async with self.bot.session.get(url=url, headers=self.tmdb_headers) as response:
             data = await response.json()
 
         if response.status != 200:
             return await ctx.reply("Couldn't connect to the API.", user_mistake=True)
-        
+
         try:
-            person = max(data['results'], key=lambda _person: _person['popularity'])
-            
+            person = max(data["results"], key=lambda _person: _person["popularity"])
+
         except ValueError:
-            return await ctx.reply(f"Couldn't find a person by the name of {person}.", user_mistake=True)
-        
-        wiki = wikipediaapi.Wikipedia('en')
-        page: wikipediaapi.WikipediaPage = wiki.page(person['name'])
-        
+            return await ctx.reply(
+                f"Couldn't find a person by the name of {person}.", user_mistake=True
+            )
+
+        wiki = wikipediaapi.Wikipedia("en")
+        page: wikipediaapi.WikipediaPage = wiki.page(person["name"])
+
         embed: discord.Embed = discord.Embed(
-            title=person['original_name'],
+            title=person["original_name"],
             description=page.summary,
             url=f"https://www.themoviedb.org/person/{person['id']}",
             color=cs.RANDOM_COLOR,
         )
-        #rd: List[str] = movie['release_date'].split('-')
-        #year, month, day = int(rd[0]), int(rd[1]), int(rd[2])
-        #release_date: datetime.datetime = datetime.datetime(year, month, day, tzinfo=None)
-        
-        #embed.add_field(name='Release Date', value=discord.utils.format_dt(release_date, style='d'))
-        
-        gender = 'Male' if person['gender'] == 2 else 'Female'
-        top_movies = [movie for movie in person['known_for']]
+        # rd: List[str] = movie['release_date'].split('-')
+        # year, month, day = int(rd[0]), int(rd[1]), int(rd[2])
+        # release_date: datetime.datetime = datetime.datetime(year, month, day, tzinfo=None)
 
-        embed.add_field(name='Gender', value=gender)
-        #embed.add_field(name='Age', value=None)
-        embed.add_field(name='Department', value=person['known_for_department'])
-        
+        # embed.add_field(name='Release Date', value=discord.utils.format_dt(release_date, style='d'))
+
+        gender = "Male" if person["gender"] == 2 else "Female"
+        top_movies = [movie for movie in person["known_for"]]
+
+        embed.add_field(name="Gender", value=gender)
+        # embed.add_field(name='Age', value=None)
+        embed.add_field(name="Department", value=person["known_for_department"])
+
         top_movies_desc: str = ""
         for movie in top_movies:
             top_movies_desc += f"\n• [{movie['title']}](https://www.themoviedb.org/movie/{movie['id']})"
-            
+
         if top_movies_desc:
             embed.add_field(name="Top Movies", value=top_movies_desc, inline=False)
 
-        if person['profile_path']:
-            embed.set_thumbnail(url=f"https://image.tmdb.org/t/p/w500{person['profile_path']}")
+        if person["profile_path"]:
+            embed.set_thumbnail(
+                url=f"https://image.tmdb.org/t/p/w500{person['profile_path']}"
+            )
 
         embed.set_footer(text=f"Popularity: {person['popularity']}")
 
         return await ctx.reply(embed=embed)
-        
 
-    @commands.command(name="movie", help="Returns a movie by its title.", aliases=["film", "films", "movies"])
-    async def movie(self: Self, ctx: DwelloContext, *, movie: str) -> Optional[discord.Message]:
-        #Docs: https://developer.themoviedb.org/reference/intro/getting-started
-        
+    @commands.command(
+        name="movie",
+        help="Returns a movie by its title.",
+        aliases=["film", "films", "movies"],
+    )
+    async def movie(
+        self: Self, ctx: DwelloContext, *, movie: str
+    ) -> Optional[discord.Message]:
+        # Docs: https://developer.themoviedb.org/reference/intro/getting-started
+
         pages: int = 1
-        url: URL = "https://api.themoviedb.org/3/search/movie?query=%s&include_adult=%s&language=en-US&page=%s" % (movie, True, pages)
-        async with self.bot.session.get(url=url, headers=self.tmdb_headers) as response:  
+        url: URL = (
+            "https://api.themoviedb.org/3/search/movie?query=%s&include_adult=%s&language=en-US&page=%s"
+            % (movie, True, pages)
+        )
+        async with self.bot.session.get(url=url, headers=self.tmdb_headers) as response:
             data = await response.json()
 
         if response.status != 200:
             return await ctx.reply("Couldn't connect to the API.", user_mistake=True)
-        
+
         try:
-            movie = max(data['results'], key=lambda _movie: _movie['vote_count'])
-            
+            movie = max(data["results"], key=lambda _movie: _movie["vote_count"])
+
         except ValueError:
-            return await ctx.reply(f"Couldn't find a movie by the name of {movie}.", user_mistake=True)
+            return await ctx.reply(
+                f"Couldn't find a movie by the name of {movie}.", user_mistake=True
+            )
 
         embed: discord.Embed = discord.Embed(
-            title=movie['title'],
-            description=movie['overview'],
+            title=movie["title"],
+            description=movie["overview"],
             url=f"https://www.themoviedb.org/movie/{movie['id']}",
             color=cs.RANDOM_COLOR,
         )
-        embed.add_field(name='Release Date', value=get_unix_timestamp(movie['release_date'], "%Y-%m-%d", style="d"))
-        embed.add_field(name='Vote Average', value=f"{str(movie['vote_average'])[:3]} / 10")
-        embed.add_field(name='Vote Count', value=movie['vote_count'])
+        embed.add_field(
+            name="Release Date",
+            value=get_unix_timestamp(movie["release_date"], "%Y-%m-%d", style="d"),
+        )
+        embed.add_field(
+            name="Vote Average", value=f"{str(movie['vote_average'])[:3]} / 10"
+        )
+        embed.add_field(name="Vote Count", value=movie["vote_count"])
 
-        if movie['poster_path']:
-            embed.set_thumbnail(url=f"https://image.tmdb.org/t/p/w500{movie['poster_path']}")
+        if movie["poster_path"]:
+            embed.set_thumbnail(
+                url=f"https://image.tmdb.org/t/p/w500{movie['poster_path']}"
+            )
 
         embed.set_footer(text=f"Popularity: {movie['popularity']}")
 
-        return await ctx.reply(embed=embed)     
-    
+        return await ctx.reply(embed=embed)
 
     @app_commands.command(name="movie", description="Returns a movie by its title.")
-    async def _movie(self: Self, ctx: DwelloContext, *, movie: str, year: int = None) -> Optional[discord.Message]:
-        
-        pages: int = 1   
-        
-        url: URL = "https://api.themoviedb.org/3/search/movie?query=%s&include_adult=%s&language=en-US&primary_release_year=%s&page=%s" % (movie, True, year, pages)
-        
+    async def _movie(
+        self: Self, ctx: DwelloContext, *, movie: str, year: int = None
+    ) -> Optional[discord.Message]:
+        pages: int = 1
+
+        url: URL = (
+            "https://api.themoviedb.org/3/search/movie?query=%s&include_adult=%s&language=en-US&primary_release_year=%s&page=%s"
+            % (movie, True, year, pages)
+        )
+
         if not year:
-            url = "https://api.themoviedb.org/3/search/movie?query=%s&include_adult=%s&language=en-US&page=%s" % (movie, True, pages)
-        
-        async with self.bot.session.get(url=url, headers=self.tmdb_headers) as response:  
+            url = (
+                "https://api.themoviedb.org/3/search/movie?query=%s&include_adult=%s&language=en-US&page=%s"
+                % (movie, True, pages)
+            )
+
+        async with self.bot.session.get(url=url, headers=self.tmdb_headers) as response:
             data = await response.json()
-        
+
         if response.status != 200:
             return await ctx.reply("Couldn't connect to the API.", user_mistake=True)
-           
-        try: 
-            movie = max(data['results'], key=lambda _movie: _movie['vote_count'])
-            
+
+        try:
+            movie = max(data["results"], key=lambda _movie: _movie["vote_count"])
+
         except ValueError:
-            return await ctx.reply(f"Couldn't find a movie by the name of {movie}.", user_mistake=True)
+            return await ctx.reply(
+                f"Couldn't find a movie by the name of {movie}.", user_mistake=True
+            )
 
         embed: discord.Embed = discord.Embed(
-            title=movie['title'],
-            description=movie['overview'],
+            title=movie["title"],
+            description=movie["overview"],
             url=f"https://www.themoviedb.org/movie/{movie['id']}",
             color=cs.RANDOM_COLOR,
-        )   
-        embed.add_field(name='Release Date', value=get_unix_timestamp(movie['release_date'], "%Y-%m-%d", style="d"))
-        embed.add_field(name='Vote Average', value=f"{str(movie['vote_average'])[:3]} / 10")
-        embed.add_field(name='Vote Count', value=movie['vote_count'])
+        )
+        embed.add_field(
+            name="Release Date",
+            value=get_unix_timestamp(movie["release_date"], "%Y-%m-%d", style="d"),
+        )
+        embed.add_field(
+            name="Vote Average", value=f"{str(movie['vote_average'])[:3]} / 10"
+        )
+        embed.add_field(name="Vote Count", value=movie["vote_count"])
 
-        if movie['poster_path']:
-            embed.set_thumbnail(url=f"https://image.tmdb.org/t/p/w500{movie['poster_path']}")
+        if movie["poster_path"]:
+            embed.set_thumbnail(
+                url=f"https://image.tmdb.org/t/p/w500{movie['poster_path']}"
+            )
 
         embed.set_footer(text=f"Popularity: {movie['popularity']}")
 
         return await ctx.reply(embed=embed)
-    
 
-    @commands.command(name="show", help="Returns a TV show by its title.", aliases=["series", "shows"])
-    async def show(self: Self, ctx: DwelloContext, *, show: str) -> Optional[discord.Message]:
-        
+    @commands.command(
+        name="show", help="Returns a TV show by its title.", aliases=["series", "shows"]
+    )
+    async def show(
+        self: Self, ctx: DwelloContext, *, show: str
+    ) -> Optional[discord.Message]:
         pages: int = 1
-        url: URL = "https://api.themoviedb.org/3/search/tv?query=%s&include_adult=%s&language=en-US&page=%s" % (show, True, pages)      
-        async with self.bot.session.get(url=url, headers=self.tmdb_headers) as response:  
+        url: URL = (
+            "https://api.themoviedb.org/3/search/tv?query=%s&include_adult=%s&language=en-US&page=%s"
+            % (show, True, pages)
+        )
+        async with self.bot.session.get(url=url, headers=self.tmdb_headers) as response:
             data = await response.json()
-        
+
         if response.status != 200:
             return await ctx.reply("Couldn't connect to the API.", user_mistake=True)
-          
-        try:  
-            show = max(data['results'], key=lambda _show: _show['vote_count'])
-            
-        except ValueError:
-            return await ctx.reply(f"Couldn't find a show by the name of {show}.", user_mistake=True)
 
-        embed: discord.Embed = discord.Embed(
-            title=show['original_name'],
-            description=show['overview'],
-            url=f"https://www.themoviedb.org/tv/{show['id']}",
-            color=cs.RANDOM_COLOR,
-        )   
-        embed.add_field(name='Release Date', value=get_unix_timestamp(show['first_air_date'], "%Y-%m-%d", style="d"))
-        embed.add_field(name='Vote Average', value=f"{str(show['vote_average'])[:3]} / 10")
-        embed.add_field(name='Vote Count', value=show['vote_count'])
-
-        if show['poster_path']:
-            embed.set_thumbnail(url=f"https://image.tmdb.org/t/p/w500{show['poster_path']}")
-
-        embed.set_footer(text=f"Popularity: {show['popularity']}")
-
-        return await ctx.reply(embed=embed)    
-    
-
-    @app_commands.command(name="show", description="Returns a TV show by its title.")
-    async def _show(self: Self, ctx: DwelloContext, *, show: str, year: int = None) -> Optional[discord.Message]:
-        
-        pages: int = 1
-        
-        url: URL = "https://api.themoviedb.org/3/search/movie?query=%s&include_adult=%s&language=en-US&primary_release_year=%s&page=%s" % (show, True, year, pages)
-        
-        if not year:
-            url = "https://api.themoviedb.org/3/search/movie?query=%s&include_adult=%s&language=en-US&page=%s" % (show, True, pages)
-        
-        async with self.bot.session.get(url=url, headers=self.tmdb_headers) as response:  
-            data = await response.json()
-        
-        if response.status != 200:
-            return await ctx.reply("Couldn't connect to the API.", user_mistake=True)
-            
         try:
-            show = max(data['results'], key=lambda _show: _show['vote_count'])
-            
+            show = max(data["results"], key=lambda _show: _show["vote_count"])
+
         except ValueError:
-            return await ctx.reply(f"Couldn't find a show by the name of {show}.", user_mistake=True)
+            return await ctx.reply(
+                f"Couldn't find a show by the name of {show}.", user_mistake=True
+            )
 
         embed: discord.Embed = discord.Embed(
-            title=show['original_name'],
-            description=show['overview'],
+            title=show["original_name"],
+            description=show["overview"],
             url=f"https://www.themoviedb.org/tv/{show['id']}",
             color=cs.RANDOM_COLOR,
         )
-        embed.add_field(name='Release Date', value=get_unix_timestamp(show['first_air_date'], "%Y-%m-%d", style="d"))
-        embed.add_field(name='Vote Average', value=f"{str(show['vote_average'])[:3]} / 10")
-        embed.add_field(name='Vote Count', value=show['vote_count'])
+        embed.add_field(
+            name="Release Date",
+            value=get_unix_timestamp(show["first_air_date"], "%Y-%m-%d", style="d"),
+        )
+        embed.add_field(
+            name="Vote Average", value=f"{str(show['vote_average'])[:3]} / 10"
+        )
+        embed.add_field(name="Vote Count", value=show["vote_count"])
 
-        if show['poster_path']:
-            embed.set_thumbnail(url=f"https://image.tmdb.org/t/p/w500{show['poster_path']}")
+        if show["poster_path"]:
+            embed.set_thumbnail(
+                url=f"https://image.tmdb.org/t/p/w500{show['poster_path']}"
+            )
 
         embed.set_footer(text=f"Popularity: {show['popularity']}")
 
         return await ctx.reply(embed=embed)
-    
 
-    @commands.hybrid_command(name='weather', help="Shows you the temparature in the city you've typed in.", with_app_command=True)
-    async def weather(self: Self, ctx: DwelloContext, *, city: str) -> Optional[discord.Message]:
+    @app_commands.command(name="show", description="Returns a TV show by its title.")
+    async def _show(
+        self: Self, ctx: DwelloContext, *, show: str, year: int = None
+    ) -> Optional[discord.Message]:
+        pages: int = 1
+
+        url: URL = (
+            "https://api.themoviedb.org/3/search/movie?query=%s&include_adult=%s&language=en-US&primary_release_year=%s&page=%s"
+            % (show, True, year, pages)
+        )
+
+        if not year:
+            url = (
+                "https://api.themoviedb.org/3/search/movie?query=%s&include_adult=%s&language=en-US&page=%s"
+                % (show, True, pages)
+            )
+
+        async with self.bot.session.get(url=url, headers=self.tmdb_headers) as response:
+            data = await response.json()
+
+        if response.status != 200:
+            return await ctx.reply("Couldn't connect to the API.", user_mistake=True)
+
+        try:
+            show = max(data["results"], key=lambda _show: _show["vote_count"])
+
+        except ValueError:
+            return await ctx.reply(
+                f"Couldn't find a show by the name of {show}.", user_mistake=True
+            )
+
+        embed: discord.Embed = discord.Embed(
+            title=show["original_name"],
+            description=show["overview"],
+            url=f"https://www.themoviedb.org/tv/{show['id']}",
+            color=cs.RANDOM_COLOR,
+        )
+        embed.add_field(
+            name="Release Date",
+            value=get_unix_timestamp(show["first_air_date"], "%Y-%m-%d", style="d"),
+        )
+        embed.add_field(
+            name="Vote Average", value=f"{str(show['vote_average'])[:3]} / 10"
+        )
+        embed.add_field(name="Vote Count", value=show["vote_count"])
+
+        if show["poster_path"]:
+            embed.set_thumbnail(
+                url=f"https://image.tmdb.org/t/p/w500{show['poster_path']}"
+            )
+
+        embed.set_footer(text=f"Popularity: {show['popularity']}")
+
+        return await ctx.reply(embed=embed)
+
+    @commands.hybrid_command(
+        name="weather",
+        help="Shows you the temparature in the city you've typed in.",
+        with_app_command=True,
+    )
+    async def weather(
+        self: Self, ctx: DwelloContext, *, city: str
+    ) -> Optional[discord.Message]:
         if not city:
-            return await ctx.reply("Please provide a city or a contry.", mention_author=True)
+            return await ctx.reply(
+                "Please provide a city or a contry.", mention_author=True
+            )
 
         args = city.lower()
 
-        async with self.bot.session.get(f'http://api.openweathermap.org/data/2.5/weather?q={args}&APPID={WEATHER_KEY}&units=metric') as response:  
+        async with self.bot.session.get(
+            f"http://api.openweathermap.org/data/2.5/weather?q={args}&APPID={WEATHER_KEY}&units=metric"
+        ) as response:
             data = await response.json()
 
-        if data['cod'] == '404':
-            with open('datasets/countries.json', 'r') as file:
+        if data["cod"] == "404":
+            with open("datasets/countries.json", "r") as file:
                 data: dict = json.load(file)
 
             matches = []
@@ -735,7 +925,7 @@ class Scraping(BaseCog):
                         matches.append(city_matches[0])
 
             clean_matches = difflib.get_close_matches(args, matches, 5)
-            
+
             description = "Please check the spelling and try again."
             if clean_matches:
                 description = "**Did you mean...**\n"
@@ -743,44 +933,59 @@ class Scraping(BaseCog):
                     description += f"\n{match}"
 
             matches_embed: discord.Embed = discord.Embed(
-                description=
-                f"Sorry, but I couldn't recognise the city **{args.title()}**."
+                description=f"Sorry, but I couldn't recognise the city **{args.title()}**."
                 f"\n{description}",
                 color=cs.WARNING_COLOR,
             )
-            return await ctx.reply(embed=matches_embed, mention_author = True)
-                                    
-        curr_temp_celsius = data['main']['temp']
-        curr_feels_like_celsius = data['main']['feels_like']
-                                        
+            return await ctx.reply(embed=matches_embed, mention_author=True)
+
+        curr_temp_celsius = data["main"]["temp"]
+        curr_feels_like_celsius = data["main"]["feels_like"]
+
         if curr_feels_like_celsius < 14:
-            dress_code = "warm"
+            pass
 
         else:
-            dress_code = "light"
+            pass
 
-        curr_temp_fahrenheit = (curr_temp_celsius * 9/5) + 32
-        curr_feels_like_fahrenheit = (curr_feels_like_celsius * 9/5) + 32
+        curr_temp_fahrenheit = (curr_temp_celsius * 9 / 5) + 32
+        curr_feels_like_fahrenheit = (curr_feels_like_celsius * 9 / 5) + 32
 
         payload = (
-        f"Right now it is **{curr_temp_celsius} °C** / **{curr_temp_fahrenheit:.2f} °F**.\n"
-        f"But it feels like **{curr_feels_like_celsius} °C** / **{curr_feels_like_fahrenheit:.2f} °F**.\n"
-        #f"I recommend wearing {dress_code} clothes outside."
+            f"Right now it is **{curr_temp_celsius} °C** / **{curr_temp_fahrenheit:.2f} °F**.\n"
+            f"But it feels like **{curr_feels_like_celsius} °C** / **{curr_feels_like_fahrenheit:.2f} °F**.\n"
+            # f"I recommend wearing {dress_code} clothes outside."
         )
 
         weather_embed = discord.Embed(
             title=f"Current weather in {data['name']}",
             description=payload,
-            color=discord.Colour.blurple()
+            color=discord.Colour.blurple(),
         )
 
         weather_embed.set_footer(text="Powered by OpenWeatherMap")
-        weather_embed.set_thumbnail(url=f"http://openweathermap.org/img/w/{data['weather'][0]['icon']}.png")
+        weather_embed.set_thumbnail(
+            url=f"http://openweathermap.org/img/w/{data['weather'][0]['icon']}.png"
+        )
 
-        weather_embed.add_field(name="Location", value=f"{data['name']}, {data['sys']['country']}", inline=False)
-        weather_embed.add_field(name="Weather", value=data['weather'][0]['description'].title(), inline=False)
-        weather_embed.add_field(name="Humidity", value=f"{data['main']['humidity']}%", inline=True)
-        weather_embed.add_field(name="Wind", value=f"{data['wind']['speed']} m/s", inline=True)
-        weather_embed.add_field(name="Pressure", value=f"{data['main']['pressure']} hPa", inline=True)
+        weather_embed.add_field(
+            name="Location",
+            value=f"{data['name']}, {data['sys']['country']}",
+            inline=False,
+        )
+        weather_embed.add_field(
+            name="Weather",
+            value=data["weather"][0]["description"].title(),
+            inline=False,
+        )
+        weather_embed.add_field(
+            name="Humidity", value=f"{data['main']['humidity']}%", inline=True
+        )
+        weather_embed.add_field(
+            name="Wind", value=f"{data['wind']['speed']} m/s", inline=True
+        )
+        weather_embed.add_field(
+            name="Pressure", value=f"{data['main']['pressure']} hPa", inline=True
+        )
 
-        return await ctx.reply(embed = weather_embed, ephemeral=False)
+        return await ctx.reply(embed=weather_embed, ephemeral=False)

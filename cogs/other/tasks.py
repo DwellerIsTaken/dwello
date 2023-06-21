@@ -1,32 +1,32 @@
 from __future__ import annotations
 
 import asyncio
-import asyncpg
-
-from discord.ext import tasks
 from datetime import datetime
-from pytz import timezone
-
 from typing import Any
+
+import asyncpg
+from discord.ext import tasks
+from pytz import timezone
 from typing_extensions import Self
 
-from utils import BaseCog
 from bot import Dwello
+from utils import BaseCog
+
 
 class Tasks(BaseCog):
-
     def __init__(self: Self, bot: Dwello, *args: Any, **kwargs: Any):
         super().__init__(bot, *args, **kwargs)
         self.stats_loop.start()
-        self.eco_loop.start() # maybe start it in bot_base.py instead
+        self.eco_loop.start()  # maybe start it in bot_base.py instead
 
-    @tasks.loop(minutes = 10)
+    @tasks.loop(minutes=10)
     async def stats_loop(self: Self) -> None:
-
         for guild in self.bot.guilds:
-            await self.bot.otherutils.exe_sql(guild) # in case join/leave won't work because of rate limitations
+            await self.bot.otherutils.exe_sql(
+                guild
+            )  # in case join/leave won't work because of rate limitations
 
-    @tasks.loop(seconds = 1)
+    @tasks.loop(seconds=1)
     async def eco_loop(self: Self) -> None:
         cet = timezone("Europe/Amsterdam")
         now = datetime.now(cet)

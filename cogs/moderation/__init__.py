@@ -1,12 +1,15 @@
 from __future__ import annotations
-#from typing import TYPE_CHECKING
 
 from discord.ext import commands
+
 from bot import Dwello
 
 from .standard import StandardModeration
 from .timeout import Timeout
 from .warnings import Warnings
+
+# from typing import TYPE_CHECKING
+
 
 class Moderation(StandardModeration, Timeout, Warnings, name="Moderation"):
     """
@@ -22,6 +25,7 @@ class Moderation(StandardModeration, Timeout, Warnings, name="Moderation"):
         if not ctx.guild:
             raise commands.NoPrivateMessage
         return True
+
 
 async def setup(bot: Dwello):
     await bot.add_cog(Moderation(bot))

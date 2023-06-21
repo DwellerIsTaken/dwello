@@ -1,4 +1,4 @@
-'''from __future__ import annotations
+"""from __future__ import annotations
 
 import text_variables as tv
 import datetime, re, discord, asyncpg
@@ -15,9 +15,9 @@ if TYPE_CHECKING:
     from bot import Dwello 
     
 else:
-    from discord.ext.commands import Bot as Dwello'''
+    from discord.ext.commands import Bot as Dwello"""
 
-'''async def user_job_display(ctx, member = None) -> None:
+"""async def user_job_display(ctx, member = None) -> None:
     async with asqlite.connect(tv.sql_dir) as connector:
         async with connector.cursor() as cursor:
 
@@ -52,9 +52,9 @@ else:
                     return [str(name), int(id_), int(salary), str(description)]
 
         await cursor.close()
-    await connector.close()'''
+    await connector.close()"""
 
-'''async def server_user_job_display(self, ctx: commands.Context, member: discord.Member) -> Optional[Tuple[Optional[str], Optional[int], Optional[str]]]:
+"""async def server_user_job_display(self, ctx: commands.Context, member: discord.Member) -> Optional[Tuple[Optional[str], Optional[int], Optional[str]]]:
     async with self.bot.pool.acquire() as conn:
         async with conn.transaction():
 
@@ -80,4 +80,4 @@ else:
             
             name, salary, description = str(data[0]), int(data[1]), str(data[2]) if data[2] else None
 
-    return name, salary, description'''
+    return name, salary, description"""

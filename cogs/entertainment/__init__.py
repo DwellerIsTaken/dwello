@@ -1,8 +1,9 @@
 from __future__ import annotations
 
+from bot import Dwello
+
 from .fun import Fun
 
-from bot import Dwello
 
 class Entertainment(Fun, name="Entertainment"):
     """
@@ -11,9 +12,12 @@ class Entertainment(Fun, name="Entertainment"):
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-    
+
         self.select_emoji = "🎲"
-        self.select_brief = "Commands for providing entertainment and recreational features."
+        self.select_brief = (
+            "Commands for providing entertainment and recreational features."
+        )
+
 
 async def setup(bot: Dwello):
     await bot.add_cog(Entertainment(bot))

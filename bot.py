@@ -1,32 +1,22 @@
 from __future__ import annotations
 
-import aiohttp
 import asyncio
-import asyncpg
 import logging
 
+import aiohttp
+import asyncpg
 from dotenv import load_dotenv
+
 load_dotenv()
 
-from typing import (
-    TYPE_CHECKING, 
-    Any, 
-    Dict, 
-    List, 
-    ClassVar, 
-    Generic,
-    Optional, 
-    TypeVar,
-    Tuple,
-)
+from typing import TYPE_CHECKING, Generic, Optional, Tuple, TypeVar
+
 from typing_extensions import Self
 
-from utils.context import DwelloContext
 from utils.bases.bot_base import DwelloBase, get_or_fail
+from utils.context import DwelloContext
 
 if TYPE_CHECKING:
-
-    from aiohttp import ClientSession
     from asyncpg import Connection, Pool
     from asyncpg.transaction import Transaction
 
@@ -35,9 +25,9 @@ DCT = TypeVar("DCT", bound="DwelloContext")
 
 
 logging.basicConfig(
-    format='%(asctime)s [%(levelname)s] - %(name)s: %(message)s',
+    format="%(asctime)s [%(levelname)s] - %(name)s: %(message)s",
     level=logging.INFO,
-    datefmt='%Y-%m-%d %H:%M:%S %Z%z',  # CET timezone format
+    datefmt="%Y-%m-%d %H:%M:%S %Z%z",  # CET timezone format
 )
 
 
@@ -86,7 +76,6 @@ class ContextManager(Generic[DBT]):
 
 
 class Dwello(DwelloBase):
-    
     def safe_connection(self: Self, *, timeout: float = 10.0) -> ContextManager:
         """A context manager that will acquire a connection from the bot's pool.
 
@@ -99,23 +88,22 @@ class Dwello(DwelloBase):
         """
         return ContextManager(self, timeout=timeout)
 
-if __name__ == "__main__":
 
+if __name__ == "__main__":
     credentials = {
-        "user": get_or_fail('pg_username'),
-        "password": get_or_fail('pg_password'),
-        "database": get_or_fail('pg_name'),
-        "host": get_or_fail('pg_host'),
-        "port": get_or_fail('pg_port'),
+        "user": get_or_fail("pg_username"),
+        "password": get_or_fail("pg_password"),
+        "database": get_or_fail("pg_name"),
+        "host": get_or_fail("pg_host"),
+        "port": get_or_fail("pg_port"),
     }
 
-    async def main(): # ADD SSH KEY CONNECTION
-        async with asyncpg.create_pool(**credentials) as pool, aiohttp.ClientSession() as session, Dwello(pool, session) as bot:
-
-            token = get_or_fail('token')
+    async def main():  # ADD SSH KEY CONNECTION
+        async with asyncpg.create_pool(
+            **credentials
+        ) as pool, aiohttp.ClientSession() as session, Dwello(pool, session) as bot:
+            token = get_or_fail("token")
             await bot.start(token)
-
-        
 
     asyncio.run(main())
 

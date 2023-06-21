@@ -1,31 +1,36 @@
 from __future__ import annotations
 
+from typing import TYPE_CHECKING, List, Optional
+
 import discord
-
 from discord.app_commands import Choice
-from discord.ext import commands
-
-from typing import List, Optional, Any, TYPE_CHECKING
 from typing_extensions import Self
 
 if TYPE_CHECKING:
-    from bot import Dwello 
-    
+    from bot import Dwello
+
 else:
     from discord.ext.commands import Bot as Dwello
 
-class AutoComplete:
 
+class AutoComplete:
     def __init__(self: Self, bot: Dwello):
         self.bot = bot
 
-    async def choice_autocomplete(self: Self, interaction: discord.Interaction, current: str, table: str, name: str, value: Optional[str] = None, all: bool = False) -> List[Choice]: 
-
-        '''
-            :Actually yea. The data type of the value needs to match the annotation
-            :Forgot about that
-            :job_name: str, value (s) must be strings.
-        '''
+    async def choice_autocomplete(
+        self: Self,
+        interaction: discord.Interaction,
+        current: str,
+        table: str,
+        name: str,
+        value: Optional[str] = None,
+        all: bool = False,
+    ) -> List[Choice]:
+        """
+        :Actually yea. The data type of the value needs to match the annotation
+        :Forgot about that
+        :job_name: str, value (s) must be strings.
+        """
 
         records = self.bot.db_data
         table_ = records[table]
@@ -37,7 +42,7 @@ class AutoComplete:
             value = name
 
         if all is True:
-            choices.append(Choice(name = "all", value = "all"))
+            choices.append(Choice(name="all", value="all"))
 
         for record in table_:
             name_ = record[name]
@@ -50,16 +55,15 @@ class AutoComplete:
             if current:
                 pass
 
-            if current.startswith(str(name_).lower()[:int(item)]):
-                choices.append(Choice(name = str(name_), value = str(value_)))
+            if current.startswith(str(name_).lower()[: int(item)]):
+                choices.append(Choice(name=str(name_), value=str(value_)))
                 pass
-                
-            elif current.startswith(str(value_)[:int(item)]):
-                choices.append(Choice(name = str(name_), value = str(value_)))
+
+            elif current.startswith(str(value_)[: int(item)]):
+                choices.append(Choice(name=str(name_), value=str(value_)))
                 pass
 
         if len(choices) > 5:
             return choices[:5]
 
         return choices
-
