@@ -48,9 +48,7 @@ class CommandErrorHandler(commands.Cog):
         if hasattr(ctx.command, "on_error"):
             return
 
-        # This prevents any cogs with an overwritten cog_command_error being handled here.
-        cog = ctx.cog
-        if cog:
+        if cog := ctx.cog:
             if cog._get_overridden_method(cog.cog_command_error) is not None:
                 return
 
@@ -82,7 +80,6 @@ class CommandErrorHandler(commands.Cog):
         elif isinstance(error, commands.errors.MemberNotFound):
             return await ctx.reply(error, user_mistake=True)
 
-        # For this error example we check to see where it came from...
         elif isinstance(error, commands.BadArgument):
             "Use later."
 
@@ -132,10 +129,7 @@ class CommandErrorHandler(commands.Cog):
             # print('Ignoring exception in command {}:'.format(ctx.command), file=sys.stderr)
             # traceback.print_exception(type(error), error, error.__traceback__, file=sys.stderr)
 
-            if ctx.guild:
-                guild: str = f"Guild ID: {ctx.guild.id}\n"
-            else:
-                guild: str = ""
+            guild: str = f"Guild ID: {ctx.guild.id}\n" if ctx.guild else ""
             # self.bot.logger.error("An error occurred", exc_info=error) report error to special log TODO
             embed: discord.Embed = discord.Embed(
                 title=f"Ignoring exception in {ctx.command}:",
@@ -180,6 +174,5 @@ class CommandErrorHandler(commands.Cog):
         """
 
         # Check if our required argument inp is missing.
-        if isinstance(error, commands.MissingRequiredArgument):
-            if error.param.name == "inp":
-                await ctx.send("You forgot to give me input to repeat!")
+        if isinstance(error, commands.MissingRequiredArgument) and error.param.name == "inp":
+            await ctx.send("You forgot to give me input to repeat!")

@@ -15,10 +15,7 @@ import pkg_resources
 
 
 def apostrophize(word: str) -> str:
-    if word[-1] == "s":
-        return word + "'"
-    else:
-        return word + "'s"
+    return f"{word}'" if word[-1] == "s" else f"{word}'s"
 
 
 def is_discord_link(link: str) -> bool:
@@ -36,8 +33,7 @@ def capitalize_greek_numbers(text):
 def find_greek_numbers(text):
     pattern = r"\b(?=[MDCLXVIΙΙ]+)\b(M{0,4}(CM|CD|D?C{0,3})(XC|XL|L?X{0,3})(IX|IV|V?I{0,3}))\b"
     matches = re.findall(pattern, text, re.IGNORECASE)
-    greek_numbers = [match[0] for match in matches]
-    return greek_numbers
+    return [match[0] for match in matches]
 
 
 def get_unix_timestamp(

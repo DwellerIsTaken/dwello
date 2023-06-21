@@ -48,7 +48,7 @@ class DB_Operations:
                 for table in tables:
                     if table == "prefixes":
                         continue
-                    query = "SELECT * FROM " + table
+                    query = f"SELECT * FROM {table}"
                     table_data = await conn.fetch(query)
                     data[table] = table_data
         return data

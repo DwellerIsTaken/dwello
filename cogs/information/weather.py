@@ -44,13 +44,10 @@ class Weather(BaseCog):
 
             matches = []
             for key, value in data.items():
-                country_match = difflib.get_close_matches(args, [key])
-                if country_match:
+                if country_match := difflib.get_close_matches(args, [key]):
                     matches.append(country_match[0])
-                else:
-                    city_matches = difflib.get_close_matches(args, value)
-                    if city_matches:
-                        matches.append(city_matches[0])
+                elif city_matches := difflib.get_close_matches(args, value):
+                    matches.append(city_matches[0])
 
             clean_matches = difflib.get_close_matches(args, matches, 5)
 
@@ -69,12 +66,6 @@ class Weather(BaseCog):
 
         curr_temp_celsius = data["main"]["temp"]
         curr_feels_like_celsius = data["main"]["feels_like"]
-
-        if curr_feels_like_celsius < 14:
-            pass
-
-        else:
-            pass
 
         curr_temp_fahrenheit = (curr_temp_celsius * 9 / 5) + 32
         curr_feels_like_fahrenheit = (curr_feels_like_celsius * 9 / 5) + 32

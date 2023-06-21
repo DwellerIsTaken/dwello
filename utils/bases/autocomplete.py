@@ -41,29 +41,18 @@ class AutoComplete:
         if not value:
             value = name
 
-        if all is True:
+        if all:
             choices.append(Choice(name="all", value="all"))
 
         for record in table_:
             name_ = record[name]
             value_ = record[value]
 
-            if value_ is None:
-                if name_ is None:
-                    continue
+            if value_ is None and name_ is None:
+                continue
 
-            if current:
-                pass
-
-            if current.startswith(str(name_).lower()[: int(item)]):
+            if current.startswith(str(name_).lower()[:item]):
                 choices.append(Choice(name=str(name_), value=str(value_)))
-                pass
-
-            elif current.startswith(str(value_)[: int(item)]):
+            elif current.startswith(str(value_)[:item]):
                 choices.append(Choice(name=str(name_), value=str(value_)))
-                pass
-
-        if len(choices) > 5:
-            return choices[:5]
-
-        return choices
+        return choices[:5] if len(choices) > 5 else choices

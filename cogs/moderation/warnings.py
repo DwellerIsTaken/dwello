@@ -98,11 +98,8 @@ class Warnings(BaseCog):
                         member.id,
                     )
 
-            warns = 0
-            for result in results:
-                if result["warn_text"]:
-                    warns += 1  # DO THIS WITH QUERY INSTEAD OF LOOP
-
+            warns = sum(bool(result["warn_text"])
+                    for result in results)
             embed: discord.Embed = discord.Embed(
                 title="Warned",
                 description=f"Goede morgen! \nYou have been warned. Try to avoid being warned next time or it might get bad...\n\n"
@@ -178,10 +175,9 @@ class Warnings(BaseCog):
 
                     warns = 0
                     for result in results:
-                        reason = result["warn_text"]
                         date = result["created_at"]
 
-                        if reason:
+                        if reason := result["warn_text"]:
                             reason_list.append(str(reason))
                             date_list.append(date)
                             warns += 1
@@ -196,7 +192,7 @@ class Warnings(BaseCog):
                         )  # kind of success, so embed can be used
 
                     warns_1 = 0
-                    for result in range(warns):
+                    for _ in range(warns):
                         if warns_1 > 4:
                             embed.add_field(
                                 name="\u2800",
@@ -225,14 +221,13 @@ class Warnings(BaseCog):
                     description=f"Would you like to time **{member}** out for 12 hours?",
                     color=cs.WARNING_COLOR,
                 )
-                if warns > 3:
-                    if ctx.author.guild_permissions.moderate_members:  # == True ?
-                        return await ctx.send(
-                            embed=embed,
-                            view=TimeoutSuggestion(
-                                self.bot, ctx, member, "Too many warnings!"
-                            ),
-                        )
+                if warns > 3 and ctx.author.guild_permissions.moderate_members:
+                    return await ctx.send(
+                        embed=embed,
+                        view=TimeoutSuggestion(
+                            self.bot, ctx, member, "Too many warnings!"
+                        ),
+                    )
 
     @warning.command(
         name="remove", help="Removes selected warnings.", with_app_command=True
@@ -320,34 +315,21 @@ class Warnings(BaseCog):
                 )
 
                 item = len(current)
-                choices = []
-
-                choices.append(Choice(name="all", value="all"))
+                choices = [Choice(name="all", value="all")]
 
                 for result in results:
                     text = result["warn_text"]
                     date = result["created_at"]
 
-                    if text is None:
-                        if date is None:
-                            continue
+                    if text is None and date is None:
+                        continue
 
                     name = str(text)  # {str(date)[:10]}
 
-                    # if len(str(text)) > 15:
-                    # name = f"{str(text)[:15]}...\u2800{str(date)[:10]}"
-
-                    if current:
-                        pass
-
-                    if current.startswith(str(text).lower()[: int(item)]):
+                    if current.startswith(str(text).lower()[:item]):
                         choices.append(Choice(name=name, value=name))
-                        pass
-
-                    elif current.startswith(str(date)[: int(item)]):
+                    elif current.startswith(str(date)[:item]):
                         choices.append(Choice(name=name, value=name))
-                        pass
-
                 if len(choices) > 5:
                     return choices[:5]
 

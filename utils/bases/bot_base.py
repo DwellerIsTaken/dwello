@@ -46,11 +46,7 @@ def col(color=None, /, *, fmt=0, bg=False):
         base += "{color}m"
         color = 0
     else:
-        if bg is True:
-            base += "4{color}m"
-        else:
-            base += "3{color}m"
-
+        base += "4{color}m" if bg is True else "3{color}m"
     return base.format(fmt=fmt, color=color)
 
 
@@ -65,9 +61,7 @@ def get_or_fail(var: str) -> str:
 
 
 def blacklist_check(ctx: DwelloContext) -> bool:
-    if ctx.bot.is_blacklisted(ctx.author.id):
-        return False
-    return True
+    return not ctx.bot.is_blacklisted(ctx.author.id)
 
 
 class DwelloBase(AutoShardedBot):
@@ -113,7 +107,9 @@ class DwelloBase(AutoShardedBot):
         self.blacklisted_users: Dict[int, str] = {}
         self.bypass_cooldown_users: List[int] = []
 
-        self.launch_time: datetime.datetime = datetime.datetime.utcnow()
+        self.launch_time: datetime.datetime = datetime.datetime.now(
+            datetime.timezone.utc
+        )
 
         self.cooldown: commands.CooldownMapping[
             discord.Message
@@ -149,7 +145,7 @@ class DwelloBase(AutoShardedBot):
         records: List[Any] = await self.pool.fetch(
             "SELECT guild_id, array_agg(prefix) FROM prefixes GROUP BY guild_id"
         )
-        self.guild_prefixes = {guild_id: prefix for guild_id, prefix in records}
+        self.guild_prefixes = dict(records)
 
         blacklist: List[asyncpg.Record] = await self.pool.fetch(
             "SELECT * FROM blacklist"
@@ -173,9 +169,7 @@ class DwelloBase(AutoShardedBot):
     @override
     async def get_prefix(self: Self, message: discord.Message, /) -> List[str]:
         prefixes: List[str] = self.DEFAULT_PREFIXES.copy()
-        guild_prefixes: List[str] | None = self.guild_prefixes.get(message.guild.id)
-
-        if guild_prefixes:
+        if guild_prefixes := self.guild_prefixes.get(message.guild.id):
             prefixes.extend(guild_prefixes)
 
         # Disable default prefix when custom enabled? add checks to make sure custom prefix isnt the default one. make sure you cant remove prefix if default one is disabled

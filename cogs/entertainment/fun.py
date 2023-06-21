@@ -63,10 +63,7 @@ class Fun(BaseCog):
         ckey: str = self.bot.user.id
 
         # Docs: https://developers.google.com/tenor/guides/endpoints
-        url: URL = (
-            "https://tenor.googleapis.com/v2/search?q=%s&key=%s&client_key=%s&limit=%s&media_filter=%s&contentfilter=%s&random=%s"
-            % (gif, key, ckey, limit, "gif", "low", True)
-        )
+        url: URL = f"https://tenor.googleapis.com/v2/search?q={gif}&key={key}&client_key={ckey}&limit={limit}&media_filter=gif&contentfilter=low&random=True"
         async with self.bot.session.get(url=url) as response:
             data = await response.json()
 

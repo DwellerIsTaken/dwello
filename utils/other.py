@@ -37,9 +37,7 @@ class OtherUtils:
                     )
 
                     if event_type in counters:
-                        channel: discord.VoiceChannel = self.bot.get_channel(
-                            int(channel_id)
-                        )
+                        channel: discord.VoiceChannel = self.bot.get_channel(channel_id)
 
                         try:  # suppress?
                             if event_type == counters[0]:

@@ -232,13 +232,12 @@ class NewsViewer(discord.ui.View):
     async def interaction_check(
         self: Self, interaction: discord.Interaction[Dwello]
     ) -> Optional[bool]:
-        val = interaction.user == self.author
-        if not val:
+        if val := interaction.user == self.author:
+            return val
+        else:
             return await interaction.response.send_message(
                 content="Hey! You can't do that!", ephemeral=True
             )
-
-        return val
 
     # @cachetools.cached(cachetools.LRUCache(maxsize=10))
     async def get_embed(self: Self, page: Page) -> discord.Embed:
@@ -388,11 +387,11 @@ class News(BaseCog):
             return await ctx.reply("Invalid link provided.", user_mistake=True)
 
         success = False
-        match = re.search(r"https://discord\.com/channels/(\d+)/(\d+)/(\d+)", link)
-
-        if match:
-            channel_id: int = int(match.group(2))
-            message_id: int = int(match.group(3))
+        if match := re.search(
+            r"https://discord\.com/channels/(\d+)/(\d+)/(\d+)", link
+        ):
+            channel_id: int = int(match[2])
+            message_id: int = int(match[3])
 
         try:  # prbly remove entire check or redo
             channel: discord.TextChannel = await self.bot.fetch_channel(channel_id)

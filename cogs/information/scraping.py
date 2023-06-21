@@ -42,7 +42,7 @@ class GameNotFound(Exception):  # <- look into it
         self.game_id = game_id
         error_message = "Game not found"
         if game_id is not None:
-            error_message += " with ID: %s" % game_id
+            error_message += f" with ID: {game_id}"
         super().__init__(error_message)
 
 
@@ -108,11 +108,10 @@ class Scraping(BaseCog):
 
     @property
     def tmdb_headers(self: Self) -> Dict[str, str]:
-        _headers = {
+        return {
             "accept": "application/json",
             "Authorization": f"Bearer {self.tmdb_key}",
         }
-        return _headers
 
     @property
     def spotify_http_client(self: Self) -> http.HTTPClient:
@@ -226,7 +225,6 @@ class Scraping(BaseCog):
                 user_mistake=True,
             )
 
-        embeds = []
         for album in albums:
             album: Dict[str, Any]  # = albums[0]
 
@@ -261,8 +259,7 @@ class Scraping(BaseCog):
                 id=_id, market="US", limit=5
             )
 
-            tracks: List[Dict[str, Any]] = tracks_data["items"]
-            if tracks:
+            if tracks := tracks_data["items"]:
                 embed.add_field(
                     name="Tracks",
                     value="\n".join(
@@ -278,7 +275,7 @@ class Scraping(BaseCog):
                 value="\n".join([f"> [{i[0].title()}]({i[1]})" for i in artists]),
             )
 
-        embeds.append((name, embed))
+        embeds = [(name, embed)]
         # await ctx.send(embeds)
         # view = OptionSelectView(ctx, embeds)
         # await view.start()
@@ -378,8 +375,8 @@ class Scraping(BaseCog):
         unique_albums = [
             album
             for i, album in enumerate(unique_albums)
-            if not any(
-                album["name"].split(" (")[0].lower() in a["name"].lower()
+            if all(
+                album["name"].split(" (")[0].lower() not in a["name"].lower()
                 for a in unique_albums[:i]
             )
         ]
@@ -406,7 +403,7 @@ class Scraping(BaseCog):
 
         _description = (
             f"**Followers**: {artist.followers.total:,}\n**Genres**: "
-            + ", ".join([genre for genre in artist.genres[:2]])
+            + ", ".join(list(artist.genres[:2]))
         )
         embed: discord.Embed = discord.Embed(
             title=artist.name,
@@ -459,7 +456,7 @@ class Scraping(BaseCog):
         owner_name = playlist["owner"]["display_name"]
         owner_url = playlist["owner"]["external_urls"]["spotify"]
         image_url = playlist["images"][0]["url"] if playlist["images"] else None
-        description = playlist["description"] if playlist["description"] else None
+        description = playlist["description"] or None
 
         embed: discord.Embed = discord.Embed(
             title=name,
@@ -542,8 +539,6 @@ class Scraping(BaseCog):
 
         if response.status != 200:
             raise discord.HTTPException
-            print("Couldn't connect to the API.")
-
         game_list = data["applist"]["apps"]
 
         for game in game_list:
@@ -569,8 +564,8 @@ class Scraping(BaseCog):
                 f"Couldn't find a game by the name *{mk(game)}*", user_mistake=True
             )
 
-        url: URL = "https://store.steampowered.com/api/appdetails?appids=%s&l=en" % (
-            game_id
+        url: URL = (
+            f"https://store.steampowered.com/api/appdetails?appids={game_id}&l=en"
         )
         async with self.bot.session.get(url=url) as response:
             data = await response.json()
@@ -622,10 +617,7 @@ class Scraping(BaseCog):
         self: Self, ctx: DwelloContext, *, person: str
     ) -> Optional[discord.Message]:
         pages: int = 1
-        url: URL = (
-            "https://api.themoviedb.org/3/search/person?query=%s&include_adult=%s&language=en-US&page=%s"
-            % (person, True, pages)
-        )
+        url: URL = f"https://api.themoviedb.org/3/search/person?query={person}&include_adult=True&language=en-US&page={pages}"
         async with self.bot.session.get(url=url, headers=self.tmdb_headers) as response:
             data = await response.json()
 
@@ -656,17 +648,16 @@ class Scraping(BaseCog):
         # embed.add_field(name='Release Date', value=discord.utils.format_dt(release_date, style='d'))
 
         gender = "Male" if person["gender"] == 2 else "Female"
-        top_movies = [movie for movie in person["known_for"]]
+        top_movies = list(person["known_for"])
 
         embed.add_field(name="Gender", value=gender)
         # embed.add_field(name='Age', value=None)
         embed.add_field(name="Department", value=person["known_for_department"])
 
-        top_movies_desc: str = ""
-        for movie in top_movies:
-            top_movies_desc += f"\n• [{movie['title']}](https://www.themoviedb.org/movie/{movie['id']})"
-
-        if top_movies_desc:
+        if top_movies_desc := "".join(
+            f"\n• [{movie['title']}](https://www.themoviedb.org/movie/{movie['id']})"
+            for movie in top_movies
+        ):
             embed.add_field(name="Top Movies", value=top_movies_desc, inline=False)
 
         if person["profile_path"]:
@@ -689,10 +680,7 @@ class Scraping(BaseCog):
         # Docs: https://developer.themoviedb.org/reference/intro/getting-started
 
         pages: int = 1
-        url: URL = (
-            "https://api.themoviedb.org/3/search/movie?query=%s&include_adult=%s&language=en-US&page=%s"
-            % (movie, True, pages)
-        )
+        url: URL = f"https://api.themoviedb.org/3/search/movie?query={movie}&include_adult=True&language=en-US&page={pages}"
         async with self.bot.session.get(url=url, headers=self.tmdb_headers) as response:
             data = await response.json()
 
@@ -737,16 +725,10 @@ class Scraping(BaseCog):
     ) -> Optional[discord.Message]:
         pages: int = 1
 
-        url: URL = (
-            "https://api.themoviedb.org/3/search/movie?query=%s&include_adult=%s&language=en-US&primary_release_year=%s&page=%s"
-            % (movie, True, year, pages)
-        )
+        url: URL = f"https://api.themoviedb.org/3/search/movie?query={movie}&include_adult=True&language=en-US&primary_release_year={year}&page={pages}"
 
         if not year:
-            url = (
-                "https://api.themoviedb.org/3/search/movie?query=%s&include_adult=%s&language=en-US&page=%s"
-                % (movie, True, pages)
-            )
+            url = f"https://api.themoviedb.org/3/search/movie?query={movie}&include_adult=True&language=en-US&page={pages}"
 
         async with self.bot.session.get(url=url, headers=self.tmdb_headers) as response:
             data = await response.json()
@@ -793,10 +775,7 @@ class Scraping(BaseCog):
         self: Self, ctx: DwelloContext, *, show: str
     ) -> Optional[discord.Message]:
         pages: int = 1
-        url: URL = (
-            "https://api.themoviedb.org/3/search/tv?query=%s&include_adult=%s&language=en-US&page=%s"
-            % (show, True, pages)
-        )
+        url: URL = f"https://api.themoviedb.org/3/search/tv?query={show}&include_adult=True&language=en-US&page={pages}"
         async with self.bot.session.get(url=url, headers=self.tmdb_headers) as response:
             data = await response.json()
 
@@ -841,16 +820,10 @@ class Scraping(BaseCog):
     ) -> Optional[discord.Message]:
         pages: int = 1
 
-        url: URL = (
-            "https://api.themoviedb.org/3/search/movie?query=%s&include_adult=%s&language=en-US&primary_release_year=%s&page=%s"
-            % (show, True, year, pages)
-        )
+        url: URL = f"https://api.themoviedb.org/3/search/movie?query={show}&include_adult=True&language=en-US&primary_release_year={year}&page={pages}"
 
         if not year:
-            url = (
-                "https://api.themoviedb.org/3/search/movie?query=%s&include_adult=%s&language=en-US&page=%s"
-                % (show, True, pages)
-            )
+            url = f"https://api.themoviedb.org/3/search/movie?query={show}&include_adult=True&language=en-US&page={pages}"
 
         async with self.bot.session.get(url=url, headers=self.tmdb_headers) as response:
             data = await response.json()
@@ -916,13 +889,10 @@ class Scraping(BaseCog):
 
             matches = []
             for key, value in data.items():
-                country_match = difflib.get_close_matches(args, [key])
-                if country_match:
+                if country_match := difflib.get_close_matches(args, [key]):
                     matches.append(country_match[0])
-                else:
-                    city_matches = difflib.get_close_matches(args, value)
-                    if city_matches:
-                        matches.append(city_matches[0])
+                elif city_matches := difflib.get_close_matches(args, value):
+                    matches.append(city_matches[0])
 
             clean_matches = difflib.get_close_matches(args, matches, 5)
 
@@ -941,12 +911,6 @@ class Scraping(BaseCog):
 
         curr_temp_celsius = data["main"]["temp"]
         curr_feels_like_celsius = data["main"]["feels_like"]
-
-        if curr_feels_like_celsius < 14:
-            pass
-
-        else:
-            pass
 
         curr_temp_fahrenheit = (curr_temp_celsius * 9 / 5) + 32
         curr_feels_like_fahrenheit = (curr_feels_like_celsius * 9 / 5) + 32

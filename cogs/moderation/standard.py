@@ -118,25 +118,15 @@ class StandardModeration(BaseCog):
         choices = []
 
         async for entry in interaction.guild.bans(limit=None):
-            if current:
-                pass
-
-            if current.startswith(str(entry.user.name).lower()[: int(item)]):
+            if current.startswith(str(entry.user.name).lower()[:item]):
                 choices.append(
                     Choice(name=str(entry.user.name), value=str(entry.user.id))
                 )
-                pass
-
-            elif current.startswith(str(entry.user.id)[: int(item)]):
+            elif current.startswith(str(entry.user.id)[:item]):
                 choices.append(
                     Choice(name=str(entry.user.name), value=str(entry.user.id))
                 )
-                pass
-
-        if len(choices) > 5:
-            return choices[:5]
-
-        return choices
+        return choices[:5] if len(choices) > 5 else choices
 
     @commands.hybrid_command(
         name="kick",

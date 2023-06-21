@@ -29,11 +29,8 @@ class ChannelsFunctions:
             async with conn.transaction():
                 count = ctx.guild.member_count
 
-                bot_counter = 0
-                for member in ctx.guild.members:
-                    if member.bot:
-                        bot_counter += 1
-
+                bot_counter = sum(bool(member.bot)
+                              for member in ctx.guild.members)
                 member_counter = int(ctx.guild.member_count) - bot_counter
 
                 query = "SELECT channel_id FROM server_data WHERE guild_id = $1 AND event_type = 'counter' AND counter_name = $2"
@@ -57,22 +54,21 @@ class ChannelsFunctions:
                             ephemeral=True,
                         )
 
-                    else:
-                        counter_channel = await ctx.guild.create_category(
-                            "📊 Server Counters 📊", reason=None
-                        )
-                        await counter_channel.edit(position=0)
-                        await conn.execute(
-                            "UPDATE server_data SET channel_id = $1 WHERE counter_name = $2 AND event_type = 'counter' AND guild_id = $3",
-                            counter_channel.id,
-                            name,
-                            ctx.guild.id,
-                        )
-                        await ctx.reply(
-                            f"The **{counter_channel.name}** is successfully created!",
-                            mention_author=False,
-                        )
-                        return counter_channel
+                    counter_channel = await ctx.guild.create_category(
+                        "📊 Server Counters 📊", reason=None
+                    )
+                    await counter_channel.edit(position=0)
+                    await conn.execute(
+                        "UPDATE server_data SET channel_id = $1 WHERE counter_name = $2 AND event_type = 'counter' AND guild_id = $3",
+                        counter_channel.id,
+                        name,
+                        ctx.guild.id,
+                    )
+                    await ctx.reply(
+                        f"The **{counter_channel.name}** is successfully created!",
+                        mention_author=False,
+                    )
+                    return counter_channel
 
                 query = "SELECT channel_id, deny_clicked FROM server_data WHERE guild_id = $1 AND event_type = 'counter' AND counter_name = $2"  # maybe create a category func after all
                 row = await conn.fetchrow(query, ctx.guild.id, name)
@@ -136,10 +132,8 @@ class ChannelsFunctions:
         async with self.bot.pool.acquire() as conn:
             conn: asyncpg.Connection
             async with conn.transaction():
-                placeholders = ",".join(["${}".format(i + 2) for i in range(len(args))])
-                query = "SELECT channel_id FROM server_data WHERE guild_id = $1 AND event_type = 'counter' AND counter_name IN ({})".format(
-                    placeholders
-                )
+                placeholders = ",".join([f"${i + 2}" for i in range(len(args))])
+                query = f"SELECT channel_id FROM server_data WHERE guild_id = $1 AND event_type = 'counter' AND counter_name IN ({placeholders})"
 
                 rows = await conn.fetch(query, ctx.guild.id, *args)
 
@@ -170,16 +164,15 @@ class Stats_View(View):
         if interaction.user.id == self.ctx.author.id:
             return True
 
-        else:
-            missing_permissions_embed = discord.Embed(
-                title="Permission Denied.",
-                description="You can't interact with someone else's buttons.",
-                color=cs.RANDOM_COLOR,
-            )
-            missing_permissions_embed.set_footer(text=cs.FOOTER)
-            return await interaction.response.send_message(
-                embed=missing_permissions_embed, ephemeral=True
-            )
+        missing_permissions_embed = discord.Embed(
+            title="Permission Denied.",
+            description="You can't interact with someone else's buttons.",
+            color=cs.RANDOM_COLOR,
+        )
+        missing_permissions_embed.set_footer(text=cs.FOOTER)
+        return await interaction.response.send_message(
+            embed=missing_permissions_embed, ephemeral=True
+        )
 
     @button(
         style=discord.ButtonStyle.green,

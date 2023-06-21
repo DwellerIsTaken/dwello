@@ -126,10 +126,7 @@ class LevellingUtils:
                     user_id,
                     guild_id,
                 )
-                results = []
-                for record in records:
-                    results.append(dict(record))
-
+                results = [dict(record) for record in records]
         return results
 
     async def get_rank(

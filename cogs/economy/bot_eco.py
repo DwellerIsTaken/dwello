@@ -27,7 +27,7 @@ class BotEcoUtils:
                 row = await conn.fetchrow(
                     "SELECT money FROM users WHERE user_id = $1 AND guild_id = $2 AND event_type = $3",
                     ctx.author.id,
-                    not None if str(name) == "bot" else ctx.guild.id,
+                    not None if name == "bot" else ctx.guild.id,
                     name,
                 )
 

@@ -39,10 +39,7 @@ class GuildEcoUtils:
         async with self.bot.pool.acquire() as conn:
             conn: asyncpg.Connection
             async with conn.transaction():
-                if salary >= 2000 and salary <= 20000:  # DIFFERENT SALARY SYSTEM
-                    pass
-
-                else:
+                if salary < 2000 or salary > 20000:
                     return await ctx.reply(
                         "Please provide the salary between 2000 and 20000."
                     )
@@ -52,7 +49,7 @@ class GuildEcoUtils:
                 )
 
                 job_count = 0
-                for record in data if data else []:
+                for record in data or []:
                     if record["name"] == name:
                         return await ctx.reply("The job with this name already exists!")
 
@@ -124,7 +121,7 @@ class GuildEcoUtils:
                     if not name:
                         continue
 
-                    value = f"*Salary:* {salary}\n*Description:* {description if description else None}"
+                    value = f"*Salary:* {salary}\n*Description:* {description or None}"
                     job_embed.add_field(name=name, value=value, inline=False)
 
                 if not job_embed.fields:
@@ -172,7 +169,7 @@ class GuildEcoUtils:
         # MAYBE CREATE SOME LOG FOR CMDS WITHIN SERVER AND STORE UNOFFICIAL MANAGEMENT THERE, SO IT WOULD BE SEEN WHO CREATED/REMOVED THE JOB(S)
         embed: discord.Embed = discord.Embed(
             description=f"{'Your job' if member == ctx.author else f'The job of {member}'} is removed.\n"
-            f"\n**Details**\nJob name: {name}\nSalary: {salary}\nDescription: {description if not description else f'```{description}```'}",
+            f"\n**Details**\nJob name: {name}\nSalary: {salary}\nDescription: {f'```{description}```' if description else description}",
             color=cs.RANDOM_COLOR,
         )
         return await ctx.reply(embed=embed)
@@ -237,7 +234,7 @@ class GuildEcoUtils:
                     if name == "all"
                     else (
                         f"the job.\n\n**Details**\nJob name: {name}\nSalary: {salary}\nDescription: "
-                        + (description if not description else f"```{description}```")
+                        + (f"```{description}```" if description else description)
                     )
                 )
 
@@ -325,13 +322,12 @@ class Guild_Economy(BaseCog):
                     "SELECT array_agg(name) FROM jobs WHERE guild_id = $1", ctx.guild.id
                 )
 
-                if name.isdigit():
-                    if str(name) not in names:
-                        return await ctx.reply(
-                            "Please provide a correct job name.",
-                            ephemeral=True,
-                            mention_author=True,
-                        )
+                if name.isdigit() and name not in names:
+                    return await ctx.reply(
+                        "Please provide a correct job name.",
+                        ephemeral=True,
+                        mention_author=True,
+                    )
 
                 data = await conn.fetchrow(
                     "SELECT id, salary, description FROM jobs WHERE guild_id = $1 AND name = $2",

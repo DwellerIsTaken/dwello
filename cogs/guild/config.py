@@ -170,7 +170,7 @@ class ChannelConfig:
                     name,
                     ctx.guild.id,
                 )
-                string = f"{name.capitalize()} message has been {'set' if not result[0] else 'updated'} to: ```{text}```"
+                string = f"{name.capitalize()} message has been {'updated' if result[0] else 'set'} to: ```{text}```"
 
         return await ctx.reply(
             embed=discord.Embed(description=string, color=cs.RANDOM_COLOR),
@@ -192,7 +192,7 @@ class ChannelConfig:
                     name,
                 )
 
-                string = f"The channel has been {'set' if not (result[0] if result else None) else 'updated'} to {channel.mention}"
+                string = f"The channel has been {'updated' if result[0] if result else None else 'set'} to {channel.mention}"
 
                 if (result[0] if result else None) == channel.id:
                     return await ctx.reply(

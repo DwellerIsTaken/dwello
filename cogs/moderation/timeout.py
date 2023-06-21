@@ -204,7 +204,6 @@ class Timeout(BaseCog):
         with_app_command=True,
     )  # MODERATION OR MEMBER-FRIENDLY (PERMS)?
     @commands.bot_has_permissions(view_audit_log=True)
-    # @commands.has_permissions(moderate_members = True)
     @commands.guild_only()
     async def timed_out(self: Self, ctx: DwelloContext) -> Optional[discord.Message]:
         async with ctx.typing(ephemeral=True):
@@ -222,13 +221,8 @@ class Timeout(BaseCog):
 
             for member in ctx.guild.members:
                 if member.is_timed_out():
-                    entry: discord.AuditLogEntry = member_updates.get(member.id)
-                    if entry:
-                        if not entry.reason:
-                            reason = "Not specified"
-                        else:
-                            reason = entry.reason
-
+                    if entry := member_updates.get(member.id):
+                        reason = entry.reason or "Not specified"
                         reason_list.append(str(reason))
                     timed_out_list.append(member)
 
@@ -236,7 +230,7 @@ class Timeout(BaseCog):
                 title="Timed out list", color=cs.RANDOM_COLOR
             )
 
-            if len(timed_out_list) == 0:
+            if not timed_out_list:
                 embed.add_field(name="\u2800", value="`Nobody is timed out.`")
 
             else:
@@ -245,7 +239,7 @@ class Timeout(BaseCog):
                     if num > 4:
                         embed.add_field(
                             name="\u2800",
-                            value=f"There are/is **{int(len(timed_out_list)) - 5}** more muted members out there.",
+                            value=f"There are/is **{len(timed_out_list) - 5}** more muted members out there.",
                             inline=False,
                         )
                         break

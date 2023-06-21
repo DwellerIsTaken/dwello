@@ -138,18 +138,16 @@ class HelpView(discord.ui.View):
                 embed=self.main_embed, view=self
             )
 
-        cog = self.bot.get_cog(select.values[0])
-        if not cog:
-            return await interaction.response.send_message(
-                "Somehow, that category was not found? 🤔", ephemeral=True
-            )
-
-        else:
+        if cog := self.bot.get_cog(select.values[0]):
             self.embeds = self.build_embeds(cog)
             self.current_page = 0
             self._update_buttons()
             return await interaction.response.edit_message(
                 embed=self.embeds[self.current_page], view=self
+            )
+        else:
+            return await interaction.response.send_message(
+                "Somehow, that category was not found? 🤔", ephemeral=True
             )
 
     def build_embeds(self: Self, cog: commands.Cog) -> List[discord.Embed]:
@@ -177,11 +175,11 @@ class HelpView(discord.ui.View):
                     embed.add_field(
                         name=f"`{cmd.name}{f' {cmd.signature}`' if cmd.signature else '`'}",
                         value=(
-                            ("> " + (cmd.brief or cmd.help or "No help given..."))
-                            + (f"\n> Parent: `{cmd.parent}`" if cmd.parent else "")
-                        )[
-                            0:1024
-                        ],  # .replace("%PRE%", self.ctx.clean_prefix)
+                            "> " + (cmd.brief or cmd.help or "No help given...")
+                        )
+                        + (f"\n> Parent: `{cmd.parent}`" if cmd.parent else "")[
+                            :1024
+                        ],
                         inline=False,
                     )
                 embed.set_footer(text='For more info on a command run "help [command]"')
@@ -204,7 +202,7 @@ class HelpView(discord.ui.View):
             if not comm:
                 continue
             emoji = getattr(cog, "select_emoji", None)
-            label = cog.qualified_name + f" ({len(comm)})"
+            label = f"{cog.qualified_name} ({len(comm)})"
             brief = getattr(cog, "select_brief", None)
             self.category_select.add_option(
                 label=label, value=cog.qualified_name, emoji=emoji, description=brief
@@ -360,16 +358,8 @@ class MyHelp(commands.HelpCommand):
 
     def get_minimal_command_signature(self, command):
         if isinstance(command, commands.Group):
-            return "[G] %s%s %s" % (
-                self.context.clean_prefix,
-                command.qualified_name,
-                command.signature,
-            )
-        return "(c) %s%s %s" % (
-            self.context.clean_prefix,
-            command.qualified_name,
-            command.signature,
-        )
+            return f"[G] {self.context.clean_prefix}{command.qualified_name} {command.signature}"
+        return f"(c) {self.context.clean_prefix}{command.qualified_name} {command.signature}"
 
     # !help
     @override
@@ -468,20 +458,14 @@ class MyHelp(commands.HelpCommand):
 
     @override
     async def send_cog_help(self, cog: commands.Cog):
-        entries = cog.get_commands()
-        if entries:
+        if entries := cog.get_commands():
             data = [self.get_minimal_command_signature(entry) for entry in entries]
             embed = discord.Embed(
                 title=f"{getattr(cog, 'select_emoji', '')} `{cog.qualified_name}` category commands",
                 description="**Description:**\n"
                 + cog.description.replace("%PRE%", self.context.clean_prefix),
             )
-            embed.description = (
-                embed.description
-                + f"\n\n**Commands:**\n```css\n{newline.join(data)}\n```"
-                f"\n`[G]` means group, these have sub-commands."
-                f"\n`(C)` means command, these do not have sub-commands."
-            )
+            embed.description = f"{embed.description}\n\n**Commands:**\n```css\n{newline.join(data)}\n```\n`[G]` means group, these have sub-commands.\n`(C)` means command, these do not have sub-commands."
             await self.context.send(embed=embed)
         else:
             await self.context.send(f"No commands found in {cog.qualified_name}")
@@ -500,9 +484,7 @@ class MyHelp(commands.HelpCommand):
             value=f"```css\n{self.get_minimal_command_signature(group)}\n```",
         )
         if group.aliases:
-            embed.description = (
-                embed.description + f'\n\n**Aliases:**\n`{"`, `".join(group.aliases)}`'
-            )
+            embed.description = f'{embed.description}\n\n**Aliases:**\n`{"`, `".join(group.aliases)}`'
         if group.commands:
             formatted = "\n".join(
                 [self.get_minimal_command_signature(c) for c in group.commands]
@@ -576,8 +558,9 @@ class MyHelp(commands.HelpCommand):
 
     @override
     async def send_error_message(self, error):
-        matches = difflib.get_close_matches(error, self.context.bot.cogs.keys())
-        if matches:
+        if matches := difflib.get_close_matches(
+            error, self.context.bot.cogs.keys()
+        ):
             confirm = await self.context.confirm(
                 message=f"Sorry but i couldn't recognise {error} as one of my categories!"
                 f"\n{f'**did you mean... `{matches[0]}`?**' if matches else ''}",
@@ -585,7 +568,7 @@ class MyHelp(commands.HelpCommand):
                 delete_after_timeout=True,
                 delete_after_cancel=True,
                 buttons=(
-                    ("✅", f"See {matches[0]}"[0:80], discord.ButtonStyle.blurple),
+                    ("✅", f"See {matches[0]}"[:80], discord.ButtonStyle.blurple),
                     ("🗑", None, discord.ButtonStyle.red),
                 ),
                 timeout=15,
@@ -595,16 +578,15 @@ class MyHelp(commands.HelpCommand):
             return
         else:
             command_names = []
-            for command in [c for c in self.context.bot.commands]:
+            for command in list(self.context.bot.commands):
                 # noinspection PyBroadException
                 try:
                     if await command.can_run(self.context):
                         command_names.append([command.name] + command.aliases)
-                except:
+                except Exception:
                     continue
             command_names = list(itertools.chain.from_iterable(command_names))
-            matches = difflib.get_close_matches(error, command_names)
-            if matches:
+            if matches := difflib.get_close_matches(error, command_names):
                 confirm = await self.context.confirm(
                     message=f"Sorry but i couldn't recognise {error} as one of my commands!"
                     f"\n{f'**did you mean... `{matches[0]}`?**' if matches else ''}",
@@ -612,7 +594,11 @@ class MyHelp(commands.HelpCommand):
                     delete_after_timeout=True,
                     delete_after_cancel=True,
                     buttons=(
-                        ("✅", f"See {matches[0]}"[0:80], discord.ButtonStyle.blurple),
+                        (
+                            "✅",
+                            f"See {matches[0]}"[:80],
+                            discord.ButtonStyle.blurple,
+                        ),
                         ("🗑", None, discord.ButtonStyle.red),
                     ),
                     timeout=15,
@@ -665,7 +651,7 @@ class About(commands.Cog):
     def get_uptime(self: Self) -> Tuple[int, int, int, int]:
         """Return format: days, hours, minutes, seconds."""
 
-        uptime = datetime.datetime.utcnow() - self.bot.launch_time
+        uptime = datetime.datetime.now(datetime.timezone.utc) - self.bot.launch_time
 
         hours, remainder = divmod(int(uptime.total_seconds()), 3600)
         minutes, seconds = divmod(remainder, 60)
@@ -677,22 +663,15 @@ class About(commands.Cog):
         self: Self, style: discord.utils.TimestampStyle = None
     ) -> str:
         return discord.utils.format_dt(
-            self.bot.launch_time, style=style if style else "F"
+            self.bot.launch_time, style=style or "F"
         )
 
     def get_average_latency(self: Self, *latencies: float) -> Union[Any, float]:
         if not latencies:
             raise TypeError("Missing required argument: 'latencies'")
 
-        pings = []
-        number = 0
-
-        for latency in latencies:
-            pings.append(latency)
-
-        for ms in pings:
-            number += ms
-
+        pings = list(latencies)
+        number = sum(pings)
         return number / len(pings)
 
     # make uptime: add here -> trigger on mention in on_message
@@ -823,7 +802,7 @@ class About(commands.Cog):
         embed.add_field(name="Guilds", value=len(self.bot.guilds), inline=False)
         embed.add_field(
             name="Messages",
-            value=self.bot.reply_count if self.bot.reply_count else 1,
+            value=self.bot.reply_count or 1,
             inline=False,
         )
         embed.add_field(
@@ -985,13 +964,10 @@ class ManualHelp:
 
                     for group_command in command.commands:
                         if isinstance(group_command, commands.Group):
-                            subgroup_structure = {}
-
-                            for subgroup_command in group_command.commands:
-                                subgroup_structure[
-                                    subgroup_command.name
-                                ] = subgroup_command.help
-
+                            subgroup_structure = {
+                                subgroup_command.name: subgroup_command.help
+                                for subgroup_command in group_command.commands
+                            }
                             group_structure[group_command.name] = subgroup_structure
 
                         else:
@@ -1044,13 +1020,11 @@ class ManualHelp:
     ) -> str:
         """Returns the hierarchical representation of a command or command group."""
 
-        if isinstance(command, commands.Group):
-            hierarchy = f"{command.name} {self.get_command_hierarchy(command.all_commands[list(command.all_commands.keys())[0]])}"
-
-        else:
-            hierarchy = command.name
-
-        return hierarchy
+        return (
+            f"{command.name} {self.get_command_hierarchy(command.all_commands[list(command.all_commands.keys())[0]])}"
+            if isinstance(command, commands.Group)
+            else command.name
+        )
 
     def leo_bot_mapping(self):
         bot = self.context.bot
@@ -1059,14 +1033,15 @@ class ManualHelp:
             "Jishaku",
             "Other",
         ]
-        mapping = {
+        return {
             cog: cog.get_commands()
             for cog in sorted(
-                bot.cogs.values(), key=lambda c: len(c.get_commands()), reverse=True
+                bot.cogs.values(),
+                key=lambda c: len(c.get_commands()),
+                reverse=True,
             )
             if cog.qualified_name not in ignored_cogs
         }
-        return mapping
 
     def new_bot_mapping(self) -> Dict[commands.Cog, List[commands.Command]]:
         """Retrieves full bot mapping that includes every (user-) available command: all command/parent groups are unpacked."""

@@ -55,10 +55,7 @@ class Owner(BaseCog):
             user = self.bot.get_user(user)
             if not user:
                 return await ctx.reply("Couldn't find the user.")
-            user_id = user.id
-        else:
-            user_id = user.id
-
+        user_id = user.id
         try:
             async with self.bot.safe_connection() as conn:
                 await conn.execute(
@@ -100,11 +97,7 @@ class Owner(BaseCog):
     async def remove(
         self: Self, ctx: DwelloContext, user: Union[discord.User, int]
     ) -> discord.Message:
-        if isinstance(user, int):
-            user_id = user
-        else:
-            user_id = user.id
-
+        user_id = user if isinstance(user, int) else user.id
         async with ctx.bot.safe_connection() as conn:
             query = """
             WITH deleted AS (

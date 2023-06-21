@@ -161,10 +161,6 @@ class DwelloContext(commands.Context):
             **kwargs,
         )
 
-        """except discord.HTTPException:
-            return await super().send(content=content, embeds=embeds, reference=None, mention_author=mention_author, file=file, **kwargs)
-        """
-
     @override
     async def reply(
         self,
@@ -182,7 +178,7 @@ class DwelloContext(commands.Context):
         reference: discord.MessageReference = self.message.reference
         if reference and mention_reference_author:
             message = reference.resolved
-            mention = True if message.author in self.message.mentions else False
+            mention = message.author in self.message.mentions
 
         if mention_author:
             mention = mention_author
@@ -266,35 +262,27 @@ class DwelloContext(commands.Context):
         view.stop()
         if view.value is None:
             try:
-                if return_message is False:
-                    (
-                        await message.edit(view=view)
-                    ) if delete_after_timeout is False else (await message.delete())
+                if not return_message:
+                    await message.delete() if delete_after_timeout else await message.edit(
+                                            view=view
+                                        )
             except (discord.Forbidden, discord.HTTPException):
                 pass
-            return (
-                (None, message)
-                if delete_after_timeout is False and return_message is True
-                else None
-            )
+            return (None, message) if not delete_after_timeout and return_message else None
 
         elif view.value:
             try:
-                if return_message is False:
-                    (
-                        await message.edit(view=view)
-                    ) if delete_after_confirm is False else (await message.delete())
+                if not return_message:
+                    await message.delete() if delete_after_confirm else await message.edit(
+                                            view=view
+                                        )
             except (discord.Forbidden, discord.HTTPException):
                 pass
-            return (
-                (True, message)
-                if delete_after_confirm is False and return_message is True
-                else True
-            )
+            return (True, message) if not delete_after_confirm and return_message else True
 
         else:
             try:
-                if return_message is False:
+                if not return_message:
                     (
                         await message.edit(view=view)
                     ) if delete_after_cancel is False else (await message.delete())
@@ -303,7 +291,7 @@ class DwelloContext(commands.Context):
 
             return (
                 (False, message)
-                if delete_after_cancel is False and return_message is True
+                if delete_after_cancel is False and return_message
                 else False
             )
 

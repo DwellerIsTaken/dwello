@@ -66,19 +66,19 @@ class SharedEcoUtils:
                 row = await conn.fetchrow(
                     "SELECT money FROM users WHERE user_id = $1 AND guild_id = $2 AND event_type = $3",
                     member.id,
-                    not None if str(name) == "bot" else member.guild.id,
+                    not None if name == "bot" else member.guild.id,
                     name,
                 )
                 # DOESNT FETCH CORRECTLY
 
                 money = row[0]
-                balance = int(money) + int(amount)
+                balance = int(money) + amount
 
                 await conn.execute(
                     "UPDATE users SET money = $1 WHERE user_id = $2 AND guild_id = $3 AND event_type = $4",
                     balance,
                     member.id,
-                    not None if str(name) == "bot" else member.guild.id,
+                    not None if name == "bot" else member.guild.id,
                     name,
                 )
 
@@ -107,11 +107,10 @@ class SharedEcoUtils:
                 # limit_embed.set_footer(text = "Your next workday begins in")
                 # limit_embed.timestamp = discord.utils.format_dt(my_datetime) # loop.EcoLoop.my_datetime1
 
-                if worked is True:
+                if worked:
                     embed: discord.Embed = discord.Embed(
                         title="→ \U0001d5e6\U0001d5fc\U0001d5ff\U0001d5ff\U0001d606 ←",
-                        description=f"Your have already worked{' *on this server* ' if str(name) == 'server' else ' '}today!"
-                        f"\nYour next workday begins {discord.utils.format_dt(my_datetime, style ='R')}",
+                        description=f"Your have already worked{' *on this server* ' if name == 'server' else ' '}today!\nYour next workday begins {discord.utils.format_dt(my_datetime, style='R')}",
                         color=cs.RANDOM_COLOR,
                     )
                     return await ctx.reply(embed=embed)
@@ -127,7 +126,7 @@ class SharedEcoUtils:
                 except TypeError:
                     return
 
-                amount = salary if str(name) == "server" else 250
+                amount = salary if name == "server" else 250
                 if not amount:
                     return await ctx.reply("You are unemployed.")
 

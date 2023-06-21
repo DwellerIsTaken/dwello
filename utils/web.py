@@ -24,9 +24,7 @@ class AiohttpWeb:
         print(data)
 
         await self.bot.twitch.twitch_to_discord(data)
-        return web.json_response(
-            {"message": "data received by aiohttp: {}".format(data)}
-        )
+        return web.json_response({"message": f"data received by aiohttp: {data}"})
 
     async def run(self: Self, port: int = 8081):
         runner = web.AppRunner(self.app)

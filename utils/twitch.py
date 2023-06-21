@@ -35,10 +35,9 @@ async def get_access_token(bot: Dwello):
         "https://id.twitch.tv/oauth2/token", data=body
     )
     keys = await request.json()
-    access_token = keys["access_token"]
     keys["expires_in"]
 
-    return access_token
+    return keys["access_token"]
 
 
 class Twitch:
@@ -55,11 +54,10 @@ class Twitch:
 
     @property
     def headers(self: Self) -> Dict[str, Any]:
-        _headers = {
+        return {
             "Client-ID": CLIENT_ID,
             "Authorization": f"Bearer {self.access_token}",
         }
-        return _headers
 
     async def username_to_id(self: Self, username: str) -> Optional[str]:
         url = f"https://api.twitch.tv/helix/users?login={username.lower()}"
@@ -69,13 +67,11 @@ class Twitch:
         )
         data = await response.json()
 
-        # The Twitch user ID to subscribe to
-        if "data" in data and len(data["data"]) > 0:
-            _user_id = data["data"][0]["id"]
-            print(type(_user_id))
-
-        else:
+        if "data" not in data or len(data["data"]) <= 0:
             raise Exception(f"Could not find user {username}")  # incorrect check ?
+
+        _user_id = data["data"][0]["id"]
+        print(type(_user_id))
 
         return _user_id
 
@@ -107,7 +103,7 @@ class Twitch:
                 try:
                     user_id = await self.username_to_id(username)
 
-                except:
+                except Exception:
                     return await ctx.reply(
                         embed=discord.Embed(
                             description=f"Could not find user **{username}**.",
@@ -189,8 +185,8 @@ class Twitch:
                     int(user_id),
                     ctx.guild.id,
                 )
-                # await conn.execute("UPDATE server_data SET twitch_id = $1 WHERE guild_id = $2 AND event_type = 'twitch'", user_id, ctx.guild.id)
-                # Print the response to confirm whether the subscription was created successfully or not
+                        # await conn.execute("UPDATE server_data SET twitch_id = $1 WHERE guild_id = $2 AND event_type = 'twitch'", user_id, ctx.guild.id)
+                        # Print the response to confirm whether the subscription was created successfully or not
 
         await self.bot.db.fetch_table_data("twitch_users")
         return (
