@@ -387,9 +387,7 @@ class News(BaseCog):
             return await ctx.reply("Invalid link provided.", user_mistake=True)
 
         success = False
-        if match := re.search(
-            r"https://discord\.com/channels/(\d+)/(\d+)/(\d+)", link
-        ):
+        if match := re.search(r"https://discord\.com/channels/(\d+)/(\d+)/(\d+)", link):
             channel_id: int = int(match[2])
             message_id: int = int(match[3])
 

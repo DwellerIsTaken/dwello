@@ -29,8 +29,7 @@ class ChannelsFunctions:
             async with conn.transaction():
                 count = ctx.guild.member_count
 
-                bot_counter = sum(bool(member.bot)
-                              for member in ctx.guild.members)
+                bot_counter = sum(bool(member.bot) for member in ctx.guild.members)
                 member_counter = int(ctx.guild.member_count) - bot_counter
 
                 query = "SELECT channel_id FROM server_data WHERE guild_id = $1 AND event_type = 'counter' AND counter_name = $2"

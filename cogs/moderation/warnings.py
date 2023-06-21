@@ -98,8 +98,7 @@ class Warnings(BaseCog):
                         member.id,
                     )
 
-            warns = sum(bool(result["warn_text"])
-                    for result in results)
+            warns = sum(bool(result["warn_text"]) for result in results)
             embed: discord.Embed = discord.Embed(
                 title="Warned",
                 description=f"Goede morgen! \nYou have been warned. Try to avoid being warned next time or it might get bad...\n\n"

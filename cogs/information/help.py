@@ -174,12 +174,8 @@ class HelpView(discord.ui.View):
                 else:
                     embed.add_field(
                         name=f"`{cmd.name}{f' {cmd.signature}`' if cmd.signature else '`'}",
-                        value=(
-                            "> " + (cmd.brief or cmd.help or "No help given...")
-                        )
-                        + (f"\n> Parent: `{cmd.parent}`" if cmd.parent else "")[
-                            :1024
-                        ],
+                        value=("> " + (cmd.brief or cmd.help or "No help given..."))
+                        + (f"\n> Parent: `{cmd.parent}`" if cmd.parent else "")[:1024],
                         inline=False,
                     )
                 embed.set_footer(text='For more info on a command run "help [command]"')
@@ -484,7 +480,9 @@ class MyHelp(commands.HelpCommand):
             value=f"```css\n{self.get_minimal_command_signature(group)}\n```",
         )
         if group.aliases:
-            embed.description = f'{embed.description}\n\n**Aliases:**\n`{"`, `".join(group.aliases)}`'
+            embed.description = (
+                f'{embed.description}\n\n**Aliases:**\n`{"`, `".join(group.aliases)}`'
+            )
         if group.commands:
             formatted = "\n".join(
                 [self.get_minimal_command_signature(c) for c in group.commands]
@@ -558,9 +556,7 @@ class MyHelp(commands.HelpCommand):
 
     @override
     async def send_error_message(self, error):
-        if matches := difflib.get_close_matches(
-            error, self.context.bot.cogs.keys()
-        ):
+        if matches := difflib.get_close_matches(error, self.context.bot.cogs.keys()):
             confirm = await self.context.confirm(
                 message=f"Sorry but i couldn't recognise {error} as one of my categories!"
                 f"\n{f'**did you mean... `{matches[0]}`?**' if matches else ''}",
@@ -662,9 +658,7 @@ class About(commands.Cog):
     def get_startup_timestamp(
         self: Self, style: discord.utils.TimestampStyle = None
     ) -> str:
-        return discord.utils.format_dt(
-            self.bot.launch_time, style=style or "F"
-        )
+        return discord.utils.format_dt(self.bot.launch_time, style=style or "F")
 
     def get_average_latency(self: Self, *latencies: float) -> Union[Any, float]:
         if not latencies:

@@ -185,8 +185,8 @@ class Twitch:
                     int(user_id),
                     ctx.guild.id,
                 )
-                        # await conn.execute("UPDATE server_data SET twitch_id = $1 WHERE guild_id = $2 AND event_type = 'twitch'", user_id, ctx.guild.id)
-                        # Print the response to confirm whether the subscription was created successfully or not
+                # await conn.execute("UPDATE server_data SET twitch_id = $1 WHERE guild_id = $2 AND event_type = 'twitch'", user_id, ctx.guild.id)
+                # Print the response to confirm whether the subscription was created successfully or not
 
         await self.bot.db.fetch_table_data("twitch_users")
         return (

@@ -174,5 +174,8 @@ class CommandErrorHandler(commands.Cog):
         """
 
         # Check if our required argument inp is missing.
-        if isinstance(error, commands.MissingRequiredArgument) and error.param.name == "inp":
+        if (
+            isinstance(error, commands.MissingRequiredArgument)
+            and error.param.name == "inp"
+        ):
             await ctx.send("You forgot to give me input to repeat!")

@@ -264,21 +264,25 @@ class DwelloContext(commands.Context):
             try:
                 if not return_message:
                     await message.delete() if delete_after_timeout else await message.edit(
-                                            view=view
-                                        )
+                        view=view
+                    )
             except (discord.Forbidden, discord.HTTPException):
                 pass
-            return (None, message) if not delete_after_timeout and return_message else None
+            return (
+                (None, message) if not delete_after_timeout and return_message else None
+            )
 
         elif view.value:
             try:
                 if not return_message:
                     await message.delete() if delete_after_confirm else await message.edit(
-                                            view=view
-                                        )
+                        view=view
+                    )
             except (discord.Forbidden, discord.HTTPException):
                 pass
-            return (True, message) if not delete_after_confirm and return_message else True
+            return (
+                (True, message) if not delete_after_confirm and return_message else True
+            )
 
         else:
             try:
