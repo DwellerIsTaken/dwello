@@ -14,9 +14,7 @@ class Entertainment(Fun, name="Entertainment"):
         super().__init__(*args, **kwargs)
 
         self.select_emoji = "🎲"
-        self.select_brief = (
-            "Commands for providing entertainment and recreational features."
-        )
+        self.select_brief = "Commands for providing entertainment and recreational features."
 
 
 async def setup(bot: Dwello):

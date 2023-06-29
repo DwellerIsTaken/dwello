@@ -106,9 +106,7 @@ class Warnings(BaseCog):
                 color=cs.WARNING_COLOR,
                 timestamp=discord.utils.utcnow(),
             )
-            embed.set_image(
-                url="https://c.tenor.com/GDm0wZykMA4AAAAd/thanos-vs-vision-thanos.gif"
-            )
+            embed.set_image(url="https://c.tenor.com/GDm0wZykMA4AAAAd/thanos-vs-vision-thanos.gif")
             embed.set_footer(text=cs.FOOTER)  #  •
 
             try:
@@ -128,14 +126,10 @@ class Warnings(BaseCog):
 
             return await ctx.send(embed=embed)
 
-    @warning.command(
-        name="warnings", help="Shows member's warnings.", with_app_command=True
-    )
+    @warning.command(name="warnings", help="Shows member's warnings.", with_app_command=True)
     @commands.bot_has_permissions(moderate_members=True)
     @commands.guild_only()
-    async def warnings(
-        self: Self, ctx: DwelloContext, member: discord.Member = None
-    ) -> Optional[discord.Message]:
+    async def warnings(self: Self, ctx: DwelloContext, member: discord.Member = None) -> Optional[discord.Message]:
         async with ctx.typing(ephemeral=True):
             async with self.bot.pool.acquire() as conn:
                 conn: asyncpg.Connection
@@ -162,9 +156,7 @@ class Warnings(BaseCog):
                     reason_list = []
                     date_list = []
 
-                    embed: discord.Embed = discord.Embed(
-                        color=cs.WARNING_COLOR, timestamp=discord.utils.utcnow()
-                    )
+                    embed: discord.Embed = discord.Embed(color=cs.WARNING_COLOR, timestamp=discord.utils.utcnow())
                     embed.set_author(
                         name=f"{apostrophize(member.name)} warnings",
                         icon_url=str(member.display_avatar),
@@ -223,20 +215,14 @@ class Warnings(BaseCog):
                 if warns > 3 and ctx.author.guild_permissions.moderate_members:
                     return await ctx.send(
                         embed=embed,
-                        view=TimeoutSuggestion(
-                            self.bot, ctx, member, "Too many warnings!"
-                        ),
+                        view=TimeoutSuggestion(self.bot, ctx, member, "Too many warnings!"),
                     )
 
-    @warning.command(
-        name="remove", help="Removes selected warnings.", with_app_command=True
-    )
+    @warning.command(name="remove", help="Removes selected warnings.", with_app_command=True)
     @commands.bot_has_permissions(moderate_members=True)
     @commands.has_permissions(moderate_members=True)
     @commands.guild_only()
-    async def remove_warn(
-        self: Self, ctx: DwelloContext, member: discord.Member, warning: str
-    ) -> Optional[discord.Message]:
+    async def remove_warn(self: Self, ctx: DwelloContext, member: discord.Member, warning: str) -> Optional[discord.Message]:
         async with ctx.typing(ephemeral=True):
             async with self.bot.pool.acquire() as conn:
                 conn: asyncpg.Connection
@@ -295,9 +281,7 @@ class Warnings(BaseCog):
             return await ctx.reply(embed=embed, permission_cmd=True)
 
     @remove_warn.autocomplete("warning")
-    async def autocomplete_callback(
-        self: Self, interaction: discord.Interaction, current: str
-    ) -> List[Choice]:
+    async def autocomplete_callback(self: Self, interaction: discord.Interaction, current: str) -> List[Choice]:
         async with self.bot.pool.acquire() as conn:
             conn: asyncpg.Connection
             async with conn.transaction():  # REDO: DONT FETCH ON AUTOCOMPLETE

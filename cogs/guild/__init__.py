@@ -15,9 +15,7 @@ class Guild(Config, Channels, Messages, name="Guild Management"):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.select_emoji = "📝"
-        self.select_brief = (
-            "Commands for guild customization, configuration, and management."
-        )
+        self.select_brief = "Commands for guild customization, configuration, and management."
 
 
 async def setup(bot: Dwello):

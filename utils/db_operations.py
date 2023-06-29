@@ -60,9 +60,7 @@ class DB_Operations:
                 job_dict = {}
                 guild_check_list = []
 
-                data = await conn.fetch(
-                    "SELECT guild_id, name, id, salary, description FROM jobs"
-                )
+                data = await conn.fetch("SELECT guild_id, name, id, salary, description FROM jobs")
 
                 for record in data:
                     guild_id, name, id, salary, description = (

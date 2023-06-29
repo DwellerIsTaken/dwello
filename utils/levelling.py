@@ -20,9 +20,7 @@ class LevellingUtils:
     def __init__(self: Self, bot: Dwello):
         self.bot = bot
 
-    async def create_user(
-        self: Self, user_id: Optional[int], guild_id: Optional[int]
-    ) -> None:
+    async def create_user(self: Self, user_id: Optional[int], guild_id: Optional[int]) -> None:
         async with self.bot.pool.acquire() as conn:
             conn: asyncpg.Connection
             async with conn.transaction():
@@ -70,9 +68,7 @@ class LevellingUtils:
 
                     level_embed = discord.Embed(
                         title="Congratulations with your new level!",
-                        description=string.Template(level_embed_dis).safe_substitute(
-                            member=message.author.name
-                        ),
+                        description=string.Template(level_embed_dis).safe_substitute(member=message.author.name),
                         color=cs.RANDOM_COLOR,
                     )
 

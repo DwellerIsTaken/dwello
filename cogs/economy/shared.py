@@ -33,9 +33,7 @@ class SharedEcoUtils:
 
                 if not (record[0] if record else None):
                     return await ctx.reply(
-                        embed=discord.Embed(
-                            description="The job isn't yet set.", color=cs.RANDOM_COLOR
-                        ),
+                        embed=discord.Embed(description="The job isn't yet set.", color=cs.RANDOM_COLOR),
                         ephemeral=True,
                     )
 
@@ -57,9 +55,7 @@ class SharedEcoUtils:
 
         return name, salary, description, job_id
 
-    async def add_currency(
-        self: Self, member: discord.Member, amount: int, name: str
-    ) -> Optional[int]:
+    async def add_currency(self: Self, member: discord.Member, amount: int, name: str) -> Optional[int]:
         async with self.bot.pool.acquire() as conn:
             conn: asyncpg.Connection
             async with conn.transaction():
@@ -84,9 +80,7 @@ class SharedEcoUtils:
 
                 return balance
 
-    async def work(
-        self: Self, ctx: DwelloContext, name: str
-    ) -> Optional[discord.Message]:
+    async def work(self: Self, ctx: DwelloContext, name: str) -> Optional[discord.Message]:
         async with self.bot.pool.acquire() as conn:
             conn: asyncpg.Connection
             async with conn.transaction():

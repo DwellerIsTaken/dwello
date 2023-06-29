@@ -22,13 +22,9 @@ class Weather(BaseCog):
         help="Shows you the temparature in the city you've typed in.",
         with_app_command=True,
     )
-    async def weather(
-        self: Self, ctx: DwelloContext, *, city: str
-    ) -> Optional[discord.Message]:
+    async def weather(self: Self, ctx: DwelloContext, *, city: str) -> Optional[discord.Message]:
         if not city:
-            return await ctx.reply(
-                "Please provide a city or a contry.", mention_author=True
-            )
+            return await ctx.reply("Please provide a city or a contry.", mention_author=True)
 
         key = get_or_fail("OPENWEATHERMAP_KEY")
         args = city.lower()
@@ -58,8 +54,7 @@ class Weather(BaseCog):
                     description += f"\n{match}"
 
             matches_embed: discord.Embed = discord.Embed(
-                description=f"Sorry, but I couldn't recognise the city **{args.title()}**."
-                f"\n{description}",
+                description=f"Sorry, but I couldn't recognise the city **{args.title()}**." f"\n{description}",
                 color=cs.WARNING_COLOR,
             )
             return await ctx.reply(embed=matches_embed, mention_author=True)
@@ -83,9 +78,7 @@ class Weather(BaseCog):
         )
 
         weather_embed.set_footer(text="Powered by OpenWeatherMap")
-        weather_embed.set_thumbnail(
-            url=f"http://openweathermap.org/img/w/{data['weather'][0]['icon']}.png"
-        )
+        weather_embed.set_thumbnail(url=f"http://openweathermap.org/img/w/{data['weather'][0]['icon']}.png")
 
         weather_embed.add_field(
             name="Location",
@@ -97,15 +90,9 @@ class Weather(BaseCog):
             value=data["weather"][0]["description"].title(),
             inline=False,
         )
-        weather_embed.add_field(
-            name="Humidity", value=f"{data['main']['humidity']}%", inline=True
-        )
-        weather_embed.add_field(
-            name="Wind", value=f"{data['wind']['speed']} m/s", inline=True
-        )
-        weather_embed.add_field(
-            name="Pressure", value=f"{data['main']['pressure']} hPa", inline=True
-        )
+        weather_embed.add_field(name="Humidity", value=f"{data['main']['humidity']}%", inline=True)
+        weather_embed.add_field(name="Wind", value=f"{data['wind']['speed']} m/s", inline=True)
+        weather_embed.add_field(name="Pressure", value=f"{data['main']['pressure']} hPa", inline=True)
 
         return await ctx.reply(embed=weather_embed, ephemeral=False)
 

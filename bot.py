@@ -99,9 +99,9 @@ if __name__ == "__main__":
     }
 
     async def main():  # ADD SSH KEY CONNECTION
-        async with asyncpg.create_pool(
-            **credentials
-        ) as pool, aiohttp.ClientSession() as session, Dwello(pool, session) as bot:
+        async with asyncpg.create_pool(**credentials) as pool, aiohttp.ClientSession() as session, Dwello(
+            pool, session
+        ) as bot:
             token = get_or_fail("token")
             await bot.start(token)
 

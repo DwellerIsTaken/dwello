@@ -22,9 +22,7 @@ class Tasks(BaseCog):
     @tasks.loop(minutes=10)
     async def stats_loop(self: Self) -> None:
         for guild in self.bot.guilds:
-            await self.bot.otherutils.exe_sql(
-                guild
-            )  # in case join/leave won't work because of rate limitations
+            await self.bot.otherutils.exe_sql(guild)  # in case join/leave won't work because of rate limitations
 
     @tasks.loop(seconds=1)
     async def eco_loop(self: Self) -> None:

@@ -32,9 +32,7 @@ class OtherUtils:
                 counters = ["all", "member", "bot"]
 
                 for row in channels:
-                    channel_id, event_type = int(row["channel_id"]), str(
-                        row["counter_name"]
-                    )
+                    channel_id, event_type = int(row["channel_id"]), str(row["counter_name"])
 
                     if event_type in counters:
                         channel: discord.VoiceChannel = self.bot.get_channel(channel_id)

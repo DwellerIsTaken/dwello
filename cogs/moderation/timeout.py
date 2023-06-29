@@ -121,9 +121,7 @@ class Timeout(BaseCog):
                 return await ctx.channel.send(embed=missing_permissions_embed)
 
             else:
-                return await ctx.interaction.response.send_message(
-                    embed=missing_permissions_embed, ephemeral=True
-                )
+                return await ctx.interaction.response.send_message(embed=missing_permissions_embed, ephemeral=True)
 
         elif isinstance(error, commands.errors.MissingRequiredArgument):
             return await ctx.reply(
@@ -139,26 +137,18 @@ class Timeout(BaseCog):
 
         elif isinstance(error, discord.errors.Forbidden):
             if ctx.interaction is None:
-                return await ctx.reply(
-                    "This member cannot be timed out.", mention_author=True
-                )
+                return await ctx.reply("This member cannot be timed out.", mention_author=True)
             else:
-                return await ctx.interaction.response.send_message(
-                    "This member cannot be timed out.", ephemeral=True
-                )
+                return await ctx.interaction.response.send_message("This member cannot be timed out.", ephemeral=True)
 
         else:
             raise error
 
-    @commands.hybrid_command(
-        name="unmute", help="Unmutes member.", with_app_command=True
-    )
+    @commands.hybrid_command(name="unmute", help="Unmutes member.", with_app_command=True)
     @commands.bot_has_permissions(moderate_members=True)
     @commands.has_permissions(moderate_members=True)
     @commands.guild_only()
-    async def unmute(
-        self: Self, ctx: DwelloContext, member: discord.Member
-    ) -> Optional[discord.Message]:
+    async def unmute(self: Self, ctx: DwelloContext, member: discord.Member) -> Optional[discord.Message]:
         async with ctx.typing(ephemeral=True):
             if member.id == self.bot.user.id:
                 return await ctx.reply(
@@ -171,9 +161,7 @@ class Timeout(BaseCog):
                 )
 
             elif member.is_timed_out() is False:
-                return await ctx.reply(
-                    "The provided member isn't timed out.", ephemeral=True
-                )
+                return await ctx.reply("The provided member isn't timed out.", ephemeral=True)
 
             elif ctx.author == member:
                 return await ctx.reply(
@@ -210,12 +198,8 @@ class Timeout(BaseCog):
             timed_out_list: List[discord.Member] = []
             reason_list: List[str] = []
 
-            member_updates: Dict[
-                Union[int, str], Union[discord.AuditLogEntry, Any]
-            ] = {}
-            async for entry in ctx.guild.audit_logs(
-                action=discord.AuditLogAction.member_update
-            ):
+            member_updates: Dict[Union[int, str], Union[discord.AuditLogEntry, Any]] = {}
+            async for entry in ctx.guild.audit_logs(action=discord.AuditLogAction.member_update):
                 if entry.target in ctx.guild.members:
                     member_updates[entry.target.id] = entry
 
@@ -226,9 +210,7 @@ class Timeout(BaseCog):
                         reason_list.append(str(reason))
                     timed_out_list.append(member)
 
-            embed: discord.Embed = discord.Embed(
-                title="Timed out list", color=cs.RANDOM_COLOR
-            )
+            embed: discord.Embed = discord.Embed(title="Timed out list", color=cs.RANDOM_COLOR)
 
             if not timed_out_list:
                 embed.add_field(name="\u2800", value="`Nobody is timed out.`")

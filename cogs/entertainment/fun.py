@@ -38,9 +38,7 @@ class Fun(BaseCog):
         try:
             data["data"]
         except KeyError:
-            return await ctx.reply(
-                "No subreddit found.", user_mistake=True
-            )  # make an errorhandler for that
+            return await ctx.reply("No subreddit found.", user_mistake=True)  # make an errorhandler for that
 
         try:
             _data: Dict[str, Any] = random.choice(data["data"]["children"])["data"]
@@ -55,9 +53,7 @@ class Fun(BaseCog):
         aliases=["tenor"],
         with_app_command=True,
     )
-    async def gif(
-        self: Self, ctx: DwelloContext, *, gif: str = "dankmeme"
-    ) -> Optional[discord.Message]:
+    async def gif(self: Self, ctx: DwelloContext, *, gif: str = "dankmeme") -> Optional[discord.Message]:
         key: str = get_or_fail("TENOR_KEY")
         limit: int = 1
         ckey: str = self.bot.user.id
@@ -85,15 +81,11 @@ class Fun(BaseCog):
             color=cs.RANDOM_COLOR,
         )
         embed.set_image(url=gif_url)
-        embed.set_footer(
-            text=f"Powered by Tenor | Tags: {', '.join(result['tags'][:2])}"
-        )
+        embed.set_footer(text=f"Powered by Tenor | Tags: {', '.join(result['tags'][:2])}")
 
         return await ctx.reply(embed=embed)
 
-    @commands.hybrid_command(
-        name="meme", help="Returns a subreddit meme.", with_app_command=True
-    )
+    @commands.hybrid_command(name="meme", help="Returns a subreddit meme.", with_app_command=True)
     async def meme(self: Self, ctx: DwelloContext) -> Optional[discord.Message]:
         data = await self.retrieve_subreddit(ctx, "dankmeme")
         if isinstance(data, discord.Message):
@@ -112,21 +104,13 @@ class Fun(BaseCog):
 
         return await ctx.reply(embed=embed)
 
-    @commands.hybrid_command(
-        name="reddit", help="Returns a subreddit.", with_app_command=True
-    )
-    async def reddit(
-        self: Self, ctx: DwelloContext, subreddit: str
-    ) -> Optional[discord.Message]:
+    @commands.hybrid_command(name="reddit", help="Returns a subreddit.", with_app_command=True)
+    async def reddit(self: Self, ctx: DwelloContext, subreddit: str) -> Optional[discord.Message]:
         data: Dict[str, Any] = await self.retrieve_subreddit(ctx, subreddit)
         if isinstance(data, discord.Message):
             return
 
-        if (
-            data["over_18"]
-            and not ctx.channel.is_nsfw()
-            and not await self.bot.is_owner(ctx.author)
-        ):
+        if data["over_18"] and not ctx.channel.is_nsfw() and not await self.bot.is_owner(ctx.author):
             return await ctx.reply(
                 "This post is nsfw! I cannot send this in a regular channel!",
                 user_mistake=True,
@@ -167,17 +151,13 @@ class Fun(BaseCog):
             "start_timestamp": spotify.start.timestamp(),
             "artists": spotify.artists,
         }
-        async with self.bot.session.get(
-            "https://api.jeyy.xyz/discord/spotify", params=params
-        ) as response:
+        async with self.bot.session.get("https://api.jeyy.xyz/discord/spotify", params=params) as response:
             bytes = io.BytesIO(await response.read())
 
         file: discord.File = discord.File(bytes, "spotify.png")
         artists: str = ", ".join(spotify.artists)
 
-        embed: discord.Embed = discord.Embed(
-            description=f"**{spotify.title}** by **{artists}**"
-        )
+        embed: discord.Embed = discord.Embed(description=f"**{spotify.title}** by **{artists}**")
         embed.set_author(
             name=f"{discord.utils.escape_markdown(member.display_name)}'s Spotify",
             url=spotify.track_url,

@@ -40,13 +40,9 @@ class GuildEcoUtils:
             conn: asyncpg.Connection
             async with conn.transaction():
                 if salary < 2000 or salary > 20000:
-                    return await ctx.reply(
-                        "Please provide the salary between 2000 and 20000."
-                    )
+                    return await ctx.reply("Please provide the salary between 2000 and 20000.")
 
-                data = await conn.fetch(
-                    "SELECT name FROM jobs WHERE guild_id = $1", ctx.guild.id
-                )
+                data = await conn.fetch("SELECT name FROM jobs WHERE guild_id = $1", ctx.guild.id)
 
                 job_count = 0
                 for record in data or []:
@@ -135,11 +131,7 @@ class GuildEcoUtils:
         async with self.bot.pool.acquire() as conn:
             conn: asyncpg.Connection
             async with conn.transaction():
-                if (
-                    not ctx.author.guild_permissions.administrator
-                    and member
-                    and member != ctx.author
-                ):
+                if not ctx.author.guild_permissions.administrator and member and member != ctx.author:
                     return await ctx.reply(
                         "You can't remove someone's job unless you are a server administrator.",
                         ephemeral=True,
@@ -180,9 +172,7 @@ class GuildEcoUtils:
         async with self.bot.pool.acquire() as conn:
             conn: asyncpg.Connection
             async with conn.transaction():
-                data = await conn.fetch(
-                    "SELECT id FROM jobs WHERE guild_id = $1", ctx.guild.id
-                )
+                data = await conn.fetch("SELECT id FROM jobs WHERE guild_id = $1", ctx.guild.id)
 
                 job_count = 0
                 if not data:
@@ -209,9 +199,7 @@ class GuildEcoUtils:
                         ) = await self.fetch_basic_job_data_by_job_name(ctx, name)
 
                     except TypeError:
-                        return await ctx.reply(
-                            "That job doesn't exist.", ephemeral=True
-                        )
+                        return await ctx.reply("That job doesn't exist.", ephemeral=True)
                     job_id = await conn.fetchrow(
                         "SELECT id FROM jobs WHERE name = $1 AND guild_id = $2",
                         name,
@@ -260,9 +248,7 @@ class Guild_Economy(BaseCog):
     # jobs -- lots of available jobs ?
     # DECIDE PERMISSIONS NEEDED FOR JOBS CREATION/REMOVAL
 
-    @commands.hybrid_group(
-        name="server", invoke_without_command=True, with_app_command=True
-    )
+    @commands.hybrid_group(name="server", invoke_without_command=True, with_app_command=True)
     async def server(self: Self, ctx: DwelloContext) -> Optional[discord.Message]:
         embed = discord.Embed(
             title="Denied",
@@ -273,9 +259,7 @@ class Guild_Economy(BaseCog):
 
     @server.group(name="job", invoke_without_command=True, with_app_command=True)
     async def jobs(self: Self, ctx: DwelloContext) -> Optional[discord.Message]:
-        embed = discord.Embed(
-            title="Denied", description="```$job list```", color=cs.RANDOM_COLOR
-        )
+        embed = discord.Embed(title="Denied", description="```$job list```", color=cs.RANDOM_COLOR)
         return await ctx.reply(embed=embed)
 
     @jobs.command(
@@ -302,25 +286,15 @@ class Guild_Economy(BaseCog):
         return await self.ge.server_job_delete(ctx, name)
 
     @job_delete.autocomplete("name")
-    async def autocomplete_callback(
-        self: Self, interaction: discord.Interaction, current: str
-    ):
-        return await self.bot.autocomplete.choice_autocomplete(
-            interaction, current, "jobs", "name", None, True
-        )
+    async def autocomplete_callback(self: Self, interaction: discord.Interaction, current: str):
+        return await self.bot.autocomplete.choice_autocomplete(interaction, current, "jobs", "name", None, True)
 
-    @jobs.command(
-        name="set", description="You can set your server job here!"
-    )  # MAYBE PUT THIS IN ECONOMY.PY
-    async def job_set(
-        self: Self, ctx: DwelloContext, name: str
-    ) -> Optional[discord.Message]:
+    @jobs.command(name="set", description="You can set your server job here!")  # MAYBE PUT THIS IN ECONOMY.PY
+    async def job_set(self: Self, ctx: DwelloContext, name: str) -> Optional[discord.Message]:
         async with self.bot.pool.acquire() as conn:
             conn: asyncpg.Connection
             async with conn.transaction():
-                names = await conn.fetchval(
-                    "SELECT array_agg(name) FROM jobs WHERE guild_id = $1", ctx.guild.id
-                )
+                names = await conn.fetchval("SELECT array_agg(name) FROM jobs WHERE guild_id = $1", ctx.guild.id)
 
                 if name.isdigit() and name not in names:
                     return await ctx.reply(
@@ -351,30 +325,20 @@ class Guild_Economy(BaseCog):
 
         await self.bot.db.fetch_table_data("jobs")
         return await ctx.reply(
-            embed=discord.Embed(
-                description=f"The job is set to: **{name}**", color=cs.RANDOM_COLOR
-            ),
+            embed=discord.Embed(description=f"The job is set to: **{name}**", color=cs.RANDOM_COLOR),
             mention_author=False,
         )
 
     @job_set.autocomplete("name")
-    async def autocomplete_callback(
-        self: Self, interaction: discord.Interaction, current: str
-    ):
-        return await self.bot.autocomplete.choice_autocomplete(
-            interaction, current, "jobs", "name", None, False
-        )
+    async def autocomplete_callback(self: Self, interaction: discord.Interaction, current: str):
+        return await self.bot.autocomplete.choice_autocomplete(interaction, current, "jobs", "name", None, False)
 
-    @jobs.command(
-        name="remove", description="Removes member's job. | Admin-associated"
-    )  # thus only one param is for admins
+    @jobs.command(name="remove", description="Removes member's job. | Admin-associated")  # thus only one param is for admins
     async def job_remove(self: Self, ctx: DwelloContext, member: discord.Member = None):
         return await self.ge.server_job_remove(ctx, member)
 
     @jobs.command(name="display", description="Displays member's current job.")
-    async def display(
-        self: Self, ctx: DwelloContext, member: discord.Member = None
-    ) -> Optional[discord.Message]:
+    async def display(self: Self, ctx: DwelloContext, member: discord.Member = None) -> Optional[discord.Message]:
         try:
             (
                 name,

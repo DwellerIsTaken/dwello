@@ -32,7 +32,9 @@ class ChannelsFunctions:
                 bot_counter = sum(bool(member.bot) for member in ctx.guild.members)
                 member_counter = int(ctx.guild.member_count) - bot_counter
 
-                query = "SELECT channel_id FROM server_data WHERE guild_id = $1 AND event_type = 'counter' AND counter_name = $2"
+                query = (
+                    "SELECT channel_id FROM server_data WHERE guild_id = $1 AND event_type = 'counter' AND counter_name = $2"
+                )
                 row = await conn.fetchrow(query, ctx.guild.id, "category")
                 counter_category_id = row[0] if row else None
 
@@ -53,9 +55,7 @@ class ChannelsFunctions:
                             ephemeral=True,
                         )
 
-                    counter_channel = await ctx.guild.create_category(
-                        "📊 Server Counters 📊", reason=None
-                    )
+                    counter_channel = await ctx.guild.create_category("📊 Server Counters 📊", reason=None)
                     await counter_channel.edit(position=0)
                     await conn.execute(
                         "UPDATE server_data SET channel_id = $1 WHERE counter_name = $2 AND event_type = 'counter' AND guild_id = $3",
@@ -101,9 +101,7 @@ class ChannelsFunctions:
                 # await conn.execute("UPDATE server_data SET deny_clicked = $1 WHERE guild_id = $2", 1, ctx.guild.id)
 
                 if not channel_id:
-                    counter_category: discord.CategoryChannel = ctx.guild.get_channel(
-                        int(counter_category_id)
-                    )
+                    counter_category: discord.CategoryChannel = ctx.guild.get_channel(int(counter_category_id))
                     counter_channel = await ctx.guild.create_voice_channel(
                         f"📊 {name.capitalize()} counter: {count}",
                         reason=None,
@@ -125,9 +123,7 @@ class ChannelsFunctions:
         )  # DISPLAEYD IN DISCORD LOGS
         return counter_channel
 
-    async def move_channel(
-        self: Self, ctx: DwelloContext, category: discord.CategoryChannel, *args: str
-    ) -> None:
+    async def move_channel(self: Self, ctx: DwelloContext, category: discord.CategoryChannel, *args: str) -> None:
         async with self.bot.pool.acquire() as conn:
             conn: asyncpg.Connection
             async with conn.transaction():
@@ -138,17 +134,13 @@ class ChannelsFunctions:
 
                 for row in rows:
                     channel = ctx.guild.get_channel(row[0])
-                    async with HandleHTTPException(
-                        ctx, title=f"Failed to move {channel} into {category}"
-                    ):
+                    async with HandleHTTPException(ctx, title=f"Failed to move {channel} into {category}"):
                         await channel.move(category=category, beginning=True)
         return
 
 
 class Stats_View(View):
-    def __init__(
-        self: Self, bot: Dwello, ctx: DwelloContext, name: str, *, timeout: int = None
-    ):
+    def __init__(self: Self, bot: Dwello, ctx: DwelloContext, name: str, *, timeout: int = None):
         super().__init__(timeout=timeout)
         self.bot = bot
         self.ctx = ctx
@@ -157,9 +149,7 @@ class Stats_View(View):
         self.cf_: ChannelsFunctions = ChannelsFunctions(self.bot)
 
     # DO A MORE USER-FRIENDLY INTERACTION CHECK
-    async def interaction_check(
-        self: Self, interaction: discord.Interaction
-    ) -> Optional[discord.Message]:
+    async def interaction_check(self: Self, interaction: discord.Interaction) -> Optional[discord.Message]:
         if interaction.user.id == self.ctx.author.id:
             return True
 
@@ -169,9 +159,7 @@ class Stats_View(View):
             color=cs.RANDOM_COLOR,
         )
         missing_permissions_embed.set_footer(text=cs.FOOTER)
-        return await interaction.response.send_message(
-            embed=missing_permissions_embed, ephemeral=True
-        )
+        return await interaction.response.send_message(embed=missing_permissions_embed, ephemeral=True)
 
     @button(
         style=discord.ButtonStyle.green,
@@ -199,9 +187,7 @@ class Stats_View(View):
         disabled=False,
         custom_id="deny_button",
     )
-    async def deny(
-        self: Self, interaction: discord.interactions.Interaction, button: Button
-    ) -> None:
+    async def deny(self: Self, interaction: discord.interactions.Interaction, button: Button) -> None:
         async with self.bot.pool.acquire() as conn:
             conn: asyncpg.Connection
             async with conn.transaction():
@@ -230,9 +216,7 @@ class Channels(BaseCog):
     @commands.guild_only()
     async def counter(self: Self, ctx: DwelloContext):
         async with ctx.typing(ephemeral=True):
-            embed: discord.Embed = discord.Embed(
-                description="```$counter [counter type]```", color=cs.WARNING_COLOR
-            )
+            embed: discord.Embed = discord.Embed(description="```$counter [counter type]```", color=cs.WARNING_COLOR)
             return await ctx.reply(embed=embed, user_mistake=True)
 
     @counter.command(
@@ -256,9 +240,7 @@ class Channels(BaseCog):
     async def bots(self: Self, ctx: DwelloContext):
         return await self.cf.counter_func(ctx, "bot")
 
-    @counter.command(
-        name="category", help="Creates a category where your counter(s) will be stored."
-    )
+    @counter.command(name="category", help="Creates a category where your counter(s) will be stored.")
     async def category(self: Self, ctx: DwelloContext):
         category = await self.cf.counter_func(ctx, "category")
         return await self.cf.move_channel(ctx, category[1], "all", "member", "bot")

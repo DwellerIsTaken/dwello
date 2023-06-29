@@ -16,9 +16,7 @@ class StandardModeration(BaseCog):
     def __init__(self: Self, bot: Dwello, *args: Any, **kwargs: Any):
         super().__init__(bot, *args, **kwargs)
 
-    @commands.hybrid_command(
-        name="ban", help="Bans users with bad behaviour.", with_app_command=True
-    )
+    @commands.hybrid_command(name="ban", help="Bans users with bad behaviour.", with_app_command=True)
     @commands.bot_has_guild_permissions(ban_members=True)
     @commands.has_guild_permissions(ban_members=True)
     @commands.guild_only()
@@ -30,9 +28,7 @@ class StandardModeration(BaseCog):
         reason: Optional[str] = None,
     ) -> Optional[discord.Message]:
         async with ctx.typing(ephemeral=True):
-            if (
-                await member_check(ctx, member, self.bot) is not True
-            ):  # redo member_check later (?)
+            if await member_check(ctx, member, self.bot) is not True:  # redo member_check later (?)
                 return
 
             if not reason:
@@ -46,9 +42,7 @@ class StandardModeration(BaseCog):
                 color=cs.RANDOM_COLOR,
             )
 
-            embed.set_image(
-                url="https://media1.tenor.com/images/05186cf068c1d8e4b6e6d81025602215/tenor.gif?itemid=14108167"
-            )
+            embed.set_image(url="https://media1.tenor.com/images/05186cf068c1d8e4b6e6d81025602215/tenor.gif?itemid=14108167")
             embed.set_footer(text=cs.FOOTER)
             embed.timestamp = discord.utils.utcnow()
 
@@ -78,12 +72,8 @@ class StandardModeration(BaseCog):
     # guild.bans (?) <- unban cmd
     # REDO
 
-    @commands.hybrid_command(
-        name="unban", help="Unbans users for good behaviour.", with_app_command=True
-    )
-    @commands.bot_has_permissions(
-        send_messages=True, view_audit_log=True, ban_members=True
-    )
+    @commands.hybrid_command(name="unban", help="Unbans users for good behaviour.", with_app_command=True)
+    @commands.bot_has_permissions(send_messages=True, view_audit_log=True, ban_members=True)
     @commands.has_guild_permissions(ban_members=True)
     @commands.guild_only()
     async def unban(
@@ -111,21 +101,15 @@ class StandardModeration(BaseCog):
                 )
 
     @unban.autocomplete("member_object")
-    async def autocomplete_callback(
-        self: Self, interaction: discord.Interaction, current: str
-    ):
+    async def autocomplete_callback(self: Self, interaction: discord.Interaction, current: str):
         item = len(current)
         choices = []
 
         async for entry in interaction.guild.bans(limit=None):
             if current.startswith(str(entry.user.name).lower()[:item]):
-                choices.append(
-                    Choice(name=str(entry.user.name), value=str(entry.user.id))
-                )
+                choices.append(Choice(name=str(entry.user.name), value=str(entry.user.id)))
             elif current.startswith(str(entry.user.id)[:item]):
-                choices.append(
-                    Choice(name=str(entry.user.name), value=str(entry.user.id))
-                )
+                choices.append(Choice(name=str(entry.user.name), value=str(entry.user.id)))
         return choices[:5] if len(choices) > 5 else choices
 
     @commands.hybrid_command(
@@ -180,14 +164,10 @@ class StandardModeration(BaseCog):
     ) -> Optional[discord.Message]:
         async with ctx.typing(ephemeral=True):
             if not nickname and not member.nick:
-                return await ctx.reply(
-                    f"**{member}** has no nickname to remove.", user_mistake=True
-                )
+                return await ctx.reply(f"**{member}** has no nickname to remove.", user_mistake=True)
 
             elif nickname and len(nickname) > 32:
-                return await ctx.reply(
-                    f"Nickname is too long! ({len(nickname)}/32)", user_mistake=True
-                )
+                return await ctx.reply(f"Nickname is too long! ({len(nickname)}/32)", user_mistake=True)
 
             message = "Changed nickname of **{user}** to **{nick}**.' if nickname else 'Removed nickname of **{user}**."
             embed: discord.Embed = discord.Embed(
@@ -196,9 +176,7 @@ class StandardModeration(BaseCog):
                 color=cs.WARNING_COLOR,
             )
 
-            async with HandleHTTPException(
-                ctx, title=f"Failed to set nickname for {member}."
-            ):
+            async with HandleHTTPException(ctx, title=f"Failed to set nickname for {member}."):
                 await member.edit(nick=nickname)
 
             return await ctx.channel.send(embed=embed)

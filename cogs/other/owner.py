@@ -67,9 +67,7 @@ class Owner(BaseCog):
             return await ctx.reply("Already blacklisted.")
 
         self.bot.blacklisted_users[user_id] = reason
-        return await ctx.reply(
-            f"Blacklisted **{mk(user.name, as_needed=False)}** successfully."
-        )
+        return await ctx.reply(f"Blacklisted **{mk(user.name, as_needed=False)}** successfully.")
 
     @commands.is_owner()
     @blacklist_group.command(name="display", hidden=True)
@@ -94,9 +92,7 @@ class Owner(BaseCog):
 
     @commands.is_owner()
     @blacklist_group.command(name="remove", hidden=True)
-    async def remove(
-        self: Self, ctx: DwelloContext, user: Union[discord.User, int]
-    ) -> discord.Message:
+    async def remove(self: Self, ctx: DwelloContext, user: Union[discord.User, int]) -> discord.Message:
         user_id = user if isinstance(user, int) else user.id
         async with ctx.bot.safe_connection() as conn:
             query = """
@@ -135,9 +131,7 @@ class Owner(BaseCog):
             else:
                 synced = await bot.tree.sync()
 
-            await ctx.send(
-                f"Synced {len(synced)} commands {'globally' if spec is None else 'to the current guild.'}"
-            )
+            await ctx.send(f"Synced {len(synced)} commands {'globally' if spec is None else 'to the current guild.'}")
             return
 
         ret = 0

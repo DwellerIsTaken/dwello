@@ -18,9 +18,7 @@ class BotEcoUtils:
     def __init__(self: Self, bot: Dwello):
         self.bot = bot
 
-    async def balance_check(
-        self: Self, ctx: DwelloContext, amount: int, name: str
-    ) -> Optional[bool]:
+    async def balance_check(self: Self, ctx: DwelloContext, amount: int, name: str) -> Optional[bool]:
         async with self.bot.pool.acquire() as conn:
             conn: asyncpg.Connection
             async with conn.transaction():

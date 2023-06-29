@@ -83,9 +83,7 @@ class NewsFeed:
     @property
     def previous(self) -> Page:
         """Get the previous page."""
-        number = (
-            self._current_page - 1 if self._current_page > 0 else self.max_pages - 1
-        )
+        number = self._current_page - 1 if self._current_page > 0 else self.max_pages - 1
         return self.news[number]
 
     @property
@@ -96,9 +94,7 @@ class NewsFeed:
     @property
     def next(self) -> Page:
         """Get the next page"""
-        number = (
-            self._current_page + 1 if self._current_page + 1 < self.max_pages else 0
-        )
+        number = self._current_page + 1 if self._current_page + 1 < self.max_pages else 0
         return self.news[number]
 
     @property
@@ -212,9 +208,7 @@ class NewsViewer(discord.ui.View):
 
             self.current = NewsCurrentButton(style=ButtonStyle.red)
             self.next = NewsNextButton(style=ButtonStyle.blurple, label="\u226b")
-            self.previous = NewsPreviousButton(
-                style=ButtonStyle.blurple, label="\u226a"
-            )
+            self.previous = NewsPreviousButton(style=ButtonStyle.blurple, label="\u226a")
 
             self.add_item(self.previous)
             self.add_item(self.current)
@@ -223,21 +217,15 @@ class NewsViewer(discord.ui.View):
             self.news = news
 
         if self.old_view and self.embed:
-            self.go_back = NewsGoBackButton(
-                emoji="🏠", label="Go Back", style=discord.ButtonStyle.blurple
-            )
+            self.go_back = NewsGoBackButton(emoji="🏠", label="Go Back", style=discord.ButtonStyle.blurple)
 
             self.add_item(self.go_back)
 
-    async def interaction_check(
-        self: Self, interaction: discord.Interaction[Dwello]
-    ) -> Optional[bool]:
+    async def interaction_check(self: Self, interaction: discord.Interaction[Dwello]) -> Optional[bool]:
         if val := interaction.user == self.author:
             return val
         else:
-            return await interaction.response.send_message(
-                content="Hey! You can't do that!", ephemeral=True
-            )
+            return await interaction.response.send_message(content="Hey! You can't do that!", ephemeral=True)
 
     # @cachetools.cached(cachetools.LRUCache(maxsize=10))
     async def get_embed(self: Self, page: Page) -> discord.Embed:
@@ -296,9 +284,7 @@ class NewsViewer(discord.ui.View):
 
     def update_labels(self: Self):
         """Used to update the internal cache of the view, it will update the labels of the buttons."""
-        previous_page_num = self.news.max_pages - self.news.news.index(
-            self.news.previous
-        )
+        previous_page_num = self.news.max_pages - self.news.news.index(self.news.previous)
         self.next.disabled = previous_page_num == 1
 
         self.current.label = str(self.news.max_pages - self.news.current_index)

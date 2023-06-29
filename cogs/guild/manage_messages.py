@@ -42,6 +42,4 @@ class Messages(BaseCog):  # RENAME CLASS
                     msg.append(m)
 
             await ctx.channel.delete_messages(msg)
-            return await ctx.send(
-                f"Purged {limit} messages of {member.mention}", delete_after=3
-            )
+            return await ctx.send(f"Purged {limit} messages of {member.mention}", delete_after=3)

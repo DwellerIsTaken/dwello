@@ -107,13 +107,9 @@ class DwelloBase(AutoShardedBot):
         self.blacklisted_users: Dict[int, str] = {}
         self.bypass_cooldown_users: List[int] = []
 
-        self.launch_time: datetime.datetime = datetime.datetime.now(
-            datetime.timezone.utc
-        )
+        self.launch_time: datetime.datetime = datetime.datetime.now(datetime.timezone.utc)
 
-        self.cooldown: commands.CooldownMapping[
-            discord.Message
-        ] = commands.CooldownMapping.from_cooldown(
+        self.cooldown: commands.CooldownMapping[discord.Message] = commands.CooldownMapping.from_cooldown(
             1,
             1.5,
             commands.BucketType.member,
@@ -124,9 +120,7 @@ class DwelloBase(AutoShardedBot):
         self.otherutils: OtherUtils = OtherUtils(self)
         self.db: DB_Operations = DB_Operations(self)
         self.listeners = ListenersFunctions(self)
-        self.web: AiohttpWeb = AiohttpWeb(
-            self
-        )  # redo all -> maybe class methods instead
+        self.web: AiohttpWeb = AiohttpWeb(self)  # redo all -> maybe class methods instead
         # self.twitch: Twitch = Twitch(self)
 
     @override
@@ -142,14 +136,10 @@ class DwelloBase(AutoShardedBot):
         self.tables = await self.db.create_tables()
         self.db_data = await self.db.fetch_table_data()
 
-        records: List[Any] = await self.pool.fetch(
-            "SELECT guild_id, array_agg(prefix) FROM prefixes GROUP BY guild_id"
-        )
+        records: List[Any] = await self.pool.fetch("SELECT guild_id, array_agg(prefix) FROM prefixes GROUP BY guild_id")
         self.guild_prefixes = dict(records)
 
-        blacklist: List[asyncpg.Record] = await self.pool.fetch(
-            "SELECT * FROM blacklist"
-        )
+        blacklist: List[asyncpg.Record] = await self.pool.fetch("SELECT * FROM blacklist")
         for record in blacklist:
             self.blacklisted_users[record["user_id"]] = record["reason"]
 
@@ -181,9 +171,7 @@ class DwelloBase(AutoShardedBot):
         return await super().get_context(message, cls=cls)
 
     @override
-    async def load_extension(
-        self: Self, name: str, *, package: Optional[str] = None, _raise: bool = True
-    ) -> None:
+    async def load_extension(self: Self, name: str, *, package: Optional[str] = None, _raise: bool = True) -> None:
         self._ext_log.info(f"{col(7)}Attempting to load {col(7, fmt=4)}{name}{col()}")
         try:
             await super().load_extension(name, package=package)
@@ -195,17 +183,11 @@ class DwelloBase(AutoShardedBot):
                 raise e
 
     @override
-    async def unload_extension(
-        self: Self, name: str, *, package: Optional[str] = None, _raise: bool = True
-    ) -> None:
-        self._ext_log.info(
-            f"{col(7)}Attempting to unload extension {col(7, fmt=4)}{name}{col()}"
-        )
+    async def unload_extension(self: Self, name: str, *, package: Optional[str] = None, _raise: bool = True) -> None:
+        self._ext_log.info(f"{col(7)}Attempting to unload extension {col(7, fmt=4)}{name}{col()}")
         try:
             await super().unload_extension(name, package=package)
-            self._ext_log.info(
-                f"{col(2)}Unloaded extension {col(2, fmt=4)}{name}{col()}"
-            )
+            self._ext_log.info(f"{col(2)}Unloaded extension {col(2, fmt=4)}{name}{col()}")
 
         except Exception as e:
             self._ext_log.error(f"Failed to unload extension {name}", exc_info=e)
@@ -213,17 +195,11 @@ class DwelloBase(AutoShardedBot):
                 raise e
 
     @override
-    async def reload_extension(
-        self: Self, name: str, *, package: Optional[str] = None, _raise: bool = True
-    ) -> None:
-        self._ext_log.info(
-            f"{col(7)}Attempting to reload extension {col(7, fmt=4)}{name}{col()}"
-        )
+    async def reload_extension(self: Self, name: str, *, package: Optional[str] = None, _raise: bool = True) -> None:
+        self._ext_log.info(f"{col(7)}Attempting to reload extension {col(7, fmt=4)}{name}{col()}")
         try:
             await super().reload_extension(name, package=package)
-            self._ext_log.info(
-                f"{col(2)}Reloaded extension {col(2, fmt=4)}{name}{col()}"
-            )
+            self._ext_log.info(f"{col(2)}Reloaded extension {col(2, fmt=4)}{name}{col()}")
 
         except Exception as e:
             self._ext_log.error(f"Failed to reload extension {name}", exc_info=e)
@@ -231,6 +207,4 @@ class DwelloBase(AutoShardedBot):
                 raise e
 
     def is_blacklisted(self: Self, user_id: int) -> bool:
-        return (
-            user_id in self.blacklisted_users
-        )  # rewrite member and user and put it there as a property
+        return user_id in self.blacklisted_users  # rewrite member and user and put it there as a property

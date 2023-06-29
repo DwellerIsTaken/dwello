@@ -42,9 +42,7 @@ class HandleHTTPException(AbstractAsyncContextManager, AbstractContextManager):
 
     __slots__ = ("destination", "message")
 
-    def __init__(
-        self, destination: discord.abc.Messageable, *, title: Optional[str] = None
-    ):
+    def __init__(self, destination: discord.abc.Messageable, *, title: Optional[str] = None):
         self.destination = destination
         self.message = title
 
@@ -66,11 +64,7 @@ class HandleHTTPException(AbstractAsyncContextManager, AbstractContextManager):
         #'please use `async with` syntax instead.'
         # )
 
-        if (
-            exc_val is not None
-            and isinstance(exc_val, discord.HTTPException)
-            and exc_type is not None
-        ):
+        if exc_val is not None and isinstance(exc_val, discord.HTTPException) and exc_type is not None:
             embed = discord.Embed(
                 title=self.message or "An unexpected error occurred!",
                 description=f"{exc_type.__name__}: {exc_val.text}",
@@ -88,11 +82,7 @@ class HandleHTTPException(AbstractAsyncContextManager, AbstractContextManager):
         exc_val: Optional[BaseException] = None,
         exc_tb: Optional[TracebackType] = None,
     ) -> bool:
-        if (
-            exc_val is not None
-            and isinstance(exc_val, discord.HTTPException)
-            and exc_type
-        ):
+        if exc_val is not None and isinstance(exc_val, discord.HTTPException) and exc_type:
             embed = discord.Embed(
                 title=self.message or "An unexpected error occurred!",
                 description=f"{exc_type.__name__}: {exc_val.text}",

@@ -57,9 +57,7 @@ class ListenersFunctions:
                 if not (result[0] if result else None):
                     return
 
-                send_channel = discord.utils.get(
-                    member.guild.channels, id=int(result[0])
-                )
+                send_channel = discord.utils.get(member.guild.channels, id=int(result[0]))
 
                 guild = member.guild
 
@@ -76,15 +74,11 @@ class ListenersFunctions:
                         color=discord.Color.random(),
                     )
                     member_welcome_embed.set_thumbnail(
-                        url=guild.icon.url
-                        if guild.icon
-                        else self.bot.user.display_avatar.url
+                        url=guild.icon.url if guild.icon else self.bot.user.display_avatar.url
                     )
                     member_welcome_embed.set_author(
                         name=member.name,
-                        icon_url=member.display_avatar.url
-                        if member.display_avatar
-                        else self.bot.user.display_avatar.url,
+                        icon_url=member.display_avatar.url if member.display_avatar else self.bot.user.display_avatar.url,
                     )
                     member_welcome_embed.set_footer(text=cs.FOOTER)
                     member_welcome_embed.timestamp = discord.utils.utcnow()
@@ -102,9 +96,7 @@ class ListenersFunctions:
 
                 elif str(name) == "leave":
                     if not second_result[0]:
-                        _message = (
-                            "If you left, you had a reason to do so. Farewell, dweller!"
-                        )
+                        _message = "If you left, you had a reason to do so. Farewell, dweller!"
 
                     _title = f"Goodbye {member}!"
 
@@ -117,19 +109,13 @@ class ListenersFunctions:
                         space="\n",
                     )
 
-                _embed = discord.Embed(
-                    title=_title, description=_message, color=discord.Color.random()
-                )
+                _embed = discord.Embed(title=_title, description=_message, color=discord.Color.random())
                 _embed.set_thumbnail(
-                    url=member.display_avatar.url
-                    if member.display_avatar
-                    else self.bot.user.display_avatar.url
+                    url=member.display_avatar.url if member.display_avatar else self.bot.user.display_avatar.url
                 )
                 _embed.set_author(
                     name=member.name,
-                    icon_url=member.display_avatar.url
-                    if member.display_avatar
-                    else self.bot.user.display_avatar.url,
+                    icon_url=member.display_avatar.url if member.display_avatar else self.bot.user.display_avatar.url,
                 )
                 _embed.set_footer(text=cs.FOOTER)
                 _embed.timestamp = discord.utils.utcnow()

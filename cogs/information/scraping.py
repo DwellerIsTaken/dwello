@@ -62,13 +62,9 @@ class OptionSelectView(discord.ui.View):
         print("\n\n", self.main_embed)
 
     @discord.ui.select(placeholder="Select a category", row=0)
-    async def category_select(
-        self: Self, interaction: discord.Interaction, select: discord.ui.Select
-    ):
+    async def category_select(self: Self, interaction: discord.Interaction, select: discord.ui.Select):
         print(select.values)
-        return await interaction.response.edit_message(
-            embed=select.values[0], view=self
-        )
+        return await interaction.response.edit_message(embed=select.values[0], view=self)
 
     def build_select(self: Self) -> None:
         self.category_select.options = []
@@ -165,9 +161,7 @@ class Scraping(BaseCog):
         aliases=["images"],
         with_app_command=True,
     )
-    async def image(
-        self: Self, ctx: DwelloContext, *, image: str
-    ) -> Optional[discord.Message]:
+    async def image(self: Self, ctx: DwelloContext, *, image: str) -> Optional[discord.Message]:
         access_key = get_or_fail("UNSPLASH_DEMO_ACCESS_KEY")
         url: URL = "https://api.unsplash.com/photos/random"
 
@@ -179,9 +173,7 @@ class Scraping(BaseCog):
             "query": image,
         }
 
-        async with self.bot.session.get(
-            url, headers=headers, params=params
-        ) as response:
+        async with self.bot.session.get(url, headers=headers, params=params) as response:
             if response.status == 200:
                 data = await response.json()
 
@@ -194,7 +186,9 @@ class Scraping(BaseCog):
             else:
                 print("Bad request: Unable to retrieve image.")
 
-        description = f"Photo by [{data['user']['name']}]({data['user']['links']['html']}) on [Unsplash](https://unsplash.com)"
+        description = (
+            f"Photo by [{data['user']['name']}]({data['user']['links']['html']}) on [Unsplash](https://unsplash.com)"
+        )
         embed: discord.Embed = discord.Embed(
             title=data["alt_description"].capitalize(),
             url=data["links"]["download"],
@@ -211,12 +205,8 @@ class Scraping(BaseCog):
         aliases=["albums"],
         with_app_command=True,
     )
-    async def album(
-        self: Self, ctx: DwelloContext, *, album: str
-    ) -> Optional[discord.Message]:
-        data: SearchResult = await self.spotify_client.search(
-            query=album, types=[ObjectType.Album], limit=5
-        )
+    async def album(self: Self, ctx: DwelloContext, *, album: str) -> Optional[discord.Message]:
+        data: SearchResult = await self.spotify_client.search(query=album, types=[ObjectType.Album], limit=5)
 
         albums: List[Dict[str, Any]] = data._data["albums"]["items"]
         if not albums:
@@ -234,10 +224,7 @@ class Scraping(BaseCog):
             link = album["external_urls"]["spotify"]
             image_url = album["images"][1]["url"] if album["images"] else None
 
-            artists = [
-                (artist["name"], artist["external_urls"]["spotify"])
-                for artist in album["artists"]
-            ][:2]
+            artists = [(artist["name"], artist["external_urls"]["spotify"]) for artist in album["artists"]][:2]
 
             embed: discord.Embed = discord.Embed(
                 title=name,
@@ -253,21 +240,12 @@ class Scraping(BaseCog):
 
             embed.add_field(name="Release Date", value=timestamp, inline=False)
 
-            tracks_data: Dict[
-                str, Any
-            ] = await self.spotify_http_client.get_album_tracks(
-                id=_id, market="US", limit=5
-            )
+            tracks_data: Dict[str, Any] = await self.spotify_http_client.get_album_tracks(id=_id, market="US", limit=5)
 
             if tracks := tracks_data["items"]:
                 embed.add_field(
                     name="Tracks",
-                    value="\n".join(
-                        [
-                            f"> [{track['name']}]({track['external_urls']['spotify']})"
-                            for track in tracks
-                        ]
-                    ),
+                    value="\n".join([f"> [{track['name']}]({track['external_urls']['spotify']})" for track in tracks]),
                 )
 
             embed.add_field(
@@ -343,12 +321,8 @@ class Scraping(BaseCog):
         aliases=["artists"],
         with_app_command=True,
     )
-    async def artist(
-        self: Self, ctx: DwelloContext, *, artist: str
-    ) -> Optional[discord.Message]:
-        data: SearchResult = await self.spotify_client.search(
-            query=artist, types=[ObjectType.Artist], limit=5
-        )
+    async def artist(self: Self, ctx: DwelloContext, *, artist: str) -> Optional[discord.Message]:
+        data: SearchResult = await self.spotify_client.search(query=artist, types=[ObjectType.Artist], limit=5)
 
         artists: List[Artist] = data.artists.items
         if not artists:
@@ -363,11 +337,7 @@ class Scraping(BaseCog):
             id=artist.id, include_groups=["album"], market="US", limit=5
         )
 
-        tracks_data: Dict[
-            str, Any
-        ] = await self.spotify_http_client.get_artist_top_tracks(
-            id=artist.id, market="US"
-        )
+        tracks_data: Dict[str, Any] = await self.spotify_http_client.get_artist_top_tracks(id=artist.id, market="US")
 
         albums = album_data["items"]
 
@@ -375,23 +345,15 @@ class Scraping(BaseCog):
         unique_albums = [
             album
             for i, album in enumerate(unique_albums)
-            if all(
-                album["name"].split(" (")[0].lower() not in a["name"].lower()
-                for a in unique_albums[:i]
-            )
+            if all(album["name"].split(" (")[0].lower() not in a["name"].lower() for a in unique_albums[:i])
         ]
 
-        album_names = [
-            re.sub(r"\([^()]+\)", "", album["name"]).strip().lower()
-            for album in unique_albums[:3]
-        ]
+        album_names = [re.sub(r"\([^()]+\)", "", album["name"]).strip().lower() for album in unique_albums[:3]]
         album_names.sort(key=lambda x: len(x))
 
         sorted_unique_albums = sorted(
             unique_albums[:3],
-            key=lambda x: album_names.index(
-                re.sub(r"\([^()]+\)", "", x["name"]).strip().lower()
-            ),
+            key=lambda x: album_names.index(re.sub(r"\([^()]+\)", "", x["name"]).strip().lower()),
         )
         album_tuples = [
             (capitalize_greek_numbers(name.title()), album["external_urls"]["spotify"])
@@ -401,10 +363,7 @@ class Scraping(BaseCog):
         tracks: List[Dict[str, Any]] = tracks_data["tracks"]
         top_tracks = sorted(tracks, key=lambda x: x["popularity"], reverse=True)
 
-        _description = (
-            f"**Followers**: {artist.followers.total:,}\n**Genres**: "
-            + ", ".join(list(artist.genres[:2]))
-        )
+        _description = f"**Followers**: {artist.followers.total:,}\n**Genres**: " + ", ".join(list(artist.genres[:2]))
         embed: discord.Embed = discord.Embed(
             title=artist.name,
             url=artist.external_urls.spotify,
@@ -420,10 +379,7 @@ class Scraping(BaseCog):
         )  # •
         embed.add_field(
             name="Top Tracks",
-            value="\n".join(
-                f"> [{track['name']}]({track['external_urls']['spotify']})"
-                for track in top_tracks[:3]
-            ),
+            value="\n".join(f"> [{track['name']}]({track['external_urls']['spotify']})" for track in top_tracks[:3]),
         )
 
         return await ctx.reply(embed=embed)
@@ -434,12 +390,8 @@ class Scraping(BaseCog):
         aliases=["playlists"],
         with_app_command=True,
     )
-    async def playlist(
-        self: Self, ctx: DwelloContext, *, playlist: str
-    ) -> Optional[discord.Message]:
-        data: SearchResult = await self.spotify_client.search(
-            query=playlist, types=[ObjectType.Playlist], limit=5
-        )
+    async def playlist(self: Self, ctx: DwelloContext, *, playlist: str) -> Optional[discord.Message]:
+        data: SearchResult = await self.spotify_client.search(query=playlist, types=[ObjectType.Playlist], limit=5)
 
         playlists: List[Dict[str, Any]] = data._data["playlists"]["items"]
         if not playlists:
@@ -471,15 +423,9 @@ class Scraping(BaseCog):
 
         return await ctx.reply(embed=embed)
 
-    @commands.hybrid_command(
-        name="track", help="Returns a track.", aliases=["tracks"], with_app_command=True
-    )
-    async def track(
-        self: Self, ctx: DwelloContext, *, track: str
-    ) -> Optional[discord.Message]:
-        data: SearchResult = await self.spotify_client.search(
-            query=track, types=[ObjectType.Track], limit=5
-        )
+    @commands.hybrid_command(name="track", help="Returns a track.", aliases=["tracks"], with_app_command=True)
+    async def track(self: Self, ctx: DwelloContext, *, track: str) -> Optional[discord.Message]:
+        data: SearchResult = await self.spotify_client.search(query=track, types=[ObjectType.Track], limit=5)
 
         tracks: List[Track] = data.tracks.items
         if not tracks:
@@ -490,9 +436,7 @@ class Scraping(BaseCog):
 
         _track: Track = tracks[0]
         _album: PartialAlbum = _track.album
-        _artists: List[Tuple[str, str]] = [
-            (artist.name, artist.external_urls.spotify) for artist in _track.artists
-        ][:2]
+        _artists: List[Tuple[str, str]] = [(artist.name, artist.external_urls.spotify) for artist in _track.artists][:2]
 
         duration_in_minutes = _track.duration / 1000 / 60
 
@@ -504,9 +448,7 @@ class Scraping(BaseCog):
 
         release_str = "\n**Release Date**: "
         try:
-            release_str += get_unix_timestamp(
-                _album.release_date.date, "%Y-%m-%d", style="d"
-            )
+            release_str += get_unix_timestamp(_album.release_date.date, "%Y-%m-%d", style="d")
         except ValueError:
             release_str += _album.release_date.date
 
@@ -523,9 +465,7 @@ class Scraping(BaseCog):
             name="Artist" if len(_artists) == 1 else "Artists",
             value="\n".join([f"> [{i[0].title()}]({i[1]})" for i in _artists]),
         )
-        embed.add_field(
-            name="Album", value=f"[{_album.name}]({_album.external_urls.spotify})"
-        )
+        embed.add_field(name="Album", value=f"[{_album.name}]({_album.external_urls.spotify})")
 
         return await ctx.reply(embed=embed)
 
@@ -547,12 +487,8 @@ class Scraping(BaseCog):
 
         raise GameNotFound(name)
 
-    @commands.hybrid_command(
-        name="game", help="Returns a game.", aliases=["games"], with_app_command=True
-    )
-    async def game(
-        self: Self, ctx: DwelloContext, *, game: str
-    ) -> Optional[discord.Message]:
+    @commands.hybrid_command(name="game", help="Returns a game.", aliases=["games"], with_app_command=True)
+    async def game(self: Self, ctx: DwelloContext, *, game: str) -> Optional[discord.Message]:
         # start = time.time()
         # end = time.time()
         # await ctx.send(f"Executed in: {end-start}") # Idea for a time per func to calculate overall latency/response time?
@@ -560,13 +496,9 @@ class Scraping(BaseCog):
         try:
             game_id = await self.get_game_by_name(game)
         except GameNotFound:
-            return await ctx.reply(
-                f"Couldn't find a game by the name *{mk(game)}*", user_mistake=True
-            )
+            return await ctx.reply(f"Couldn't find a game by the name *{mk(game)}*", user_mistake=True)
 
-        url: URL = (
-            f"https://store.steampowered.com/api/appdetails?appids={game_id}&l=en"
-        )
+        url: URL = f"https://store.steampowered.com/api/appdetails?appids={game_id}&l=en"
         async with self.bot.session.get(url=url) as response:
             data = await response.json()
 
@@ -613,11 +545,11 @@ class Scraping(BaseCog):
         aliases=["actors", "actress", "actresses"],
         with_app_command=True,
     )  # amybe people alias, but later if there are no other ppl aliases
-    async def movie_person(
-        self: Self, ctx: DwelloContext, *, person: str
-    ) -> Optional[discord.Message]:
+    async def movie_person(self: Self, ctx: DwelloContext, *, person: str) -> Optional[discord.Message]:
         pages: int = 1
-        url: URL = f"https://api.themoviedb.org/3/search/person?query={person}&include_adult=True&language=en-US&page={pages}"
+        url: URL = (
+            f"https://api.themoviedb.org/3/search/person?query={person}&include_adult=True&language=en-US&page={pages}"
+        )
         async with self.bot.session.get(url=url, headers=self.tmdb_headers) as response:
             data = await response.json()
 
@@ -628,9 +560,7 @@ class Scraping(BaseCog):
             person = max(data["results"], key=lambda _person: _person["popularity"])
 
         except ValueError:
-            return await ctx.reply(
-                f"Couldn't find a person by the name of {person}.", user_mistake=True
-            )
+            return await ctx.reply(f"Couldn't find a person by the name of {person}.", user_mistake=True)
 
         wiki = wikipediaapi.Wikipedia("en")
         page: wikipediaapi.WikipediaPage = wiki.page(person["name"])
@@ -655,15 +585,12 @@ class Scraping(BaseCog):
         embed.add_field(name="Department", value=person["known_for_department"])
 
         if top_movies_desc := "".join(
-            f"\n• [{movie['title']}](https://www.themoviedb.org/movie/{movie['id']})"
-            for movie in top_movies
+            f"\n• [{movie['title']}](https://www.themoviedb.org/movie/{movie['id']})" for movie in top_movies
         ):
             embed.add_field(name="Top Movies", value=top_movies_desc, inline=False)
 
         if person["profile_path"]:
-            embed.set_thumbnail(
-                url=f"https://image.tmdb.org/t/p/w500{person['profile_path']}"
-            )
+            embed.set_thumbnail(url=f"https://image.tmdb.org/t/p/w500{person['profile_path']}")
 
         embed.set_footer(text=f"Popularity: {person['popularity']}")
 
@@ -674,9 +601,7 @@ class Scraping(BaseCog):
         help="Returns a movie by its title.",
         aliases=["film", "films", "movies"],
     )
-    async def movie(
-        self: Self, ctx: DwelloContext, *, movie: str
-    ) -> Optional[discord.Message]:
+    async def movie(self: Self, ctx: DwelloContext, *, movie: str) -> Optional[discord.Message]:
         # Docs: https://developer.themoviedb.org/reference/intro/getting-started
 
         pages: int = 1
@@ -691,9 +616,7 @@ class Scraping(BaseCog):
             movie = max(data["results"], key=lambda _movie: _movie["vote_count"])
 
         except ValueError:
-            return await ctx.reply(
-                f"Couldn't find a movie by the name of {movie}.", user_mistake=True
-            )
+            return await ctx.reply(f"Couldn't find a movie by the name of {movie}.", user_mistake=True)
 
         embed: discord.Embed = discord.Embed(
             title=movie["title"],
@@ -705,24 +628,18 @@ class Scraping(BaseCog):
             name="Release Date",
             value=get_unix_timestamp(movie["release_date"], "%Y-%m-%d", style="d"),
         )
-        embed.add_field(
-            name="Vote Average", value=f"{str(movie['vote_average'])[:3]} / 10"
-        )
+        embed.add_field(name="Vote Average", value=f"{str(movie['vote_average'])[:3]} / 10")
         embed.add_field(name="Vote Count", value=movie["vote_count"])
 
         if movie["poster_path"]:
-            embed.set_thumbnail(
-                url=f"https://image.tmdb.org/t/p/w500{movie['poster_path']}"
-            )
+            embed.set_thumbnail(url=f"https://image.tmdb.org/t/p/w500{movie['poster_path']}")
 
         embed.set_footer(text=f"Popularity: {movie['popularity']}")
 
         return await ctx.reply(embed=embed)
 
     @app_commands.command(name="movie", description="Returns a movie by its title.")
-    async def _movie(
-        self: Self, ctx: DwelloContext, *, movie: str, year: int = None
-    ) -> Optional[discord.Message]:
+    async def _movie(self: Self, ctx: DwelloContext, *, movie: str, year: int = None) -> Optional[discord.Message]:
         pages: int = 1
 
         url: URL = f"https://api.themoviedb.org/3/search/movie?query={movie}&include_adult=True&language=en-US&primary_release_year={year}&page={pages}"
@@ -740,9 +657,7 @@ class Scraping(BaseCog):
             movie = max(data["results"], key=lambda _movie: _movie["vote_count"])
 
         except ValueError:
-            return await ctx.reply(
-                f"Couldn't find a movie by the name of {movie}.", user_mistake=True
-            )
+            return await ctx.reply(f"Couldn't find a movie by the name of {movie}.", user_mistake=True)
 
         embed: discord.Embed = discord.Embed(
             title=movie["title"],
@@ -754,26 +669,18 @@ class Scraping(BaseCog):
             name="Release Date",
             value=get_unix_timestamp(movie["release_date"], "%Y-%m-%d", style="d"),
         )
-        embed.add_field(
-            name="Vote Average", value=f"{str(movie['vote_average'])[:3]} / 10"
-        )
+        embed.add_field(name="Vote Average", value=f"{str(movie['vote_average'])[:3]} / 10")
         embed.add_field(name="Vote Count", value=movie["vote_count"])
 
         if movie["poster_path"]:
-            embed.set_thumbnail(
-                url=f"https://image.tmdb.org/t/p/w500{movie['poster_path']}"
-            )
+            embed.set_thumbnail(url=f"https://image.tmdb.org/t/p/w500{movie['poster_path']}")
 
         embed.set_footer(text=f"Popularity: {movie['popularity']}")
 
         return await ctx.reply(embed=embed)
 
-    @commands.command(
-        name="show", help="Returns a TV show by its title.", aliases=["series", "shows"]
-    )
-    async def show(
-        self: Self, ctx: DwelloContext, *, show: str
-    ) -> Optional[discord.Message]:
+    @commands.command(name="show", help="Returns a TV show by its title.", aliases=["series", "shows"])
+    async def show(self: Self, ctx: DwelloContext, *, show: str) -> Optional[discord.Message]:
         pages: int = 1
         url: URL = f"https://api.themoviedb.org/3/search/tv?query={show}&include_adult=True&language=en-US&page={pages}"
         async with self.bot.session.get(url=url, headers=self.tmdb_headers) as response:
@@ -786,9 +693,7 @@ class Scraping(BaseCog):
             show = max(data["results"], key=lambda _show: _show["vote_count"])
 
         except ValueError:
-            return await ctx.reply(
-                f"Couldn't find a show by the name of {show}.", user_mistake=True
-            )
+            return await ctx.reply(f"Couldn't find a show by the name of {show}.", user_mistake=True)
 
         embed: discord.Embed = discord.Embed(
             title=show["original_name"],
@@ -800,24 +705,18 @@ class Scraping(BaseCog):
             name="Release Date",
             value=get_unix_timestamp(show["first_air_date"], "%Y-%m-%d", style="d"),
         )
-        embed.add_field(
-            name="Vote Average", value=f"{str(show['vote_average'])[:3]} / 10"
-        )
+        embed.add_field(name="Vote Average", value=f"{str(show['vote_average'])[:3]} / 10")
         embed.add_field(name="Vote Count", value=show["vote_count"])
 
         if show["poster_path"]:
-            embed.set_thumbnail(
-                url=f"https://image.tmdb.org/t/p/w500{show['poster_path']}"
-            )
+            embed.set_thumbnail(url=f"https://image.tmdb.org/t/p/w500{show['poster_path']}")
 
         embed.set_footer(text=f"Popularity: {show['popularity']}")
 
         return await ctx.reply(embed=embed)
 
     @app_commands.command(name="show", description="Returns a TV show by its title.")
-    async def _show(
-        self: Self, ctx: DwelloContext, *, show: str, year: int = None
-    ) -> Optional[discord.Message]:
+    async def _show(self: Self, ctx: DwelloContext, *, show: str, year: int = None) -> Optional[discord.Message]:
         pages: int = 1
 
         url: URL = f"https://api.themoviedb.org/3/search/movie?query={show}&include_adult=True&language=en-US&primary_release_year={year}&page={pages}"
@@ -835,9 +734,7 @@ class Scraping(BaseCog):
             show = max(data["results"], key=lambda _show: _show["vote_count"])
 
         except ValueError:
-            return await ctx.reply(
-                f"Couldn't find a show by the name of {show}.", user_mistake=True
-            )
+            return await ctx.reply(f"Couldn't find a show by the name of {show}.", user_mistake=True)
 
         embed: discord.Embed = discord.Embed(
             title=show["original_name"],
@@ -849,15 +746,11 @@ class Scraping(BaseCog):
             name="Release Date",
             value=get_unix_timestamp(show["first_air_date"], "%Y-%m-%d", style="d"),
         )
-        embed.add_field(
-            name="Vote Average", value=f"{str(show['vote_average'])[:3]} / 10"
-        )
+        embed.add_field(name="Vote Average", value=f"{str(show['vote_average'])[:3]} / 10")
         embed.add_field(name="Vote Count", value=show["vote_count"])
 
         if show["poster_path"]:
-            embed.set_thumbnail(
-                url=f"https://image.tmdb.org/t/p/w500{show['poster_path']}"
-            )
+            embed.set_thumbnail(url=f"https://image.tmdb.org/t/p/w500{show['poster_path']}")
 
         embed.set_footer(text=f"Popularity: {show['popularity']}")
 
@@ -868,13 +761,9 @@ class Scraping(BaseCog):
         help="Shows you the temparature in the city you've typed in.",
         with_app_command=True,
     )
-    async def weather(
-        self: Self, ctx: DwelloContext, *, city: str
-    ) -> Optional[discord.Message]:
+    async def weather(self: Self, ctx: DwelloContext, *, city: str) -> Optional[discord.Message]:
         if not city:
-            return await ctx.reply(
-                "Please provide a city or a contry.", mention_author=True
-            )
+            return await ctx.reply("Please provide a city or a contry.", mention_author=True)
 
         args = city.lower()
 
@@ -903,8 +792,7 @@ class Scraping(BaseCog):
                     description += f"\n{match}"
 
             matches_embed: discord.Embed = discord.Embed(
-                description=f"Sorry, but I couldn't recognise the city **{args.title()}**."
-                f"\n{description}",
+                description=f"Sorry, but I couldn't recognise the city **{args.title()}**." f"\n{description}",
                 color=cs.WARNING_COLOR,
             )
             return await ctx.reply(embed=matches_embed, mention_author=True)
@@ -928,9 +816,7 @@ class Scraping(BaseCog):
         )
 
         weather_embed.set_footer(text="Powered by OpenWeatherMap")
-        weather_embed.set_thumbnail(
-            url=f"http://openweathermap.org/img/w/{data['weather'][0]['icon']}.png"
-        )
+        weather_embed.set_thumbnail(url=f"http://openweathermap.org/img/w/{data['weather'][0]['icon']}.png")
 
         weather_embed.add_field(
             name="Location",
@@ -942,14 +828,8 @@ class Scraping(BaseCog):
             value=data["weather"][0]["description"].title(),
             inline=False,
         )
-        weather_embed.add_field(
-            name="Humidity", value=f"{data['main']['humidity']}%", inline=True
-        )
-        weather_embed.add_field(
-            name="Wind", value=f"{data['wind']['speed']} m/s", inline=True
-        )
-        weather_embed.add_field(
-            name="Pressure", value=f"{data['main']['pressure']} hPa", inline=True
-        )
+        weather_embed.add_field(name="Humidity", value=f"{data['main']['humidity']}%", inline=True)
+        weather_embed.add_field(name="Wind", value=f"{data['wind']['speed']} m/s", inline=True)
+        weather_embed.add_field(name="Pressure", value=f"{data['main']['pressure']} hPa", inline=True)
 
         return await ctx.reply(embed=weather_embed, ephemeral=False)

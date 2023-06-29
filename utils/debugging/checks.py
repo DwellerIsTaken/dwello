@@ -10,9 +10,7 @@ import constants as cs
 # remove debugging dir
 
 
-async def member_check(
-    ctx: commands.Context, member: discord.Member, bot: commands.Bot
-) -> Union[discord.Message, bool]:
+async def member_check(ctx: commands.Context, member: discord.Member, bot: commands.Bot) -> Union[discord.Message, bool]:
     string = ctx.command.name
     monologue = random.choice(cs.bot_reply_list)
 
@@ -44,9 +42,7 @@ async def member_check(
     return True
 
 
-async def interaction_check(
-    interaction: discord.Interaction, author: discord.User
-) -> bool:
+async def interaction_check(interaction: discord.Interaction, author: discord.User) -> bool:
     if interaction.user.id == author.id:
         return True
 
@@ -55,10 +51,6 @@ async def interaction_check(
         description="You can't interact with someone else's buttons.",
         color=discord.Color.random(),
     )
-    missing_permissions_embed.set_image(
-        url="\n https://cdn-images-1.medium.com/max/833/1*kmsuUjqrZUkh_WW-nDFRgQ.gif"
-    )
+    missing_permissions_embed.set_image(url="\n https://cdn-images-1.medium.com/max/833/1*kmsuUjqrZUkh_WW-nDFRgQ.gif")
     missing_permissions_embed.set_footer(text=cs.FOOTER)
-    return await interaction.response.send_message(
-        embed=missing_permissions_embed, ephemeral=True
-    )  # bruh
+    return await interaction.response.send_message(embed=missing_permissions_embed, ephemeral=True)  # bruh
