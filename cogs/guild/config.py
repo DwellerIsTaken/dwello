@@ -191,8 +191,8 @@ class ChannelConfig:
                     ctx.guild.id,
                     name,
                 )
-
-                string = f"The channel has been {'updated' if result[0] if result else None else 'set'} to {channel.mention}"
+                status = 'updated' if (result[0] if result else None) else 'set'
+                string = f"The channel has been {status} to {channel.mention}"
 
                 if (result[0] if result else None) == channel.id:
                     return await ctx.reply(
