@@ -4,7 +4,6 @@ from typing import Optional
 
 import discord
 from discord.ext import commands
-from typing_extensions import Self
 
 from core import Bot, Cog, Context
 

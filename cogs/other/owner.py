@@ -8,7 +8,6 @@ from typing import Literal, Optional, Union
 import asyncpg
 import discord
 from discord.ext import commands
-from typing_extensions import Self
 
 import constants as cs
 from core import Bot, Cog, Context

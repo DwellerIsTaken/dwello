@@ -6,7 +6,6 @@ from typing import TYPE_CHECKING, Optional
 
 import discord
 from discord.ext import commands
-from typing_extensions import Self
 
 import constants as cs
 

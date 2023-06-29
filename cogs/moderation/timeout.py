@@ -6,7 +6,6 @@ from typing import Any, Dict, List, Optional, Union
 import discord
 from discord.app_commands import Choice
 from discord.ext import commands
-from typing_extensions import Self
 
 import constants as cs
 from core import Bot, Cog, Context

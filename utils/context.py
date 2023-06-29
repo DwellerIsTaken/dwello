@@ -3,13 +3,13 @@ from __future__ import annotations
 import random
 import re
 import typing
-from typing import TYPE_CHECKING, Any, Optional, Sequence, Union
+from typing import Any, Optional, Sequence, Union
 
 import discord
 from discord import Interaction
 from discord.ext import commands
 from discord.ext.commands.errors import BadArgument
-from typing_extensions import LiteralString, Self, override
+from typing_extensions import LiteralString, override
 
 target_type = Union[discord.Member, discord.User, discord.PartialEmoji, discord.Guild, discord.Invite]
 

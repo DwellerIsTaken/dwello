@@ -6,7 +6,6 @@ from typing import Optional, Tuple, Union
 
 import asyncpg
 import discord
-from typing_extensions import Self
 
 import constants as cs
 from core import Bot, Context

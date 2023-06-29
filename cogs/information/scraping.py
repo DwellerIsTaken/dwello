@@ -14,7 +14,7 @@ from typing_extensions import Self
 from yarl import URL
 
 import constants as cs
-from core import Bot, Cog, Context
+from core import Bot, Context
 from utils import capitalize_greek_numbers, get_unix_timestamp
 
 mk = discord.utils.escape_markdown
