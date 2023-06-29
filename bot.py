@@ -7,8 +7,6 @@ import aiohttp
 import asyncpg
 from dotenv import load_dotenv
 
-load_dotenv()
-
 from typing import TYPE_CHECKING, Generic, Optional, Tuple, TypeVar
 
 from typing_extensions import Self
@@ -29,6 +27,8 @@ logging.basicConfig(
     level=logging.INFO,
     datefmt="%Y-%m-%d %H:%M:%S %Z%z",  # CET timezone format
 )
+
+load_dotenv()
 
 
 class ContextManager(Generic[DBT]):
