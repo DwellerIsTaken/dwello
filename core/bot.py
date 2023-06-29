@@ -4,7 +4,7 @@ import asyncio
 import datetime
 import os
 from typing import Any
-
+import jishaku  # noqa: F401  # pylint: disable=unused-import
 import aiohttp
 import asyncpg
 import discord
