@@ -7,3 +7,4 @@ colorthief==0.2.1
 aiohttp==3.8.4
 asyncpg==0.27.0
 setuptools==67.4.0
+python-dotenv==1.0.0
