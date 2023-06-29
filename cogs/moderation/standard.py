@@ -21,7 +21,7 @@ class StandardModeration(Cog):
     @commands.has_guild_permissions(ban_members=True)
     @commands.guild_only()
     async def ban(
-        self: Self,
+        self,
         ctx: Context,
         member: discord.Member,
         *,
@@ -76,9 +76,7 @@ class StandardModeration(Cog):
     @commands.bot_has_permissions(send_messages=True, view_audit_log=True, ban_members=True)
     @commands.has_guild_permissions(ban_members=True)
     @commands.guild_only()
-    async def unban(
-        self: Self, ctx: Context, member_object: str
-    ) -> Union[discord.Message, discord.InteractionMessage, None]:
+    async def unban(self, ctx: Context, member_object: str) -> Union[discord.Message, discord.InteractionMessage, None]:
         async with ctx.typing(ephemeral=True):
             member = discord.Object(id=member_object)  # member_object type str?
 
@@ -101,7 +99,7 @@ class StandardModeration(Cog):
                 )
 
     @unban.autocomplete("member_object")
-    async def autocomplete_callback(self: Self, interaction: discord.Interaction, current: str):
+    async def autocomplete_callback(self, interaction: discord.Interaction, current: str):
         item = len(current)
         choices = []
 
@@ -122,7 +120,7 @@ class StandardModeration(Cog):
     @commands.has_permissions(kick_members=True)
     @commands.guild_only()
     async def kick(
-        self: Self,
+        self,
         ctx: Context,
         member: discord.Member,
         *,
@@ -156,7 +154,7 @@ class StandardModeration(Cog):
     @commands.has_guild_permissions(manage_nicknames=True)
     @commands.guild_only()
     async def nick(
-        self: Self,
+        self,
         ctx: Context,
         member: discord.Member,
         *,

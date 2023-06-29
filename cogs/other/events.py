@@ -9,19 +9,19 @@ from core import Bot, Cog, Context
 
 
 class Events(Cog):
-    def __init__(self: Self, bot: Bot):
+    def __init__(self, bot: Bot):
         self.bot = bot
 
     @commands.hybrid_command(name="table", with_app_command=False)
-    async def test(self: Self, ctx: Context):
+    async def test(self, ctx: Context):
         await self.bot.listeners.bot_join(ctx.guild)
 
     @commands.Cog.listener()
-    async def on_guild_join(self: Self, guild: discord.Guild):
+    async def on_guild_join(self, guild: discord.Guild):
         await self.bot.listeners.bot_join(guild)
 
     @commands.Cog.listener()
-    async def on_message(self: Self, message: discord.Message) -> None:
+    async def on_message(self, message: discord.Message) -> None:
         await self.bot.levelling.increase_xp(message)
 
         if message.content == f"<@{self.bot.user.id}>" and not message.author.bot:
@@ -48,7 +48,7 @@ class Events(Cog):
     channel_type_list = ["category", "all", "member", "bot"]
 
     @commands.Cog.listener()
-    async def on_guild_channel_delete(self: Self, channel: discord.abc.GuildChannel) -> None:
+    async def on_guild_channel_delete(self, channel: discord.abc.GuildChannel) -> None:
         async with self.bot.pool.acquire() as conn:
             conn: asyncpg.Connection
             async with conn.transaction():
@@ -75,16 +75,16 @@ class Events(Cog):
                         raise e
 
     @commands.Cog.listener()
-    async def on_member_join(self: Self, member: discord.Member):
+    async def on_member_join(self, member: discord.Member):
         await self.bot.levelling.create_user(member.id, member.guild.id)
         await self.bot.listeners.join_leave_event(member, "welcome")
 
     @commands.Cog.listener()
-    async def on_member_remove(self: Self, member: discord.Member):
+    async def on_member_remove(self, member: discord.Member):
         await self.bot.listeners.join_leave_event(member, "leave")
 
     @commands.Cog.listener()
-    async def on_member_update(self: Self, before, after):
+    async def on_member_update(self, before, after):
         """https://discordpy.readthedocs.io/en/latest/api.html#discord-api-events"""
 
     @commands.Cog.listener()

@@ -26,7 +26,7 @@ class DataBaseOperations:
                 await conn.execute(tables)
         return table_names
 
-    async def fetch_table_data(self: Self, *tables: str) -> Dict[str, Union[Any, list]]:
+    async def fetch_table_data(self, *tables: str) -> Dict[str, Union[Any, list]]:
         async with self.bot.pool.acquire() as conn:
             conn: asyncpg.Connection
             async with conn.transaction():

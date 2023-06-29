@@ -88,7 +88,7 @@ class Timeout(Cog):
     @commands.has_permissions(moderate_members=True)
     @commands.guild_only()
     async def mute(
-        self: Self,
+        self,
         ctx: Context,
         member: discord.Member,
         duration: int,
@@ -102,7 +102,7 @@ class Timeout(Cog):
     # LOOK INTO THIS:
     @mute.error
     async def mute_error(
-        self: Self,
+        self,
         ctx: Context,
         error: Union[commands.MissingPermissions, commands.BotMissingPermissions, Any],
     ):
@@ -113,7 +113,7 @@ class Timeout(Cog):
                 color=cs.WARNING_COLOR,
             )
             missing_permissions_embed.set_image(
-                url="\n https://cdn-images-1.medium.com/max/833/1*kmsuUjqrZUkh_WW-nDFRgQ.gif"
+                url="https://cdn-images-1.medium.com/max/833/1*kmsuUjqrZUkh_WW-nDFRgQ.gif"
             )
             missing_permissions_embed.set_footer(text=cs.FOOTER)
 
@@ -148,7 +148,7 @@ class Timeout(Cog):
     @commands.bot_has_permissions(moderate_members=True)
     @commands.has_permissions(moderate_members=True)
     @commands.guild_only()
-    async def unmute(self: Self, ctx: Context, member: discord.Member) -> Optional[discord.Message]:
+    async def unmute(self, ctx: Context, member: discord.Member) -> Optional[discord.Message]:
         async with ctx.typing(ephemeral=True):
             if member.id == self.bot.user.id:
                 return await ctx.reply(
@@ -193,7 +193,7 @@ class Timeout(Cog):
     )  # MODERATION OR MEMBER-FRIENDLY (PERMS)?
     @commands.bot_has_permissions(view_audit_log=True)
     @commands.guild_only()
-    async def timed_out(self: Self, ctx: Context) -> Optional[discord.Message]:
+    async def timed_out(self, ctx: Context) -> Optional[discord.Message]:
         async with ctx.typing(ephemeral=True):
             timed_out_list: List[discord.Member] = []
             reason_list: List[str] = []

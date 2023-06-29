@@ -30,7 +30,7 @@ async def setup(bot: Bot):
 
 class HelpCentre(discord.ui.View):
     def __init__(
-        self: Self,
+        self,
         ctx: Context,
         other_view: discord.ui.View,
     ):
@@ -41,11 +41,11 @@ class HelpCentre(discord.ui.View):
         self.other_view = other_view
 
     @discord.ui.button(emoji="🏠", label="Go Back", style=discord.ButtonStyle.blurple)
-    async def go_back(self: Self, interaction: discord.Interaction, _):
+    async def go_back(self, interaction: discord.Interaction, _):
         await interaction.response.edit_message(embed=self.embed, view=self.other_view)
         self.stop()
 
-    async def start(self: Self, interaction: discord.Interaction):
+    async def start(self, interaction: discord.Interaction):
         embed = discord.Embed(
             title="Here is a guide on how to understand this help command",
             description="\n__**Do not not include these brackets when running a command!**__"
@@ -98,7 +98,7 @@ class HelpCentre(discord.ui.View):
         )"""  # Later
         await interaction.response.edit_message(embed=embed, view=self)
 
-    async def interaction_check(self: Self, interaction: Interaction) -> bool:
+    async def interaction_check(self, interaction: Interaction) -> bool:
         if interaction.user and interaction.user == self.ctx.author:
             return True
         await interaction.response.defer()
@@ -107,7 +107,7 @@ class HelpCentre(discord.ui.View):
 
 class HelpView(discord.ui.View):
     def __init__(
-        self: Self,
+        self,
         ctx: Context,
         data: Dict[commands.Cog, List[commands.Command]],
         help_command: commands.HelpCommand,
@@ -123,7 +123,7 @@ class HelpView(discord.ui.View):
         self.embeds: List[discord.Embed] = [self.main_embed]
 
     @select(placeholder="Select a category", row=0)
-    async def category_select(self: Self, interaction: Interaction, select: Select):
+    async def category_select(self, interaction: Interaction, select: Select):
         if select.values[0] == "index":
             self.current_page = 0
             self.embeds = [self.main_embed]
@@ -138,7 +138,7 @@ class HelpView(discord.ui.View):
         else:
             return await interaction.response.send_message("Somehow, that category was not found? 🤔", ephemeral=True)
 
-    def build_embeds(self: Self, cog: commands.Cog) -> List[discord.Embed]:
+    def build_embeds(self, cog: commands.Cog) -> List[discord.Embed]:
         embeds = []
         # comm = cog.get_commands()
 
@@ -233,24 +233,24 @@ class HelpView(discord.ui.View):
         return embed
 
     @button(emoji="❓", label="help", row=1, style=discord.ButtonStyle.green)
-    async def help(self: Self, interaction: Interaction, _):
+    async def help(self, interaction: Interaction, _):
         view = HelpCentre(self.ctx, self)
         await view.start(interaction)  # make better buttons later
 
     @button(label="<", row=1)
-    async def previous(self: Self, interaction: Interaction, _):
+    async def previous(self, interaction: Interaction, _):
         self.current_page -= 1
         self._update_buttons()
         await interaction.response.edit_message(embed=self.embeds[self.current_page], view=self)
 
     @button(emoji="🗑", row=1, style=discord.ButtonStyle.red)
-    async def _end(self: Self, interaction: Interaction, _):
+    async def _end(self, interaction: Interaction, _):
         await interaction.message.delete(delay=0)
         """if self.ctx.channel.permissions_for(self.ctx.me).add_reactions:
             await self.ctx.message.add_reaction(random.choice(constants.DONE))"""
 
     @button(label=">", row=1)  # emoji
-    async def next(self: Self, interaction: Interaction, _):
+    async def next(self, interaction: Interaction, _):
         self.current_page += 1
         self._update_buttons()
         await interaction.response.edit_message(embed=self.embeds[self.current_page], view=self)
@@ -269,7 +269,7 @@ class HelpView(discord.ui.View):
         self.next.style = styles[page == total]
         self.previous.style = styles[page == 0]
 
-    async def interaction_check(self: Self, interaction: discord.Interaction) -> bool:
+    async def interaction_check(self, interaction: discord.Interaction) -> bool:
         if interaction.user and interaction.user == self.ctx.author:
             return True
         await interaction.response.defer()
@@ -570,7 +570,7 @@ class About(commands.Cog):
     😮 Commands related to the bot itself, that have the only purpose to show information.
     """
 
-    def __init__(self: Self, bot: Bot) -> None:
+    def __init__(self, bot: Bot) -> None:
         self.bot: Bot = bot
         help_command = MyHelp()
         help_command.command_attrs = {
@@ -595,10 +595,10 @@ class About(commands.Cog):
 
         return days, hours, minutes, seconds
 
-    def get_startup_timestamp(self: Self, style: discord.utils.TimestampStyle = None) -> str:
+    def get_startup_timestamp(self, style: discord.utils.TimestampStyle = None) -> str:
         return discord.utils.format_dt(self.bot.launch_time, style=style or "F")
 
-    def get_average_latency(self: Self, *latencies: float) -> Union[Any, float]:
+    def get_average_latency(self, *latencies: float) -> Union[Any, float]:
         if not latencies:
             raise TypeError("Missing required argument: 'latencies'")
 
@@ -608,7 +608,7 @@ class About(commands.Cog):
 
     # make uptime: add here -> trigger on mention in on_message
     @commands.hybrid_command(name="hello", aliases=cs.HELLO_ALIASES, with_app_command=True)
-    async def hello(self: Self, ctx: Context) -> Optional[discord.Message]:
+    async def hello(self, ctx: Context) -> Optional[discord.Message]:
         # make variations for the response
         content: str = f"Hello there! I'm {self.bot.user.name}. Use `dw.help` for more."  # {self.bot.help_command}?
         return await ctx.send(content=content)  # display more info about bot
@@ -617,7 +617,7 @@ class About(commands.Cog):
     # add some latency too or smth
     # get available bot info i guess
     @commands.hybrid_command(name="about", aliases=["botinfo", "info", "bi"], with_app_command=True)
-    async def about(self: Self, ctx: Context) -> Optional[discord.Message]:
+    async def about(self, ctx: Context) -> Optional[discord.Message]:
         information: discord.AppInfo = await self.bot.application_info()
         print(information)
 
@@ -643,7 +643,7 @@ class About(commands.Cog):
         return await ctx.send(embed=embed)
 
     @commands.hybrid_command(name="uptime", help="Returns bot's uptime.", with_app_command=True)
-    async def uptime(self: Self, ctx: Context) -> Optional[discord.Message]:
+    async def uptime(self, ctx: Context) -> Optional[discord.Message]:
         days, hours, minutes, seconds = self.get_uptime()
         timestamp = self.get_startup_timestamp()
 
@@ -660,7 +660,7 @@ class About(commands.Cog):
         help="Pong.",
         with_app_command=True,
     )
-    async def ping(self: Self, ctx: Context) -> Optional[discord.Message]:  # work on return design?
+    async def ping(self, ctx: Context) -> Optional[discord.Message]:  # work on return design?
         typing_start = time.monotonic()
         await ctx.typing()
         typing_end = time.monotonic()
@@ -697,7 +697,7 @@ class About(commands.Cog):
         )
 
     @commands.hybrid_command(name="stats", help="Returns some of the bot's stats", with_app_command=True)
-    async def stats(self: Self, ctx: Context) -> Optional[discord.Message]:
+    async def stats(self, ctx: Context) -> Optional[discord.Message]:
         typing_start = time.monotonic()
         await ctx.typing()
         typing_end = time.monotonic()
@@ -746,7 +746,7 @@ class About(commands.Cog):
         return await ctx.reply(embed=embed)
 
     @commands.hybrid_command(name="source", help="Returns command's source.", with_app_command=True)
-    async def source(self: Self, ctx: Context, *, command_name: Optional[str]) -> Optional[discord.Message]:
+    async def source(self, ctx: Context, *, command_name: Optional[str]) -> Optional[discord.Message]:
         git = cs.GITHUB
         if not command_name:
             return await ctx.reply(git)

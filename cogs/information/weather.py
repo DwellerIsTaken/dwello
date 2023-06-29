@@ -14,7 +14,7 @@ from utils import ENV
 
 
 class Weather(Cog):
-    def __init__(self: Self, bot: Bot, *args: Any, **kwargs: Any):
+    def __init__(self, bot: Bot, *args: Any, **kwargs: Any):
         super().__init__(bot, *args, **kwargs)
 
     @commands.hybrid_command(
@@ -22,7 +22,7 @@ class Weather(Cog):
         help="Shows you the temparature in the city you've typed in.",
         with_app_command=True,
     )
-    async def weather(self: Self, ctx: Context, *, city: str) -> Optional[discord.Message]:
+    async def weather(self, ctx: Context, *, city: str) -> Optional[discord.Message]:
         if not city:
             return await ctx.reply("Please provide a city or a contry.", mention_author=True)
 

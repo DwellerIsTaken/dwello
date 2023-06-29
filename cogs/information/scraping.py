@@ -39,7 +39,7 @@ class GameNotFound(Exception):  # <- look into it
 
 class OptionSelectView(discord.ui.View):
     def __init__(
-        self: Self,
+        self,
         ctx: Context,
         options: List[Tuple[str, discord.Embed]],
     ):
@@ -53,7 +53,7 @@ class OptionSelectView(discord.ui.View):
         print("\n\n", self.main_embed)
 
     @discord.ui.select(placeholder="Select a category", row=0)
-    async def category_select(self: Self, interaction: discord.Interaction, select: discord.ui.Select):
+    async def category_select(self, interaction: discord.Interaction, select: discord.ui.Select):
         print(select.values)
         return await interaction.response.edit_message(embed=select.values[0], view=self)
 
@@ -63,7 +63,7 @@ class OptionSelectView(discord.ui.View):
         for label, embed in self.options:
             self.category_select.add_option(label=label, value=embed, emoji="🏠")
 
-    async def interaction_check(self: Self, interaction: discord.Interaction) -> bool:
+    async def interaction_check(self, interaction: discord.Interaction) -> bool:
         if interaction.user and interaction.user == self.ctx.author:
             return True
         await interaction.response.defer()
@@ -79,7 +79,7 @@ class OptionSelectView(discord.ui.View):
 
 
 class Scraping(BaseCog):
-    def __init__(self: Self, bot: Bot, *args: Any, **kwargs: Any):
+    def __init__(self, bot: Bot, *args: Any, **kwargs: Any):
         super().__init__(bot, *args, **kwargs)
 
         self.spotify_client: SpotifyClient = SpotifyClient(
@@ -152,7 +152,7 @@ class Scraping(BaseCog):
         aliases=["images"],
         with_app_command=True,
     )
-    async def image(self: Self, ctx: Context, *, image: str) -> Optional[discord.Message]:
+    async def image(self, ctx: Context, *, image: str) -> Optional[discord.Message]:
         access_key = get_or_fail("UNSPLASH_DEMO_ACCESS_KEY")
         url: URL = "https://api.unsplash.com/photos/random"
 
@@ -196,7 +196,7 @@ class Scraping(BaseCog):
         aliases=["albums"],
         with_app_command=True,
     )
-    async def album(self: Self, ctx: Context, *, album: str) -> Optional[discord.Message]:
+    async def album(self, ctx: Context, *, album: str) -> Optional[discord.Message]:
         data: SearchResult = await self.spotify_client.search(query=album, types=[ObjectType.Album], limit=5)
 
         albums: List[Dict[str, Any]] = data._data["albums"]["items"]
@@ -312,7 +312,7 @@ class Scraping(BaseCog):
         aliases=["artists"],
         with_app_command=True,
     )
-    async def artist(self: Self, ctx: Context, *, artist: str) -> Optional[discord.Message]:
+    async def artist(self, ctx: Context, *, artist: str) -> Optional[discord.Message]:
         data: SearchResult = await self.spotify_client.search(query=artist, types=[ObjectType.Artist], limit=5)
 
         artists: List[Artist] = data.artists.items
@@ -381,7 +381,7 @@ class Scraping(BaseCog):
         aliases=["playlists"],
         with_app_command=True,
     )
-    async def playlist(self: Self, ctx: Context, *, playlist: str) -> Optional[discord.Message]:
+    async def playlist(self, ctx: Context, *, playlist: str) -> Optional[discord.Message]:
         data: SearchResult = await self.spotify_client.search(query=playlist, types=[ObjectType.Playlist], limit=5)
 
         playlists: List[Dict[str, Any]] = data._data["playlists"]["items"]
@@ -415,7 +415,7 @@ class Scraping(BaseCog):
         return await ctx.reply(embed=embed)
 
     @commands.hybrid_command(name="track", help="Returns a track.", aliases=["tracks"], with_app_command=True)
-    async def track(self: Self, ctx: Context, *, track: str) -> Optional[discord.Message]:
+    async def track(self, ctx: Context, *, track: str) -> Optional[discord.Message]:
         data: SearchResult = await self.spotify_client.search(query=track, types=[ObjectType.Track], limit=5)
 
         tracks: List[Track] = data.tracks.items
@@ -460,7 +460,7 @@ class Scraping(BaseCog):
 
         return await ctx.reply(embed=embed)
 
-    async def get_game_by_name(self: Self, name: str) -> int:
+    async def get_game_by_name(self, name: str) -> int:
         url: URL = "http://api.steampowered.com/ISteamApps/GetAppList/v2/"
         async with self.bot.http_session.get(url=url) as response:
             data = await response.json()
@@ -479,7 +479,7 @@ class Scraping(BaseCog):
         raise GameNotFound(name)
 
     @commands.hybrid_command(name="game", help="Returns a game.", aliases=["games"], with_app_command=True)
-    async def game(self: Self, ctx: Context, *, game: str) -> Optional[discord.Message]:
+    async def game(self, ctx: Context, *, game: str) -> Optional[discord.Message]:
         # start = time.time()
         # end = time.time()
         # await ctx.send(f"Executed in: {end-start}") # Idea for a time per func to calculate overall latency/response time?
@@ -536,7 +536,7 @@ class Scraping(BaseCog):
         aliases=["actors", "actress", "actresses"],
         with_app_command=True,
     )  # amybe people alias, but later if there are no other ppl aliases
-    async def movie_person(self: Self, ctx: Context, *, person: str) -> Optional[discord.Message]:
+    async def movie_person(self, ctx: Context, *, person: str) -> Optional[discord.Message]:
         pages: int = 1
         url: URL = (
             f"https://api.themoviedb.org/3/search/person?query={person}&include_adult=True&language=en-US&page={pages}"
@@ -592,7 +592,7 @@ class Scraping(BaseCog):
         help="Returns a movie by its title.",
         aliases=["film", "films", "movies"],
     )
-    async def movie(self: Self, ctx: Context, *, movie: str) -> Optional[discord.Message]:
+    async def movie(self, ctx: Context, *, movie: str) -> Optional[discord.Message]:
         # Docs: https://developer.themoviedb.org/reference/intro/getting-started
 
         pages: int = 1
@@ -630,7 +630,7 @@ class Scraping(BaseCog):
         return await ctx.reply(embed=embed)
 
     @app_commands.command(name="movie", description="Returns a movie by its title.")
-    async def _movie(self: Self, ctx: Context, *, movie: str, year: int = None) -> Optional[discord.Message]:
+    async def _movie(self, ctx: Context, *, movie: str, year: int = None) -> Optional[discord.Message]:
         pages: int = 1
 
         url: URL = f"https://api.themoviedb.org/3/search/movie?query={movie}&include_adult=True&language=en-US&primary_release_year={year}&page={pages}"
@@ -671,7 +671,7 @@ class Scraping(BaseCog):
         return await ctx.reply(embed=embed)
 
     @commands.command(name="show", help="Returns a TV show by its title.", aliases=["series", "shows"])
-    async def show(self: Self, ctx: Context, *, show: str) -> Optional[discord.Message]:
+    async def show(self, ctx: Context, *, show: str) -> Optional[discord.Message]:
         pages: int = 1
         url: URL = f"https://api.themoviedb.org/3/search/tv?query={show}&include_adult=True&language=en-US&page={pages}"
         async with self.bot.http_session.get(url=url, headers=self.tmdb_headers) as response:
@@ -707,7 +707,7 @@ class Scraping(BaseCog):
         return await ctx.reply(embed=embed)
 
     @app_commands.command(name="show", description="Returns a TV show by its title.")
-    async def _show(self: Self, ctx: Context, *, show: str, year: int = None) -> Optional[discord.Message]:
+    async def _show(self, ctx: Context, *, show: str, year: int = None) -> Optional[discord.Message]:
         pages: int = 1
 
         url: URL = f"https://api.themoviedb.org/3/search/movie?query={show}&include_adult=True&language=en-US&primary_release_year={year}&page={pages}"
@@ -752,7 +752,7 @@ class Scraping(BaseCog):
         help="Shows you the temparature in the city you've typed in.",
         with_app_command=True,
     )
-    async def weather(self: Self, ctx: Context, *, city: str) -> Optional[discord.Message]:
+    async def weather(self, ctx: Context, *, city: str) -> Optional[discord.Message]:
         if not city:
             return await ctx.reply("Please provide a city or a contry.", mention_author=True)
 

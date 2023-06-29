@@ -14,10 +14,10 @@ from .shared import SharedEcoUtils
 
 
 class BotEcoUtils:
-    def __init__(self: Self, bot: Bot):
+    def __init__(self, bot: Bot):
         self.bot = bot
 
-    async def balance_check(self: Self, ctx: Context, amount: int, name: str) -> Optional[bool]:
+    async def balance_check(self, ctx: Context, amount: int, name: str) -> Optional[bool]:
         async with self.bot.pool.acquire() as conn:
             conn: asyncpg.Connection
             async with conn.transaction():
@@ -43,7 +43,7 @@ class BotEcoUtils:
 
 
 class Bot_Economy(Cog):
-    def __init__(self: Self, bot: Bot):
+    def __init__(self, bot: Bot):
         self.bot = bot
         self.be: BotEcoUtils = BotEcoUtils(self.bot)
         self.se: SharedEcoUtils = SharedEcoUtils(self.bot)
@@ -52,5 +52,5 @@ class Bot_Economy(Cog):
         name="work",
         description="A boring job with a basic income. Gives some of the bot's currency in return.",
     )
-    async def work_bot(self: Self, ctx: Context):
+    async def work_bot(self, ctx: Context):
         return await self.se.work(ctx, "bot")

@@ -12,7 +12,7 @@ from core import Bot, Cog
 
 
 class Tasks(Cog):
-    def __init__(self: Self, bot: Bot) -> None:
+    def __init__(self, bot: Bot) -> None:
         self.bot = bot
         self.stats_loop.start()
         self.eco_loop.start()  # maybe start it in bot_base.py instead

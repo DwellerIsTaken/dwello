@@ -6,5 +6,5 @@ from core import Bot, Cog
 
 
 class BotConfig(Cog):
-    def __init__(self: Self, bot: Bot) -> None:
+    def __init__(self, bot: Bot) -> None:
         self.bot = bot

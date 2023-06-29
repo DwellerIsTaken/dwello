@@ -20,11 +20,11 @@ async def setup(bot: Bot):
 
 # rename to error.py
 class CommandErrorHandler(commands.Cog):
-    def __init__(self: Self, bot: Bot) -> None:
+    def __init__(self, bot: Bot) -> None:
         self.bot = bot
 
     @commands.Cog.listener()
-    async def on_command_error(self: Self, ctx: Context, error: Exception) -> Optional[discord.Message]:
+    async def on_command_error(self, ctx: Context, error: Exception) -> Optional[discord.Message]:
         """The event triggered when an error is raised while invoking a command.
         Parameters
         ------------
@@ -139,7 +139,7 @@ class CommandErrorHandler(commands.Cog):
 
     # move to another channel
     @commands.command(name="repeat", aliases=["mimic", "copy"])
-    async def do_repeat(self: Self, ctx: Context, *, inp: str):
+    async def do_repeat(self, ctx: Context, *, inp: str):
         """A simple command which repeats your input!
         Parameters
         ------------
@@ -149,7 +149,7 @@ class CommandErrorHandler(commands.Cog):
         return await ctx.send(inp)
 
     @do_repeat.error
-    async def do_repeat_handler(self: Self, ctx: Context, error: Exception):
+    async def do_repeat_handler(self, ctx: Context, error: Exception):
         """A local Error Handler for our command do_repeat.
         This will only listen for errors in do_repeat.
         The global on_command_error will still be invoked after.

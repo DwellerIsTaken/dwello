@@ -9,6 +9,7 @@ import discord
 from typing_extensions import Self, Type
 
 import constants as cs
+
 # import requests
 
 
@@ -36,7 +37,7 @@ async def get_access_token(bot: Bot):
 
 class Twitch:
     # FIX ACCESS TOKEN ISSUE. CREATE LOOP BASED ON EXPIRATION DATE AND REQUEST NEW ONE WHENEVER ONE EXPIRES
-    def __init__(self: Self, access_token: str, bot: Bot) -> None:
+    def __init__(self, access_token: str, bot: Bot) -> None:
         self.bot = bot
         self.session = bot.session
         self.access_token = access_token
@@ -53,7 +54,7 @@ class Twitch:
             "Authorization": f"Bearer {self.access_token}",
         }
 
-    async def username_to_id(self: Self, username: str) -> Optional[str]:
+    async def username_to_id(self, username: str) -> Optional[str]:
         url = f"https://api.twitch.tv/helix/users?login={username.lower()}"
 
         response: aiohttp.ClientResponse = await self.session.get(url, headers=self.headers)
@@ -67,7 +68,7 @@ class Twitch:
 
         return _user_id
 
-    async def id_to_username(self: Self, user_id: int) -> Optional[str]:
+    async def id_to_username(self, user_id: int) -> Optional[str]:
         url = f"https://api.twitch.tv/helix/users?id={user_id}"
 
         response: aiohttp.ClientResponse = await self.session.get(url, headers=self.headers)
@@ -82,9 +83,7 @@ class Twitch:
 
         return _username
 
-    async def event_subscription(
-        self: Self, ctx: Context, type_: str, username: str
-    ) -> Union[Tuple[discord.Message, dict], Any]:
+    async def event_subscription(self, ctx: Context, type_: str, username: str) -> Union[Tuple[discord.Message, dict], Any]:
         async with self.bot.pool.acquire() as conn:
             conn: asyncpg.Connection
             async with conn.transaction():
@@ -175,7 +174,7 @@ class Twitch:
         # type_ = stream.online
 
     # return a list of users the guild is subscribed to
-    async def guild_twitch_subscriptions(self: Self, ctx: Context) -> Optional[discord.Message]:
+    async def guild_twitch_subscriptions(self, ctx: Context) -> Optional[discord.Message]:
         async with self.bot.pool.acquire() as conn:
             conn: asyncpg.Connection
             async with conn.transaction():
@@ -206,7 +205,7 @@ class Twitch:
         return await ctx.reply(embed=twitch_embed)
 
     async def twitch_unsubscribe_from_streamer(
-        self: Self, ctx: Context, username: Union[str, Literal["all"]]
+        self, ctx: Context, username: Union[str, Literal["all"]]
     ) -> Optional[
         discord.Message
     ]:  # IF ALL: GET ALL TWITCH USERS THAT GUILD IS SUBSCRIBED TO AND UNSUB (what if the same user for multiple guilds)
@@ -268,7 +267,7 @@ class Twitch:
         )
 
     async def twitch_to_discord(
-        self: Self, data
+        self, data
     ) -> Optional[discord.Message]:  # LET MEMBERS CUSTOMISE EVERYTHING (thumbnail, title, description, footer, timestamp...)
         async with self.bot.pool.acquire() as conn:
             conn: asyncpg.Connection
@@ -314,7 +313,7 @@ class Twitch:
                     # channel_id = row['channel_id']
 
     async def event_subscription_list(
-        self: Self,
+        self,
     ):  # RETURNS ALL SUBSCRIPTIONS FOR A CERTAIN CLIENT_ID (?)
         response: aiohttp.ClientResponse = await self.session.get(HELIX_URL, headers=self.headers)
         data = await response.json()

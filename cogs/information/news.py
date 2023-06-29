@@ -12,7 +12,7 @@ from discord.ext import commands
 from typing_extensions import Self
 
 import constants as cs
-from core import Context, Cog, Bot
+from core import Bot, Cog, Context
 from utils import get_unix_timestamp, is_discord_link
 
 # from utils import DuckCog, group
@@ -173,7 +173,7 @@ class NewsViewer(discord.ui.View):
         ctx: Optional[Context]
 
     def __init__(
-        self: Self,
+        self,
         obj: Union[Context, discord.Interaction[Bot]],
         news: List[asyncpg.Record] = None,
         /,
@@ -212,14 +212,14 @@ class NewsViewer(discord.ui.View):
 
             self.add_item(self.go_back)
 
-    async def interaction_check(self: Self, interaction: discord.Interaction[Bot]) -> Optional[bool]:
+    async def interaction_check(self, interaction: discord.Interaction[Bot]) -> Optional[bool]:
         if val := interaction.user == self.author:
             return val
         else:
             return await interaction.response.send_message(content="Hey! You can't do that!", ephemeral=True)
 
     # @cachetools.cached(cachetools.LRUCache(maxsize=10))
-    async def get_embed(self: Self, page: Page) -> discord.Embed:
+    async def get_embed(self, page: Page) -> discord.Embed:
         """:class:`discord.Embed`: Used to get the embed for the current page."""
         print(page)
 
@@ -244,7 +244,7 @@ class NewsViewer(discord.ui.View):
         return embed
 
     """@discord.ui.button(style=discord.ButtonStyle.blurple, label='\u226a')
-    async def previous(self: Self, interaction: discord.Interaction[Bot], button: discord.ui.Button) -> None:
+    async def previous(self, interaction: discord.Interaction[Bot], button: discord.ui.Button) -> None:
         self.news.advance()
         page = self.news.current
         self.update_labels()
@@ -252,7 +252,7 @@ class NewsViewer(discord.ui.View):
         return await interaction.response.edit_message(embed=embed, view=self)"""
 
     """@discord.ui.button(style=discord.ButtonStyle.red)
-    async def current(self: Self, interaction: discord.Interaction[Bot], button: discord.ui.Button) -> None:
+    async def current(self, interaction: discord.Interaction[Bot], button: discord.ui.Button) -> None:
         self.stop()
         await self.message.delete()
 
@@ -261,7 +261,7 @@ class NewsViewer(discord.ui.View):
                 await self.ctx.message.add_reaction(":white_check_mark:")"""
 
     """@discord.ui.button(style=discord.ButtonStyle.blurple, label='\u226b')
-    async def next(self: Self, interaction: discord.Interaction[Bot], button: discord.ui.Button):
+    async def next(self, interaction: discord.Interaction[Bot], button: discord.ui.Button):
         self.news.go_back()
         page = self.news.current
         self.update_labels()
@@ -348,18 +348,18 @@ class NewsViewer(discord.ui.View):
 
 
 class News(Cog):
-    def __init__(self: Self, bot: Bot) -> None:
+    def __init__(self, bot: Bot) -> None:
         self.bot = bot
 
     @commands.group(invoke_without_command=True)
-    async def news(self: Self, ctx: Context) -> NewsViewer:
+    async def news(self, ctx: Context) -> NewsViewer:
         news = await self.bot.pool.fetch("SELECT * FROM news ORDER BY news_id DESC")
 
         return await NewsViewer.start(ctx, news)
 
     @commands.is_owner()
     @news.command(hidden=True, aliases=["publish"])
-    async def add(self: Self, ctx: Context, link: str, *, title: str):
+    async def add(self, ctx: Context, link: str, *, title: str):
         if not await ctx.bot.is_owner(ctx.author):
             return await self.news(ctx)
 
@@ -401,7 +401,7 @@ class News(Cog):
 
     @commands.is_owner()
     @news.command(hidden=True)
-    async def remove(self: Self, ctx: Context, news_id: int):
+    async def remove(self, ctx: Context, news_id: int):
         if not await ctx.bot.is_owner(ctx.author):
             return await self.news(ctx)
 

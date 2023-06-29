@@ -11,10 +11,6 @@ from discord.ext import commands
 from discord.ext.commands.errors import BadArgument
 from typing_extensions import LiteralString, Self, override
 
-if TYPE_CHECKING:
-    pass
-
-
 target_type = Union[discord.Member, discord.User, discord.PartialEmoji, discord.Guild, discord.Invite]
 
 
@@ -276,7 +272,7 @@ class DwelloContext(commands.Context):
     def referenced_user(self) -> typing.Optional[discord.abc.User]:
         return getattr(self.reference, "author", None)
 
-    async def create_codeblock(self: Self, content: str) -> str:
+    async def create_codeblock(self, content: str) -> str:
         fmt: LiteralString = "`" * 3
         return f"{fmt}py\n{content}{fmt}"
 

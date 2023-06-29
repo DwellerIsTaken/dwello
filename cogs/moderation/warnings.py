@@ -33,7 +33,7 @@ class TimeoutSuggestion(View):
         self.reason = reason
 
     @button(label="Yes", style=discord.ButtonStyle.green)
-    async def yes(self: Self, interaction: discord.Interaction, button: Button):
+    async def yes(self, interaction: discord.Interaction, button: Button):
         await interaction_check(interaction, self.ctx.author)
 
         # await self.ctx.interaction.response.defer()
@@ -43,7 +43,7 @@ class TimeoutSuggestion(View):
         return await interaction.message.delete()
 
     @button(label="No", style=discord.ButtonStyle.red)
-    async def no(self: Self, interaction: discord.Interaction, button: Button):
+    async def no(self, interaction: discord.Interaction, button: Button):
         await interaction_check(interaction, self.ctx.author)
 
         await interaction.message.edit(view=None)
@@ -55,7 +55,7 @@ class Warnings(Cog):
         self.bot = bot
 
     @commands.hybrid_group(invoke_without_command=True, with_app_command=True)
-    async def warning(self: Self, ctx: Context):
+    async def warning(self, ctx: Context):
         embed = discord.Embed(
             description=f"```{ctx.clean_prefix}warning [command_name]```",
             color=cs.WARNING_COLOR,
@@ -67,7 +67,7 @@ class Warnings(Cog):
     @commands.has_permissions(moderate_members=True)
     @commands.guild_only()
     async def warn(
-        self: Self,
+        self,
         ctx: Context,
         member: discord.Member,
         reason: Optional[str] = None,
@@ -129,7 +129,7 @@ class Warnings(Cog):
     @warning.command(name="warnings", help="Shows member's warnings.", with_app_command=True)
     @commands.bot_has_permissions(moderate_members=True)
     @commands.guild_only()
-    async def warnings(self: Self, ctx: Context, member: discord.Member = None) -> Optional[discord.Message]:
+    async def warnings(self, ctx: Context, member: discord.Member = None) -> Optional[discord.Message]:
         async with ctx.typing(ephemeral=True):
             async with self.bot.pool.acquire() as conn:
                 conn: asyncpg.Connection
@@ -222,7 +222,7 @@ class Warnings(Cog):
     @commands.bot_has_permissions(moderate_members=True)
     @commands.has_permissions(moderate_members=True)
     @commands.guild_only()
-    async def remove_warn(self: Self, ctx: Context, member: discord.Member, warning: str) -> Optional[discord.Message]:
+    async def remove_warn(self, ctx: Context, member: discord.Member, warning: str) -> Optional[discord.Message]:
         async with ctx.typing(ephemeral=True):
             async with self.bot.pool.acquire() as conn:
                 conn: asyncpg.Connection
@@ -281,7 +281,7 @@ class Warnings(Cog):
             return await ctx.reply(embed=embed, permission_cmd=True)
 
     @remove_warn.autocomplete("warning")
-    async def autocomplete_callback(self: Self, interaction: discord.Interaction, current: str) -> List[Choice]:
+    async def autocomplete_callback(self, interaction: discord.Interaction, current: str) -> List[Choice]:
         async with self.bot.pool.acquire() as conn:
             conn: asyncpg.Connection
             async with conn.transaction():  # REDO: DONT FETCH ON AUTOCOMPLETE

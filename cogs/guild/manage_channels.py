@@ -14,11 +14,11 @@ from utils import HandleHTTPException
 
 
 class ChannelsFunctions:
-    def __init__(self: Self, bot: Bot):
+    def __init__(self, bot: Bot):
         self.bot = bot
 
     async def counter_func(
-        self: Self,
+        self,
         ctx: Context,
         name: Literal["all", "member", "bot", "category"],
     ) -> Optional[
@@ -123,7 +123,7 @@ class ChannelsFunctions:
         )  # DISPLAEYD IN DISCORD LOGS
         return counter_channel
 
-    async def move_channel(self: Self, ctx: Context, category: discord.CategoryChannel, *args: str) -> None:
+    async def move_channel(self, ctx: Context, category: discord.CategoryChannel, *args: str) -> None:
         async with self.bot.pool.acquire() as conn:
             conn: asyncpg.Connection
             async with conn.transaction():
@@ -140,7 +140,7 @@ class ChannelsFunctions:
 
 
 class Stats_View(View):
-    def __init__(self: Self, bot: Bot, ctx: Context, name: str, *, timeout: int = None):
+    def __init__(self, bot: Bot, ctx: Context, name: str, *, timeout: int = None):
         super().__init__(timeout=timeout)
         self.bot = bot
         self.ctx = ctx
@@ -149,7 +149,7 @@ class Stats_View(View):
         self.cf_: ChannelsFunctions = ChannelsFunctions(self.bot)
 
     # DO A MORE USER-FRIENDLY INTERACTION CHECK
-    async def interaction_check(self: Self, interaction: discord.Interaction) -> Optional[discord.Message]:
+    async def interaction_check(self, interaction: discord.Interaction) -> Optional[discord.Message]:
         if interaction.user.id == self.ctx.author.id:
             return True
 
@@ -167,9 +167,7 @@ class Stats_View(View):
         disabled=False,
         custom_id="approve_button",
     )
-    async def approve(
-        self: Self, interaction: discord.interactions.Interaction, button: Button
-    ) -> Optional[discord.Message]:
+    async def approve(self, interaction: discord.interactions.Interaction, button: Button) -> Optional[discord.Message]:
         async with self.bot.pool.acquire() as conn:
             conn: asyncpg.Connection
             async with conn.transaction():
@@ -187,7 +185,7 @@ class Stats_View(View):
         disabled=False,
         custom_id="deny_button",
     )
-    async def deny(self: Self, interaction: discord.interactions.Interaction, button: Button) -> None:
+    async def deny(self, interaction: discord.interactions.Interaction, button: Button) -> None:
         async with self.bot.pool.acquire() as conn:
             conn: asyncpg.Connection
             async with conn.transaction():
@@ -201,7 +199,7 @@ class Stats_View(View):
 
 
 class Channels(Cog):
-    def __init__(self: Self, bot: Bot):
+    def __init__(self, bot: Bot):
         self.bot = bot
         self.cf: ChannelsFunctions = ChannelsFunctions(self.bot)
 
@@ -214,7 +212,7 @@ class Channels(Cog):
     @commands.bot_has_permissions(manage_channels=True)
     @commands.has_permissions(manage_channels=True)
     @commands.guild_only()
-    async def counter(self: Self, ctx: Context):
+    async def counter(self, ctx: Context):
         async with ctx.typing(ephemeral=True):
             embed: discord.Embed = discord.Embed(description="```$counter [counter type]```", color=cs.WARNING_COLOR)
             return await ctx.reply(embed=embed, user_mistake=True)
@@ -223,30 +221,30 @@ class Channels(Cog):
         name="all",
         help="Creates a [voice] channel with all-user (bots included) count on this server.",
     )
-    async def all(self: Self, ctx: Context):
+    async def all(self, ctx: Context):
         return await self.cf.counter_func(ctx, "all")
 
     @counter.command(
         name="members",
         help="Creating a [voice] channel with all-member count on this specific server.",
     )
-    async def members(self: Self, ctx: Context):
+    async def members(self, ctx: Context):
         return await self.cf.counter_func(ctx, "member")
 
     @counter.command(
         name="bots",
         help="Creating a [voice] channel with all-bot count on this specific server.",
     )
-    async def bots(self: Self, ctx: Context):
+    async def bots(self, ctx: Context):
         return await self.cf.counter_func(ctx, "bot")
 
     @counter.command(name="category", help="Creates a category where your counter(s) will be stored.")
-    async def category(self: Self, ctx: Context):
+    async def category(self, ctx: Context):
         category = await self.cf.counter_func(ctx, "category")
         return await self.cf.move_channel(ctx, category[1], "all", "member", "bot")
 
     @counter.command(name="list", help="Shows a list of counters you can create.")
-    async def list(self: Self, ctx: Context):
+    async def list(self, ctx: Context):
         async with ctx.typing(ephemeral=True):
             embed: discord.Embed = discord.Embed(
                 title=":bar_chart: AVAILABLE COUNTERS :bar_chart:",
