@@ -12,7 +12,7 @@ from utils.context import DwelloContext
 # TRANSFER ONTO ECONOMY FOLDER  
 
 if TYPE_CHECKING:
-    from bot import Dwello 
+    from core import Bot 
     
 else:
     from discord.ext.commands import Bot as Dwello"""

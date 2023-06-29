@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from discord.ext import commands
 
-from bot import Dwello
+from core import Bot
 
 from .standard import StandardModeration
 from .timeout import Timeout
@@ -27,5 +27,5 @@ class Moderation(StandardModeration, Timeout, Warnings, name="Moderation"):
         return True
 
 
-async def setup(bot: Dwello):
+async def setup(bot: Bot):
     await bot.add_cog(Moderation(bot))

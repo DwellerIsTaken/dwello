@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from bot import Dwello
+from core import Bot
 
 from .botconfig import BotConfig
 from .events import Events
@@ -14,5 +14,5 @@ class Other(Owner, Events, Tasks, BotConfig):
     """Other Class"""
 
 
-async def setup(bot: Dwello):
+async def setup(bot: Bot):
     await bot.add_cog(Other(bot))

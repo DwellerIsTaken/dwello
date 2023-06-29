@@ -7,16 +7,11 @@ import asyncpg
 from typing_extensions import Self
 
 if TYPE_CHECKING:
-    from bot import Dwello
-
-else:
-    from discord.ext.commands import Bot as Dwello
+    from core import Bot
 
 
-# RENAME FILE
-# MAYBE RENAME CLASS
-class DB_Operations:
-    def __init__(self: Self, bot: Dwello):
+class DataBaseOperations:
+    def __init__(self, bot: Bot):
         self.bot = bot
 
     async def create_tables(self: Self) -> List[str]:
@@ -60,9 +55,7 @@ class DB_Operations:
                 job_dict = {}
                 guild_check_list = []
 
-                data = await conn.fetch(
-                    "SELECT guild_id, name, id, salary, description FROM jobs"
-                )
+                data = await conn.fetch("SELECT guild_id, name, id, salary, description FROM jobs")
 
                 for record in data:
                     guild_id, name, id, salary, description = (

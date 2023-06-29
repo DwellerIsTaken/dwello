@@ -3,16 +3,7 @@ from __future__ import annotations
 import contextlib
 import datetime
 import re
-from typing import (
-    TYPE_CHECKING,
-    List,
-    NamedTuple,
-    Optional,
-    Tuple,
-    Type,
-    TypeVar,
-    Union,
-)
+from typing import TYPE_CHECKING, List, NamedTuple, Optional, Tuple, Type, TypeVar, Union
 
 import asyncpg
 import discord
@@ -21,8 +12,8 @@ from discord.ext import commands
 from typing_extensions import Self
 
 import constants as cs
-from bot import Dwello, DwelloContext
-from utils import BaseCog, get_unix_timestamp, is_discord_link
+from core import Context, Cog, Bot
+from utils import get_unix_timestamp, is_discord_link
 
 # from utils import DuckCog, group
 # from ._news_viewer import NewsViewer
@@ -83,9 +74,7 @@ class NewsFeed:
     @property
     def previous(self) -> Page:
         """Get the previous page."""
-        number = (
-            self._current_page - 1 if self._current_page > 0 else self.max_pages - 1
-        )
+        number = self._current_page - 1 if self._current_page > 0 else self.max_pages - 1
         return self.news[number]
 
     @property
@@ -96,9 +85,7 @@ class NewsFeed:
     @property
     def next(self) -> Page:
         """Get the next page"""
-        number = (
-            self._current_page + 1 if self._current_page + 1 < self.max_pages else 0
-        )
+        number = self._current_page + 1 if self._current_page + 1 < self.max_pages else 0
         return self.news[number]
 
     @property
@@ -183,11 +170,11 @@ class NewsViewer(discord.ui.View):
 
     if TYPE_CHECKING:
         message: discord.Message
-        ctx: Optional[DwelloContext]
+        ctx: Optional[Context]
 
     def __init__(
         self: Self,
-        obj: Union[DwelloContext, discord.Interaction[Dwello]],
+        obj: Union[Context, discord.Interaction[Bot]],
         news: List[asyncpg.Record] = None,
         /,
         embed: discord.Embed = None,
@@ -195,14 +182,14 @@ class NewsViewer(discord.ui.View):
     ):
         super().__init__()
 
-        if isinstance(obj, DwelloContext):
+        if isinstance(obj, Context):
             self.author = obj.author
-            self.bot: Dwello = obj.bot
+            self.bot: Bot = obj.bot
             self.ctx = obj
         else:
             self.ctx = None
             self.author = obj.user
-            self.bot: Dwello = obj.client
+            self.bot: Bot = obj.client
 
         self.embed = embed
         self.old_view = old_view
@@ -212,9 +199,7 @@ class NewsViewer(discord.ui.View):
 
             self.current = NewsCurrentButton(style=ButtonStyle.red)
             self.next = NewsNextButton(style=ButtonStyle.blurple, label="\u226b")
-            self.previous = NewsPreviousButton(
-                style=ButtonStyle.blurple, label="\u226a"
-            )
+            self.previous = NewsPreviousButton(style=ButtonStyle.blurple, label="\u226a")
 
             self.add_item(self.previous)
             self.add_item(self.current)
@@ -223,21 +208,15 @@ class NewsViewer(discord.ui.View):
             self.news = news
 
         if self.old_view and self.embed:
-            self.go_back = NewsGoBackButton(
-                emoji="🏠", label="Go Back", style=discord.ButtonStyle.blurple
-            )
+            self.go_back = NewsGoBackButton(emoji="🏠", label="Go Back", style=discord.ButtonStyle.blurple)
 
             self.add_item(self.go_back)
 
-    async def interaction_check(
-        self: Self, interaction: discord.Interaction[Dwello]
-    ) -> Optional[bool]:
+    async def interaction_check(self: Self, interaction: discord.Interaction[Bot]) -> Optional[bool]:
         if val := interaction.user == self.author:
             return val
         else:
-            return await interaction.response.send_message(
-                content="Hey! You can't do that!", ephemeral=True
-            )
+            return await interaction.response.send_message(content="Hey! You can't do that!", ephemeral=True)
 
     # @cachetools.cached(cachetools.LRUCache(maxsize=10))
     async def get_embed(self: Self, page: Page) -> discord.Embed:
@@ -265,7 +244,7 @@ class NewsViewer(discord.ui.View):
         return embed
 
     """@discord.ui.button(style=discord.ButtonStyle.blurple, label='\u226a')
-    async def previous(self: Self, interaction: discord.Interaction[Dwello], button: discord.ui.Button) -> None:
+    async def previous(self: Self, interaction: discord.Interaction[Bot], button: discord.ui.Button) -> None:
         self.news.advance()
         page = self.news.current
         self.update_labels()
@@ -273,7 +252,7 @@ class NewsViewer(discord.ui.View):
         return await interaction.response.edit_message(embed=embed, view=self)"""
 
     """@discord.ui.button(style=discord.ButtonStyle.red)
-    async def current(self: Self, interaction: discord.Interaction[Dwello], button: discord.ui.Button) -> None:
+    async def current(self: Self, interaction: discord.Interaction[Bot], button: discord.ui.Button) -> None:
         self.stop()
         await self.message.delete()
 
@@ -282,7 +261,7 @@ class NewsViewer(discord.ui.View):
                 await self.ctx.message.add_reaction(":white_check_mark:")"""
 
     """@discord.ui.button(style=discord.ButtonStyle.blurple, label='\u226b')
-    async def next(self: Self, interaction: discord.Interaction[Dwello], button: discord.ui.Button):
+    async def next(self: Self, interaction: discord.Interaction[Bot], button: discord.ui.Button):
         self.news.go_back()
         page = self.news.current
         self.update_labels()
@@ -296,9 +275,7 @@ class NewsViewer(discord.ui.View):
 
     def update_labels(self: Self):
         """Used to update the internal cache of the view, it will update the labels of the buttons."""
-        previous_page_num = self.news.max_pages - self.news.news.index(
-            self.news.previous
-        )
+        previous_page_num = self.news.max_pages - self.news.news.index(self.news.previous)
         self.next.disabled = previous_page_num == 1
 
         self.current.label = str(self.news.max_pages - self.news.current_index)
@@ -309,7 +286,7 @@ class NewsViewer(discord.ui.View):
     @classmethod
     async def start(
         cls: Type[NVT],
-        ctx: DwelloContext,
+        ctx: Context,
         news: List[asyncpg.Record] = None,
         /,
         embed: discord.Embed = None,
@@ -334,7 +311,7 @@ class NewsViewer(discord.ui.View):
     @classmethod
     async def from_interaction(
         cls: Type[NVT],
-        interaction: discord.Interaction[Dwello],
+        interaction: discord.Interaction[Bot],
         news: List[asyncpg.Record] = None,
         /,
         embed: discord.Embed = None,
@@ -370,16 +347,19 @@ class NewsViewer(discord.ui.View):
         super().stop()"""
 
 
-class News(BaseCog):
+class News(Cog):
+    def __init__(self: Self, bot: Bot) -> None:
+        self.bot = bot
+
     @commands.group(invoke_without_command=True)
-    async def news(self: Self, ctx: DwelloContext) -> NewsViewer:
+    async def news(self: Self, ctx: Context) -> NewsViewer:
         news = await self.bot.pool.fetch("SELECT * FROM news ORDER BY news_id DESC")
 
         return await NewsViewer.start(ctx, news)
 
     @commands.is_owner()
     @news.command(hidden=True, aliases=["publish"])
-    async def add(self: Self, ctx: DwelloContext, link: str, *, title: str):
+    async def add(self: Self, ctx: Context, link: str, *, title: str):
         if not await ctx.bot.is_owner(ctx.author):
             return await self.news(ctx)
 
@@ -421,7 +401,7 @@ class News(BaseCog):
 
     @commands.is_owner()
     @news.command(hidden=True)
-    async def remove(self: Self, ctx: DwelloContext, news_id: int):
+    async def remove(self: Self, ctx: Context, news_id: int):
         if not await ctx.bot.is_owner(ctx.author):
             return await self.news(ctx)
 

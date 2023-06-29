@@ -1,22 +1,23 @@
 from __future__ import annotations
 
+from core import Bot, Cog
+
 # from colorthief import ColorThief
 # import matplotlib.colors as clr
 # from utils.levelling import LevellingUtils
 # from PIL import Image, ImageFont
 # from easy_pil import Editor, Canvas, load_image_async, Font
 # from cogs.economy.guild_eco import GuildEcoUtils
-from typing import Any
 
-from bot import Dwello
-from utils import BaseCog
 
 # REFACTOR TO PILLOW
 
 
-class UserInfo(BaseCog):
-    def __init__(self, bot: Dwello, *args: Any, **kwargs: Any):
-        super().__init__(bot, *args, **kwargs)
+class UserInfo(Cog):
+    def __init__(self, bot: Bot) -> None:
+        self.bot = bot
+        # self.levelling = LevellingUtils(bot)
+        # self.eco = GuildEcoUtils(bot)
 
     """@commands.hybrid_command(name = 'stats', description="Shows personal information and rank statistics",with_app_command=True) 
     async def stats(self, ctx: DwelloContext, member: Optional[Union[discord.Member, discord.User]] = commands.Author) -> Optional[discord.Message]:

@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from bot import Dwello
+from core import Bot
 
 from .config import Config
 from .manage_channels import Channels
@@ -15,10 +15,8 @@ class Guild(Config, Channels, Messages, name="Guild Management"):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.select_emoji = "📝"
-        self.select_brief = (
-            "Commands for guild customization, configuration, and management."
-        )
+        self.select_brief = "Commands for guild customization, configuration, and management."
 
 
-async def setup(bot: Dwello):
+async def setup(bot: Bot):
     await bot.add_cog(Guild(bot))

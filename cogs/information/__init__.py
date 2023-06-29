@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from bot import Dwello
+from core import Bot
 
 from .news import News
 from .scraping import Scraping
@@ -18,5 +18,5 @@ class Information(Scraping, UserInfo, News, name="Information"):
         self.select_brief = "Commands for providing information and data to users."
 
 
-async def setup(bot: Dwello):
+async def setup(bot: Bot):
     await bot.add_cog(Information(bot))

@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from typing import Any, List, Literal, Optional, Union
+from typing import List, Literal, Optional, Union
 
 import asyncpg
 import discord
@@ -8,17 +8,14 @@ from discord.ext import commands
 from typing_extensions import Self
 
 import constants as cs
-from bot import Dwello, DwelloContext
-from utils import BaseCog
+from core import Bot, Cog, Context
 
 
 class PrefixConfig:
-    def __init__(self: Self, bot: Dwello) -> None:
+    def __init__(self: Self, bot: Bot) -> None:
         self.bot = bot
 
-    async def set_prefix(
-        self: Self, ctx: DwelloContext, prefix: str
-    ) -> Optional[discord.Message]:
+    async def set_prefix(self: Self, ctx: Context, prefix: str) -> Optional[discord.Message]:
         async with self.bot.pool.acquire() as conn:
             conn: asyncpg.Connection
             async with conn.transaction():
@@ -30,72 +27,49 @@ class PrefixConfig:
                     )
 
                 except asyncpg.exceptions.StringDataRightTruncationError:
-                    return await ctx.reply(
-                        "This prefix is too long!", user_mistake=True
-                    )  # add allowed prefix length
+                    return await ctx.reply("This prefix is too long!", user_mistake=True)  # add allowed prefix length
 
                 except asyncpg.exceptions.UniqueViolationError:
-                    return await ctx.reply(
-                        "This prefix is already added!", user_mistake=True
-                    )
+                    return await ctx.reply("This prefix is already added!", user_mistake=True)
 
         # await self.bot.db.fetch_table_data("prefixes")
         self.bot.guild_prefixes[ctx.guild.id].append(prefix)
         return await ctx.reply(
-            embed=discord.Embed(
-                description=f"The prefix is set to `{prefix}`", color=cs.RANDOM_COLOR
-            ),
+            embed=discord.Embed(description=f"The prefix is set to `{prefix}`", color=cs.RANDOM_COLOR),
             permission_cmd=True,
         )
 
-    async def display_prefixes(
-        self: Self, ctx: DwelloContext
-    ) -> Optional[discord.Message]:
+    async def display_prefixes(self: Self, ctx: Context) -> Optional[discord.Message]:
         async with self.bot.pool.acquire() as conn:
             conn: asyncpg.Connection
             async with conn.transaction():
-                prefixes = await conn.fetch(
-                    "SELECT prefix FROM prefixes WHERE guild_id = $1", ctx.guild.id
-                )
-                default_prefixes: List[str] = self.bot.DEFAULT_PREFIXES + [
-                    f"<@!{self.bot.user.id}>"
-                ]
+                prefixes = await conn.fetch("SELECT prefix FROM prefixes WHERE guild_id = $1", ctx.guild.id)
+                default_prefixes: List[str] = self.bot.DEFAULT_PREFIXES + [f"<@!{self.bot.user.id}>"]
 
-                embed: discord.Embed = discord.Embed(
-                    title="Prefixes", color=cs.RANDOM_COLOR
-                )
+                embed: discord.Embed = discord.Embed(title="Prefixes", color=cs.RANDOM_COLOR)
 
                 if ctx.guild:
                     embed.add_field(
                         name="Guild's prefix(es)",
                         value=(
-                            ", ".join(f"`{p['prefix']}`" for p in prefixes)
-                            if prefixes
-                            else "`None` -> `dw.help prefix`"
+                            ", ".join(f"`{p['prefix']}`" for p in prefixes) if prefixes else "`None` -> `dw.help prefix`"
                         ),
                         inline=False,
                     )
                 embed.add_field(
                     name="Default prefixes",
-                    value=", ".join(
-                        p if str(self.bot.user.id) in p else f"`{p}`"
-                        for p in default_prefixes
-                    ),
+                    value=", ".join(p if str(self.bot.user.id) in p else f"`{p}`" for p in default_prefixes),
                     inline=False,
                 )
                 embed.set_footer(text=None)
 
         return await ctx.reply(embed=embed, mention_author=False, ephemeral=False)
 
-    async def remove_prefix(
-        self: Self, ctx: DwelloContext, prefix: Union[str, Literal["all"]]
-    ) -> Optional[discord.Message]:
+    async def remove_prefix(self: Self, ctx: Context, prefix: Union[str, Literal["all"]]) -> Optional[discord.Message]:
         async with self.bot.pool.acquire() as conn:
             conn: asyncpg.Connection
             async with conn.transaction():
-                prefixes = await conn.fetch(
-                    "SELECT prefix FROM prefixes WHERE guild_id = $1", ctx.guild.id
-                )
+                prefixes = await conn.fetch("SELECT prefix FROM prefixes WHERE guild_id = $1", ctx.guild.id)
 
                 if not (prefixes[0] if prefixes else None):
                     return await ctx.reply(
@@ -105,9 +79,7 @@ class PrefixConfig:
 
                 count = len(prefixes)
                 if prefix == "all":
-                    await conn.execute(
-                        "DELETE FROM prefixes WHERE guild_id = $1", ctx.guild.id
-                    )
+                    await conn.execute("DELETE FROM prefixes WHERE guild_id = $1", ctx.guild.id)
 
                 elif isinstance(prefix, str):
                     await conn.execute(
@@ -129,12 +101,10 @@ class PrefixConfig:
 
 
 class ChannelConfig:
-    def __init__(self: Self, bot: Dwello) -> None:
+    def __init__(self: Self, bot: Bot) -> None:
         self.bot = bot
 
-    async def add_message(
-        self: Self, ctx: DwelloContext, name: str, text: str
-    ) -> Optional[discord.Message]:
+    async def add_message(self: Self, ctx: Context, name: str, text: str) -> Optional[discord.Message]:
         async with self.bot.pool.acquire() as conn:
             conn: asyncpg.Connection
             async with conn.transaction():
@@ -179,7 +149,7 @@ class ChannelConfig:
 
     async def add_channel(
         self: Self,
-        ctx: DwelloContext,
+        ctx: Context,
         name: str,
         channel: Optional[discord.TextChannel] = commands.CurrentChannel,
     ) -> Optional[discord.Message]:
@@ -192,7 +162,7 @@ class ChannelConfig:
                     name,
                 )
 
-                string = f"The channel has been {'updated' if result[0] if result else None else 'set'} to {channel.mention}"
+                string = f"The channel has been {'updated' if result[0] and result else 'set'} to {channel.mention}"
 
                 if (result[0] if result else None) == channel.id:
                     return await ctx.reply(
@@ -220,9 +190,7 @@ class ChannelConfig:
             permission_cmd=True,
         )
 
-    async def message_display(
-        self: Self, ctx: DwelloContext, name: str
-    ) -> Optional[discord.Message]:
+    async def message_display(self: Self, ctx: Context, name: str) -> Optional[discord.Message]:
         async with self.bot.pool.acquire() as conn:
             conn: asyncpg.Connection
             async with conn.transaction():
@@ -247,9 +215,7 @@ class ChannelConfig:
             permission_cmd=True,
         )
 
-    async def channel_display(
-        self: Self, ctx: DwelloContext, name: str
-    ) -> Optional[discord.Message]:
+    async def channel_display(self: Self, ctx: Context, name: str) -> Optional[discord.Message]:
         async with self.bot.pool.acquire() as conn:
             conn: asyncpg.Connection
             async with conn.transaction():
@@ -276,7 +242,7 @@ class ChannelConfig:
             permission_cmd=True,
         )
 
-    async def remove(self, ctx: DwelloContext, name: str) -> Optional[discord.Message]:
+    async def remove(self, ctx: Context, name: str) -> Optional[discord.Message]:
         async with self.bot.pool.acquire() as conn:
             conn: asyncpg.Connection
             async with conn.transaction():
@@ -306,71 +272,57 @@ class ChannelConfig:
         )
 
 
-class Config(BaseCog):
-    def __init__(self: Self, bot: Dwello, *args: Any, **kwargs: Any):
-        super().__init__(bot, *args, **kwargs)
+class Config(Cog):
+    def __init__(self: Self, bot: Bot) -> None:
+        self.bot: Bot = bot
         self._channel: ChannelConfig = ChannelConfig(self.bot)
         self._prefix: PrefixConfig = PrefixConfig(self.bot)
 
     # set perms per command instead
-    @commands.hybrid_group(
-        aliases=["prefixes"], invoke_without_command=True, with_app_command=False
-    )
+    @commands.hybrid_group(aliases=["prefixes"], invoke_without_command=True, with_app_command=False)
     @commands.guild_only()
-    async def prefix(self: Self, ctx: DwelloContext):
+    async def prefix(self: Self, ctx: Context):
         async with ctx.typing():
             return await self._prefix.display_prefixes(ctx)
 
-    @commands.check_any(
-        commands.is_owner(), commands.has_permissions(administrator=True)
-    )
+    @commands.check_any(commands.is_owner(), commands.has_permissions(administrator=True))
     @commands.guild_only()
     @prefix.command(name="add", help="Adds bot prefix to the guild.")
-    async def add_prefix(self: Self, ctx: DwelloContext, *, prefix: str):
+    async def add_prefix(self: Self, ctx: Context, *, prefix: str):
         _prefix: List[str] = prefix.split()
         if len(_prefix) > 1:
-            return await ctx.reply(
-                "Prefix musn't contain whitespaces.", user_mistake=True
-            )
+            return await ctx.reply("Prefix musn't contain whitespaces.", user_mistake=True)
 
         return await self._prefix.set_prefix(ctx, prefix)
 
     @prefix.command(name="display", help="Displays all prefixes.")
-    async def display_prefix(self: Self, ctx: DwelloContext):
+    async def display_prefix(self: Self, ctx: Context):
         return await self._prefix.display_prefixes(ctx)
 
-    @commands.check_any(
-        commands.is_owner(), commands.has_permissions(administrator=True)
-    )
+    @commands.check_any(commands.is_owner(), commands.has_permissions(administrator=True))
     @commands.guild_only()
     @prefix.command(name="remove", description="Removes guild's prefix(es).")
-    async def delete_prefix(self: Self, ctx: DwelloContext, prefix: str):
+    async def delete_prefix(self: Self, ctx: Context, prefix: str):
         return await self._prefix.remove_prefix(ctx, prefix)
 
     @delete_prefix.autocomplete("prefix")
-    async def autocomplete_callback_(
-        self: Self, interaction: discord.Interaction, current: str
-    ):
-        return await self.bot.autocomplete.choice_autocomplete(
-            interaction, current, "prefixes", "prefix", None, True
-        )
+    async def autocomplete_callback_(self: Self, interaction: discord.Interaction, current: str):
+        return await self.bot.autocomplete.choice_autocomplete(interaction, current, "prefixes", "prefix", None, True)
 
     @commands.hybrid_group(invoke_without_command=True, with_app_command=True)
     @commands.bot_has_permissions(manage_channels=True, manage_messages=True)
     @commands.has_permissions(manage_channels=True, manage_messages=True)
     @commands.guild_only()  # perms aren't active if invoke without cmd is active
-    async def welcome(self: Self, ctx: DwelloContext) -> Optional[discord.Message]:
+    async def welcome(self: Self, ctx: Context) -> Optional[discord.Message]:
         async with ctx.typing(ephemeral=True):
             # welcome_help_embed = discord.Embed(title="✨ WELCOME HELP ✨", description = tv.on_member_join_help_welcome_embed_description, color = tv.color)
             # welcome_help_embed.set_footer(text=tv.footer) # help comm comprehensive group desc
 
-            embed = discord.Embed(
-                description="```$welcome [command name]```", color=cs.WARNING_COLOR
-            )
+            embed = discord.Embed(description="```$welcome [command name]```", color=cs.WARNING_COLOR)
             return await ctx.reply(embed=embed, user_mistake=True)
 
     @welcome.group(invoke_without_command=True, with_app_command=True, name="message")
-    async def w_message(self: Self, ctx: DwelloContext):
+    async def w_message(self: Self, ctx: Context):
         async with ctx.typing(ephemeral=True):
             embed = discord.Embed(
                 description="```$welcome message [command name]```",
@@ -379,7 +331,7 @@ class Config(BaseCog):
             return await ctx.reply(embed=embed, user_mistake=True)
 
     @welcome.group(invoke_without_command=True, with_app_command=True, name="channel")
-    async def w_channel(self: Self, ctx: DwelloContext):
+    async def w_channel(self: Self, ctx: Context):
         async with ctx.typing(ephemeral=True):
             embed = discord.Embed(
                 description="```$welcome channel [command name]```",
@@ -387,44 +339,38 @@ class Config(BaseCog):
             )
             return await ctx.reply(embed=embed, user_mistake=True)
 
-    @w_channel.command(
-        name="set", description="Sets chosen channel as a welcome channel."
-    )
+    @w_channel.command(name="set", description="Sets chosen channel as a welcome channel.")
     async def welcome_channel_set(
         self: Self,
-        ctx: DwelloContext,
+        ctx: Context,
         channel: Optional[discord.TextChannel] = commands.CurrentChannel,
     ):
         return await self._channel.add_channel(ctx, "welcome", channel)
 
-    @w_message.command(
-        name="set", description="You can use this command to set a welcome message."
-    )
-    async def welcome_message_set(
-        self: Self, ctx: DwelloContext, *, text: str
-    ):  # ,* (?)
+    @w_message.command(name="set", description="You can use this command to set a welcome message.")
+    async def welcome_message_set(self: Self, ctx: Context, *, text: str):  # ,* (?)
         return await self._channel.add_message(ctx, "welcome", text)
 
     @w_message.command(
         name="display",
         description="Displays the current welcome message if there is one.",
     )
-    async def welcome_message_display(self: Self, ctx: DwelloContext):
+    async def welcome_message_display(self: Self, ctx: Context):
         return await self._channel.message_display(ctx, "welcome")
 
     @w_channel.command(
         name="display",
         description="Displays the current welcome channel if there is one.",
     )
-    async def welcome_channel_display(self: Self, ctx: DwelloContext):
+    async def welcome_channel_display(self: Self, ctx: Context):
         return await self._channel.channel_display(ctx, "welcome")
 
     @w_channel.command(name="remove", description="Removes the welcome channel.")
-    async def welcome_channel_remove(self: Self, ctx: DwelloContext):
+    async def welcome_channel_remove(self: Self, ctx: Context):
         return await self._channel.remove(ctx, "welcome")
 
     @welcome.command(name="help", description="Welcome help.")
-    async def help(self: Self, ctx: DwelloContext):
+    async def help(self: Self, ctx: Context):
         async with ctx.typing(ephemeral=True):
             help_welcome_help_embed = discord.Embed(
                 title="✨ COMPREHENSIVE WELCOME/LEAVE HELP ✨",
@@ -436,26 +382,22 @@ class Config(BaseCog):
             )
             help_welcome_help_embed.set_footer(text=cs.FOOTER)
 
-            return await ctx.reply(
-                embed=help_welcome_help_embed
-            )  # add to help cmd instead
+            return await ctx.reply(embed=help_welcome_help_embed)  # add to help cmd instead
 
     @commands.hybrid_group(invoke_without_command=True, with_app_command=True)
     @commands.bot_has_permissions(manage_channels=True, manage_messages=True)
     @commands.has_permissions(manage_channels=True, manage_messages=True)  # REDO PERMS
     @commands.guild_only()
-    async def leave(self: Self, ctx: DwelloContext):
+    async def leave(self: Self, ctx: Context):
         async with ctx.typing(ephemeral=True):
             # leave_help_embed = discord.Embed(title="✨ LEAVE HELP ✨", description = tv.on_member_leave_help_welcome_embed_description, color = tv.color)
             # leave_help_embed.set_footer(text=tv.footer) #help comm group descript
 
-            embed = discord.Embed(
-                description="```$leave [command name]```", color=cs.WARNING_COLOR
-            )
+            embed = discord.Embed(description="```$leave [command name]```", color=cs.WARNING_COLOR)
             return await ctx.reply(embed=embed, user_mistake=True)
 
     @leave.group(invoke_without_command=True, with_app_command=True, name="message")
-    async def l_message(self: Self, ctx: DwelloContext):
+    async def l_message(self: Self, ctx: Context):
         async with ctx.typing(ephemeral=True):
             embed = discord.Embed(
                 description="```$leave message [command name]```",
@@ -464,7 +406,7 @@ class Config(BaseCog):
             return await ctx.reply(embed=embed, user_mistake=True)
 
     @leave.group(invoke_without_command=True, with_app_command=True, name="channel")
-    async def l_channel(self: Self, ctx: DwelloContext):
+    async def l_channel(self: Self, ctx: Context):
         async with ctx.typing(ephemeral=True):
             embed = discord.Embed(
                 description="```$leave channel [command name]```",
@@ -472,38 +414,34 @@ class Config(BaseCog):
             )
             return await ctx.reply(embed=embed, user_mistake=True)
 
-    @l_channel.command(
-        name="set", description="Sets chosen channel as a leave channel."
-    )
+    @l_channel.command(name="set", description="Sets chosen channel as a leave channel.")
     async def leave_channel_set(
         self: Self,
-        ctx: DwelloContext,
+        ctx: Context,
         channel: Optional[discord.TextChannel] = commands.CurrentChannel,
     ):
         return await self._channel.add_channel(ctx, "leave", channel)
 
-    @l_message.command(
-        name="set", description="You can use this command to set a leave message."
-    )
-    async def leave_message_set(self: Self, ctx: DwelloContext, *, text: str):
+    @l_message.command(name="set", description="You can use this command to set a leave message.")
+    async def leave_message_set(self: Self, ctx: Context, *, text: str):
         return await self._channel.add_message(ctx, "leave", text)
 
     @l_message.command(
         name="display",
         description="Displays the current leave message if there is one.",
     )
-    async def leave_message_display(self: Self, ctx: DwelloContext):
+    async def leave_message_display(self: Self, ctx: Context):
         return await self._channel.message_display(ctx, "leave")
 
     @l_channel.command(
         name="display",
         description="Displays the current leave channel if there is one.",
     )
-    async def leave_channel_display(self: Self, ctx: DwelloContext):
+    async def leave_channel_display(self: Self, ctx: Context):
         return await self._channel.channel_display(ctx, "leave")
 
     @l_channel.command(name="remove", description="Removes the leave channel.")
-    async def leave_channel_remove(self: Self, ctx: DwelloContext):
+    async def leave_channel_remove(self: Self, ctx: Context):
         return await self._channel.remove(ctx, "leave")
 
     @leave.command(name="help", description="Leave help.")
@@ -523,19 +461,15 @@ class Config(BaseCog):
 
     @commands.hybrid_group(invoke_without_command=True, with_app_command=True)
     @commands.bot_has_permissions(manage_channels=True, manage_messages=True)
-    @commands.has_permissions(
-        manage_channels=True, manage_messages=True
-    )  # change to admin maybe
+    @commands.has_permissions(manage_channels=True, manage_messages=True)  # change to admin maybe
     @commands.guild_only()
-    async def twitch(self: Self, ctx: DwelloContext):
+    async def twitch(self: Self, ctx: Context):
         async with ctx.typing(ephemeral=True):
-            embed = discord.Embed(
-                description="```$twitch [command name]```", color=cs.WARNING_COLOR
-            )
+            embed = discord.Embed(description="```$twitch [command name]```", color=cs.WARNING_COLOR)
             return await ctx.reply(embed=embed, user_mistake=True)
 
     @twitch.group(invoke_without_command=True, with_app_command=True, name="message")
-    async def t_message(self: Self, ctx: DwelloContext):
+    async def t_message(self: Self, ctx: Context):
         async with ctx.typing(ephemeral=True):
             embed = discord.Embed(
                 description="```$twitch message [command_name]```",
@@ -546,7 +480,7 @@ class Config(BaseCog):
             # return await ConfigFunctions.add_message(ctx, "twitch", text)
 
     @twitch.group(invoke_without_command=True, with_app_command=True, name="channel")
-    async def t_channel(self: Self, ctx: DwelloContext):
+    async def t_channel(self: Self, ctx: Context):
         async with ctx.typing(ephemeral=True):
             embed = discord.Embed(
                 description="```$twitch channel [command_name]```",
@@ -562,62 +496,50 @@ class Config(BaseCog):
     )
     async def twitch_channel_set(
         self: Self,
-        ctx: DwelloContext,
+        ctx: Context,
         channel: Optional[discord.TextChannel] = commands.CurrentChannel,
     ):
         return await self._channel.add_channel(ctx, "twitch", channel)
 
     @t_message.command(name="set", help="Sets a notification message.")
-    async def twitch_message_set(self: Self, ctx: DwelloContext, *, text: str):
+    async def twitch_message_set(self: Self, ctx: Context, *, text: str):
         return await self._channel.add_message(ctx, "twitch", text)
 
     @t_message.command(
         name="display",
         description="Displays the current twitch message if there is one.",
     )
-    async def twitch_message_display(self: Self, ctx: DwelloContext):
+    async def twitch_message_display(self: Self, ctx: Context):
         return await self._channel.message_display(ctx, "twitch")
 
     @t_channel.command(
         name="display",
         description="Displays the current twitch channel if there is one.",
     )
-    async def twitch_channel_display(self: Self, ctx: DwelloContext):
+    async def twitch_channel_display(self: Self, ctx: Context):
         return await self._channel.channel_display(ctx, "twitch")
 
     @t_channel.command(name="remove", description="Removes the twitch channel.")
-    async def twitch_channel_remove(self: Self, ctx: DwelloContext):
-        return await self._channel.remove(
-            ctx, "twitch"
-        )  # MAYBE REMOVE CHANNEL_REMOVE COMMS
+    async def twitch_channel_remove(self: Self, ctx: Context):
+        return await self._channel.remove(ctx, "twitch")  # MAYBE REMOVE CHANNEL_REMOVE COMMS
 
     @twitch.command(
         name="add",
         help="Sets a twitch streamer. The notification shall be posted when the streamer goes online.",
     )
-    async def add_twitch_streamer(
-        self: Self, ctx: commands.Context, twitch_streamer_name: str
-    ):
-        return await self.bot.twitch.event_subscription(
-            ctx, "stream.online", twitch_streamer_name
-        )
+    async def add_twitch_streamer(self: Self, ctx: commands.Context, twitch_streamer_name: str):
+        return await self.bot.twitch.event_subscription(ctx, "stream.online", twitch_streamer_name)
 
-    @twitch.command(
-        name="list", help="Shows the list of streamers guild is subscribed to."
-    )
-    async def twitch_streamer_list(self: Self, ctx: DwelloContext):
+    @twitch.command(name="list", help="Shows the list of streamers guild is subscribed to.")
+    async def twitch_streamer_list(self: Self, ctx: Context):
         return await self.bot.twitch.guild_twitch_subscriptions(ctx)
 
     @twitch.command(name="remove", help="Removes a twitch subscription.")
-    async def twitch_streamer_remove(
-        self: Self, ctx: DwelloContext, username: str
-    ):  # add choice to delete all
+    async def twitch_streamer_remove(self: Self, ctx: Context, username: str):  # add choice to delete all
         return await self.bot.twitch.twitch_unsubscribe_from_streamer(ctx, username)
 
     @twitch_streamer_remove.autocomplete("username")
-    async def autocomplete_callback_(
-        self: Self, interaction: discord.Interaction, current: str
-    ):  # MAKE IT A GLOBAL FUNC
+    async def autocomplete_callback_(self: Self, interaction: discord.Interaction, current: str):  # MAKE IT A GLOBAL FUNC
         return await self.bot.autocomplete.choice_autocomplete(
             interaction, current, "twitch_users", "username", "user_id", True
         )

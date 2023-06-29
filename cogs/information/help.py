@@ -17,27 +17,27 @@ from discord.ui import Select, button, select
 from typing_extensions import Self, override
 
 import constants as cs
-from bot import Dwello, DwelloContext
+from core import Bot, Context
 
 from .news import NewsViewer
 
 newline = "\n"
 
 
-async def setup(bot: Dwello):
+async def setup(bot: Bot):
     await bot.add_cog(About(bot))
 
 
 class HelpCentre(discord.ui.View):
     def __init__(
         self: Self,
-        ctx: DwelloContext,
+        ctx: Context,
         other_view: discord.ui.View,
     ):
         super().__init__()
         self.embed = None
         self.ctx = ctx
-        self.bot: Dwello = self.ctx.bot
+        self.bot: Bot = self.ctx.bot
         self.other_view = other_view
 
     @discord.ui.button(emoji="🏠", label="Go Back", style=discord.ButtonStyle.blurple)
@@ -83,15 +83,9 @@ class HelpCentre(discord.ui.View):
             inline=False,
         )
         embed.set_footer(text="To continue browsing the help menu, press 🏠Go Back")
-        embed.set_author(
-            name="About this Help Command", icon_url=self.bot.user.display_avatar.url
-        )
+        embed.set_author(name="About this Help Command", icon_url=self.bot.user.display_avatar.url)
         self.embed = interaction.message.embeds[0]
-        self.add_item(
-            discord.ui.Button(
-                label="Support Server", url="https://discord.gg/8FKNF8pC9u"
-            )
-        )
+        self.add_item(discord.ui.Button(label="Support Server", url="https://discord.gg/8FKNF8pC9u"))
         """self.add_item(
             discord.ui.Button(
                 label="Invite Me",
@@ -114,13 +108,13 @@ class HelpCentre(discord.ui.View):
 class HelpView(discord.ui.View):
     def __init__(
         self: Self,
-        ctx: DwelloContext,
+        ctx: Context,
         data: Dict[commands.Cog, List[commands.Command]],
         help_command: commands.HelpCommand,
     ):
         super().__init__()
         self.ctx = ctx
-        self.bot: Dwello = self.ctx.bot
+        self.bot: Bot = self.ctx.bot
         self.data = data
         self.current_page = 0
         self.help_command = help_command
@@ -134,21 +128,15 @@ class HelpView(discord.ui.View):
             self.current_page = 0
             self.embeds = [self.main_embed]
             self._update_buttons()
-            return await interaction.response.edit_message(
-                embed=self.main_embed, view=self
-            )
+            return await interaction.response.edit_message(embed=self.main_embed, view=self)
 
         if cog := self.bot.get_cog(select.values[0]):
             self.embeds = self.build_embeds(cog)
             self.current_page = 0
             self._update_buttons()
-            return await interaction.response.edit_message(
-                embed=self.embeds[self.current_page], view=self
-            )
+            return await interaction.response.edit_message(embed=self.embeds[self.current_page], view=self)
         else:
-            return await interaction.response.send_message(
-                "Somehow, that category was not found? 🤔", ephemeral=True
-            )
+            return await interaction.response.send_message("Somehow, that category was not found? 🤔", ephemeral=True)
 
     def build_embeds(self: Self, cog: commands.Cog) -> List[discord.Embed]:
         embeds = []
@@ -200,15 +188,13 @@ class HelpView(discord.ui.View):
             emoji = getattr(cog, "select_emoji", None)
             label = f"{cog.qualified_name} ({len(comm)})"
             brief = getattr(cog, "select_brief", None)
-            self.category_select.add_option(
-                label=label, value=cog.qualified_name, emoji=emoji, description=brief
-            )
+            self.category_select.add_option(label=label, value=cog.qualified_name, emoji=emoji, description=brief)
 
     def build_main_page(self: Self) -> discord.Embed:
         embed: discord.Embed = discord.Embed(
             color=cs.RANDOM_COLOR,
-            title="Dwello Help Menu",
-            description="Hello, I'm Dwello! I'm still in development, but you can use me.",
+            title="Bot Help Menu",
+            description="Hello, I'm Bot! I'm still in development, but you can use me.",
         )
         embed.add_field(
             name="Getting Help",
@@ -229,7 +215,7 @@ class HelpView(discord.ui.View):
         embed.add_field(
             name="Who Am I?",
             inline=False,
-            value="I'm Dwello, a multipurpose discordbot. You can use me to play games, moderate "
+            value="I'm Bot, a multipurpose discordbot. You can use me to play games, moderate "
             "\nyour server, mess with some images and more! Check out "
             "\nall my features using the dropdown below.",
         )
@@ -243,9 +229,7 @@ class HelpView(discord.ui.View):
             value="Invaluable assistance: <:github:1100906448030011503> [LeoCx1000](https://github.com/leoCx1000).",
             inline=False,
         )
-        embed.set_author(
-            name=self.bot.user.name, icon_url=self.bot.user.display_avatar.url
-        )
+        embed.set_author(name=self.bot.user.name, icon_url=self.bot.user.display_avatar.url)
         return embed
 
     @button(emoji="❓", label="help", row=1, style=discord.ButtonStyle.green)
@@ -257,9 +241,7 @@ class HelpView(discord.ui.View):
     async def previous(self: Self, interaction: Interaction, _):
         self.current_page -= 1
         self._update_buttons()
-        await interaction.response.edit_message(
-            embed=self.embeds[self.current_page], view=self
-        )
+        await interaction.response.edit_message(embed=self.embeds[self.current_page], view=self)
 
     @button(emoji="🗑", row=1, style=discord.ButtonStyle.red)
     async def _end(self: Self, interaction: Interaction, _):
@@ -271,16 +253,12 @@ class HelpView(discord.ui.View):
     async def next(self: Self, interaction: Interaction, _):
         self.current_page += 1
         self._update_buttons()
-        await interaction.response.edit_message(
-            embed=self.embeds[self.current_page], view=self
-        )
+        await interaction.response.edit_message(embed=self.embeds[self.current_page], view=self)
 
     @discord.ui.button(emoji="📰", label="news", row=1, style=discord.ButtonStyle.green)
     async def vote(self, interaction: Interaction, _):
         news = await self.bot.pool.fetch("SELECT * FROM news ORDER BY news_id DESC")
-        await NewsViewer.from_interaction(
-            interaction, news, embed=self.embeds[self.current_page], old_view=self
-        )
+        await NewsViewer.from_interaction(interaction, news, embed=self.embeds[self.current_page], old_view=self)
 
     def _update_buttons(self: Self) -> None:
         styles = {True: discord.ButtonStyle.gray, False: discord.ButtonStyle.blurple}
@@ -310,7 +288,7 @@ class HelpView(discord.ui.View):
 class MyHelp(commands.HelpCommand):
     def __init__(self, **options):
         super().__init__(**options)
-        self.context: DwelloContext = None
+        self.context: Context = None
 
     @override
     def get_bot_mapping(self):
@@ -324,9 +302,7 @@ class MyHelp(commands.HelpCommand):
 
         mapping = {}
 
-        for cog in sorted(
-            bot.cogs.values(), key=lambda c: len(c.get_commands()), reverse=True
-        ):
+        for cog in sorted(bot.cogs.values(), key=lambda c: len(c.get_commands()), reverse=True):
             if cog.qualified_name in ignored_cogs:
                 continue
 
@@ -369,9 +345,7 @@ class MyHelp(commands.HelpCommand):
         embed = discord.Embed(
             title=f"information about: `{self.context.clean_prefix}{command}`",
             description="**Description:**\n"
-            + (command.help or "No help given...").replace(
-                "%PRE%", self.context.clean_prefix
-            ),
+            + (command.help or "No help given...").replace("%PRE%", self.context.clean_prefix),
         )
         embed.add_field(
             name="Command usage:",
@@ -383,10 +357,7 @@ class MyHelp(commands.HelpCommand):
         except KeyError:
             pass
         if command.aliases:
-            embed.description = (
-                embed.description
-                + f'\n\n**Aliases:**\n`{"`, `".join(command.aliases)}`'
-            )
+            embed.description = f'{embed.description}\n\n**Aliases:**\n`{"`, `".join(command.aliases)}`'
         try:
             await command.can_run(self.context)
         except BaseException as e:
@@ -399,25 +370,17 @@ class MyHelp(commands.HelpCommand):
             except commands.MissingPermissions as error:
                 embed.add_field(
                     name="Permissions you're missing:",
-                    value=", ".join(error.missing_permissions)
-                    .replace("_", " ")
-                    .replace("guild", "server")
-                    .title(),
+                    value=", ".join(error.missing_permissions).replace("_", " ").replace("guild", "server").title(),
                     inline=False,
                 )
             except commands.BotMissingPermissions as error:
                 embed.add_field(
                     name="Permissions i'm missing:",
-                    value=", ".join(error.missing_permissions)
-                    .replace("_", " ")
-                    .replace("guild", "server")
-                    .title(),
+                    value=", ".join(error.missing_permissions).replace("_", " ").replace("guild", "server").title(),
                     inline=False,
                 )
             except commands.NotOwner:
-                embed.add_field(
-                    name="Rank you are missing:", value="Bot owner", inline=False
-                )
+                embed.add_field(name="Rank you are missing:", value="Bot owner", inline=False)
             except commands.PrivateMessageOnly:
                 embed.add_field(
                     name="Cant execute this here:",
@@ -458,8 +421,7 @@ class MyHelp(commands.HelpCommand):
             data = [self.get_minimal_command_signature(entry) for entry in entries]
             embed = discord.Embed(
                 title=f"{getattr(cog, 'select_emoji', '')} `{cog.qualified_name}` category commands",
-                description="**Description:**\n"
-                + cog.description.replace("%PRE%", self.context.clean_prefix),
+                description="**Description:**\n" + cog.description.replace("%PRE%", self.context.clean_prefix),
             )
             embed.description = f"{embed.description}\n\n**Commands:**\n```css\n{newline.join(data)}\n```\n`[G]` means group, these have sub-commands.\n`(C)` means command, these do not have sub-commands."
             await self.context.send(embed=embed)
@@ -471,22 +433,16 @@ class MyHelp(commands.HelpCommand):
         embed = discord.Embed(
             title=f"information about: `{self.context.clean_prefix}{group}`",
             description="**Description:**\n"
-            + (group.help or "No help given...").replace(
-                "%PRE%", self.context.clean_prefix
-            ),
+            + (group.help or "No help given...").replace("%PRE%", self.context.clean_prefix),
         )
         embed.add_field(
             name="Command usage:",
             value=f"```css\n{self.get_minimal_command_signature(group)}\n```",
         )
         if group.aliases:
-            embed.description = (
-                f'{embed.description}\n\n**Aliases:**\n`{"`, `".join(group.aliases)}`'
-            )
+            embed.description = f'{embed.description}\n\n**Aliases:**\n`{"`, `".join(group.aliases)}`'
         if group.commands:
-            formatted = "\n".join(
-                [self.get_minimal_command_signature(c) for c in group.commands]
-            )
+            formatted = "\n".join([self.get_minimal_command_signature(c) for c in group.commands])
             embed.add_field(
                 name="Sub-commands for this command:",
                 value=f"```css\n{formatted}\n```\n**Do `{self.context.clean_prefix}help command subcommand` for more info on a sub-command**",
@@ -498,26 +454,18 @@ class MyHelp(commands.HelpCommand):
         except commands.MissingPermissions as error:
             embed.add_field(
                 name="Permissions you're missing:",
-                value=", ".join(error.missing_permissions)
-                .replace("_", " ")
-                .replace("guild", "server")
-                .title(),
+                value=", ".join(error.missing_permissions).replace("_", " ").replace("guild", "server").title(),
                 inline=False,
             )
         except commands.BotMissingPermissions as error:
             embed.add_field(
                 name="Permissions i'm missing:",
-                value=", ".join(error.missing_permissions)
-                .replace("_", " ")
-                .replace("guild", "server")
-                .title(),
+                value=", ".join(error.missing_permissions).replace("_", " ").replace("guild", "server").title(),
                 inline=False,
             )
 
         except commands.NotOwner:
-            embed.add_field(
-                name="Rank you are missing:", value="Bot owner", inline=False
-            )
+            embed.add_field(name="Rank you are missing:", value="Bot owner", inline=False)
         except commands.PrivateMessageOnly:
             embed.add_field(
                 name="Cant execute this here:",
@@ -537,9 +485,7 @@ class MyHelp(commands.HelpCommand):
                 inline=False,
             )
         except Exception as exc:
-            embed.add_field(
-                name="Cant execute this command:", value="Unknown error.", inline=False
-            )
+            embed.add_field(name="Cant execute this command:", value="Unknown error.", inline=False)
             print(f"{group} failed to execute: {exc}")
         finally:
             await self.context.send(embed=embed)
@@ -600,9 +546,7 @@ class MyHelp(commands.HelpCommand):
                     timeout=15,
                 )
                 if confirm is True:
-                    return await self.send_command_help(
-                        self.context.bot.get_command(matches[0])
-                    )
+                    return await self.send_command_help(self.context.bot.get_command(matches[0]))
                 return
 
         await self.context.send(
@@ -616,11 +560,7 @@ class MyHelp(commands.HelpCommand):
             await ctx.send(
                 embed=discord.Embed(
                     title=str(error.original),
-                    description="".join(
-                        traceback.format_exception(
-                            error.__class__, error, error.__traceback__
-                        )
-                    ),
+                    description="".join(traceback.format_exception(error.__class__, error, error.__traceback__)),
                 )
             )
 
@@ -630,8 +570,8 @@ class About(commands.Cog):
     😮 Commands related to the bot itself, that have the only purpose to show information.
     """
 
-    def __init__(self: Self, bot: Dwello) -> None:
-        self.bot: Dwello = bot
+    def __init__(self: Self, bot: Bot) -> None:
+        self.bot: Bot = bot
         help_command = MyHelp()
         help_command.command_attrs = {
             "help": "Shows help about a command or category, it can also display other useful information, such as "
@@ -655,9 +595,7 @@ class About(commands.Cog):
 
         return days, hours, minutes, seconds
 
-    def get_startup_timestamp(
-        self: Self, style: discord.utils.TimestampStyle = None
-    ) -> str:
+    def get_startup_timestamp(self: Self, style: discord.utils.TimestampStyle = None) -> str:
         return discord.utils.format_dt(self.bot.launch_time, style=style or "F")
 
     def get_average_latency(self: Self, *latencies: float) -> Union[Any, float]:
@@ -669,10 +607,8 @@ class About(commands.Cog):
         return number / len(pings)
 
     # make uptime: add here -> trigger on mention in on_message
-    @commands.hybrid_command(
-        name="hello", aliases=cs.HELLO_ALIASES, with_app_command=True
-    )
-    async def hello(self: Self, ctx: DwelloContext) -> Optional[discord.Message]:
+    @commands.hybrid_command(name="hello", aliases=cs.HELLO_ALIASES, with_app_command=True)
+    async def hello(self: Self, ctx: Context) -> Optional[discord.Message]:
         # make variations for the response
         content: str = f"Hello there! I'm {self.bot.user.name}. Use `dw.help` for more."  # {self.bot.help_command}?
         return await ctx.send(content=content)  # display more info about bot
@@ -680,10 +616,8 @@ class About(commands.Cog):
     # uptime cmd
     # add some latency too or smth
     # get available bot info i guess
-    @commands.hybrid_command(
-        name="about", aliases=["botinfo", "info", "bi"], with_app_command=True
-    )
-    async def about(self: Self, ctx: DwelloContext) -> Optional[discord.Message]:
+    @commands.hybrid_command(name="about", aliases=["botinfo", "info", "bi"], with_app_command=True)
+    async def about(self: Self, ctx: Context) -> Optional[discord.Message]:
         information: discord.AppInfo = await self.bot.application_info()
         print(information)
 
@@ -708,17 +642,14 @@ class About(commands.Cog):
 
         return await ctx.send(embed=embed)
 
-    @commands.hybrid_command(
-        name="uptime", help="Returns bot's uptime.", with_app_command=True
-    )
-    async def uptime(self: Self, ctx: DwelloContext) -> Optional[discord.Message]:
+    @commands.hybrid_command(name="uptime", help="Returns bot's uptime.", with_app_command=True)
+    async def uptime(self: Self, ctx: Context) -> Optional[discord.Message]:
         days, hours, minutes, seconds = self.get_uptime()
         timestamp = self.get_startup_timestamp()
 
         embed: discord.Embed = discord.Embed(
             title="Current Uptime",
-            description=f"Uptime: {days}d, {hours}h, {minutes}m, {seconds}s\n"
-            f"\nStartup Time: {timestamp}",
+            description=f"Uptime: {days}d, {hours}h, {minutes}m, {seconds}s\n" f"\nStartup Time: {timestamp}",
             color=cs.RANDOM_COLOR,
         )
         return await ctx.reply(embed=embed)
@@ -729,9 +660,7 @@ class About(commands.Cog):
         help="Pong.",
         with_app_command=True,
     )
-    async def ping(
-        self: Self, ctx: DwelloContext
-    ) -> Optional[discord.Message]:  # work on return design?
+    async def ping(self: Self, ctx: Context) -> Optional[discord.Message]:  # work on return design?
         typing_start = time.monotonic()
         await ctx.typing()
         typing_end = time.monotonic()
@@ -749,9 +678,7 @@ class About(commands.Cog):
         postgres_end = time.perf_counter()
         postgres_ms = (postgres_end - postgres_start) * 1000
 
-        average = self.get_average_latency(
-            typing_ms, message_ms, latency_ms, postgres_ms
-        )
+        average = self.get_average_latency(typing_ms, message_ms, latency_ms, postgres_ms)
 
         await asyncio.sleep(0.7)
 
@@ -769,10 +696,8 @@ class About(commands.Cog):
             ),
         )
 
-    @commands.hybrid_command(
-        name="stats", help="Returns some of the bot's stats", with_app_command=True
-    )
-    async def stats(self: Self, ctx: DwelloContext) -> Optional[discord.Message]:
+    @commands.hybrid_command(name="stats", help="Returns some of the bot's stats", with_app_command=True)
+    async def stats(self: Self, ctx: Context) -> Optional[discord.Message]:
         typing_start = time.monotonic()
         await ctx.typing()
         typing_end = time.monotonic()
@@ -788,7 +713,7 @@ class About(commands.Cog):
         average = self.get_average_latency(typing_ms, latency_ms, postgres_ms)
 
         embed: discord.Embed = discord.Embed(
-            title="Dwello Statistics since launch",
+            title="Bot Statistics since launch",
             color=cs.RANDOM_COLOR,
         )
         embed.set_thumbnail(url=self.bot.user.display_avatar.url)
@@ -799,9 +724,7 @@ class About(commands.Cog):
             value=self.bot.reply_count or 1,
             inline=False,
         )
-        embed.add_field(
-            name="Total Commands", value=len(self.bot.commands), inline=False
-        )
+        embed.add_field(name="Total Commands", value=len(self.bot.commands), inline=False)
         embed.add_field(
             name="Average Latency",
             value=f"**`{round(average, 3)}ms{' ' * (9 - len(str(round(average, 3))))}`**",
@@ -822,12 +745,8 @@ class About(commands.Cog):
 
         return await ctx.reply(embed=embed)
 
-    @commands.hybrid_command(
-        name="source", help="Returns command's source.", with_app_command=True
-    )
-    async def source(
-        self: Self, ctx: DwelloContext, *, command_name: Optional[str]
-    ) -> Optional[discord.Message]:
+    @commands.hybrid_command(name="source", help="Returns command's source.", with_app_command=True)
+    async def source(self: Self, ctx: Context, *, command_name: Optional[str]) -> Optional[discord.Message]:
         git = cs.GITHUB
         if not command_name:
             return await ctx.reply(git)
@@ -934,7 +853,7 @@ class About(commands.Cog):
 
 # SOME USELESS PIECE OF SHIT
 class ManualHelp:
-    def __init__(self, bot: Dwello = None):
+    def __init__(self, bot: Bot = None):
         self.bot = bot
         self.ignored_cogs = ["CommandErrorHandler", "Other", "Jishaku"]
 
@@ -959,8 +878,7 @@ class ManualHelp:
                     for group_command in command.commands:
                         if isinstance(group_command, commands.Group):
                             subgroup_structure = {
-                                subgroup_command.name: subgroup_command.help
-                                for subgroup_command in group_command.commands
+                                subgroup_command.name: subgroup_command.help for subgroup_command in group_command.commands
                             }
                             group_structure[group_command.name] = subgroup_structure
 
@@ -988,30 +906,22 @@ class ManualHelp:
                         structure_text += f"\n\t\t'{command} (group)': {{"
                         for group_name, subgroup in substructure.items():
                             if isinstance(subgroup, dict):
-                                structure_text += (
-                                    f"\n\t\t\t'{group_name} (subgroup)': {{"
-                                )
+                                structure_text += f"\n\t\t\t'{group_name} (subgroup)': {{"
                                 for subgroup_name, subgroup_help in subgroup.items():
                                     structure_text += f"\n\t\t\t\t'{subgroup_name} (command)': '{subgroup_help}',"
                                 structure_text += "\n\t\t\t}"
                             else:
-                                structure_text += (
-                                    f"\n\t\t\t'{group_name} (command)': '{subgroup}',"
-                                )
+                                structure_text += f"\n\t\t\t'{group_name} (command)': '{subgroup}',"
                         structure_text += "\n\t\t}"
                     else:
-                        structure_text += (
-                            f"\n\t\t'{command} (command)': '{substructure}',"
-                        )
+                        structure_text += f"\n\t\t'{command} (command)': '{substructure}',"
             else:
                 structure_text += f"\n\t'{cog_name}': '{cog}',"
             structure_text += "\n\t}"
         structure_text += "\n}"
         return structure_text
 
-    def get_command_hierarchy(
-        self, command: Union[commands.Group, commands.Command]
-    ) -> str:
+    def get_command_hierarchy(self, command: Union[commands.Group, commands.Command]) -> str:
         """Returns the hierarchical representation of a command or command group."""
 
         return (
@@ -1043,9 +953,7 @@ class ManualHelp:
         bot = self.bot
         mapping = {}
 
-        for cog in sorted(
-            bot.cogs.values(), key=lambda c: len(c.get_commands()), reverse=True
-        ):
+        for cog in sorted(bot.cogs.values(), key=lambda c: len(c.get_commands()), reverse=True):
             if cog.qualified_name in self.ignored_cogs:
                 continue
 

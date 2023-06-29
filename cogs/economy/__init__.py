@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from bot import Dwello
+from core import Bot
 
 from .bot_eco import Bot_Economy
 from .guild_eco import Guild_Economy
@@ -17,5 +17,5 @@ class Economy(Bot_Economy, Guild_Economy, name="Economy"):
         self.select_brief = "Commands for managing an economy system."
 
 
-async def setup(bot: Dwello):
+async def setup(bot: Bot):
     await bot.add_cog(Economy(bot))

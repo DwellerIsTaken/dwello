@@ -1,18 +1,17 @@
 from __future__ import annotations
 
-from typing import Any, Optional
+from typing import Optional
 
 import discord
 from discord.ext import commands
 from typing_extensions import Self
 
-from bot import Dwello, DwelloContext
-from utils import BaseCog
+from core import Bot, Cog, Context
 
 
-class Messages(BaseCog):  # RENAME CLASS
-    def __init__(self: Self, bot: Dwello, *args: Any, **kwargs: Any):
-        super().__init__(bot, *args, **kwargs)
+class Messages(Cog):  # RENAME CLASS
+    def __init__(self, bot: Bot) -> None:
+        self.bot = bot
 
     @commands.hybrid_command(
         name="clear",
@@ -22,9 +21,7 @@ class Messages(BaseCog):  # RENAME CLASS
     )
     @commands.bot_has_permissions(manage_messages=True)
     @commands.has_permissions(manage_messages=True)
-    async def clear(
-        self: Self, ctx: DwelloContext, limit: int = 5, member: discord.Member = None
-    ) -> Optional[discord.Message]:
+    async def clear(self: Self, ctx: Context, limit: int = 5, member: discord.Member = None) -> Optional[discord.Message]:
         async with ctx.typing(ephemeral=True):
             msg = []
 
@@ -42,6 +39,4 @@ class Messages(BaseCog):  # RENAME CLASS
                     msg.append(m)
 
             await ctx.channel.delete_messages(msg)
-            return await ctx.send(
-                f"Purged {limit} messages of {member.mention}", delete_after=3
-            )
+            return await ctx.send(f"Purged {limit} messages of {member.mention}", delete_after=3)

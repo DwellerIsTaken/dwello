@@ -5,9 +5,7 @@ import discord
 
 RANDOM_COLOR = discord.Colour.random()  # -> MOST USED
 WARNING_COLOR = 0xFF0000  # -> COLOR FOR WARNINGS
-TWITCH_COLOR = (
-    discord.Colour.random()
-)  # get color of streamer later & add customize option
+TWITCH_COLOR = discord.Colour.random()  # get color of streamer later & add customize option
 
 # ___FOOTERS___:
 FOOTER = "https://hitoshi.org"

@@ -9,28 +9,22 @@ from discord.ext import commands
 from typing_extensions import Self
 
 import constants as cs
-from utils.context import DwelloContext
 
 if TYPE_CHECKING:
-    from bot import Dwello
-
-else:
-    from discord.ext.commands import Bot as Dwello
+    from core import Bot, Context
 
 
-async def setup(bot: Dwello):
+async def setup(bot: Bot):
     await bot.add_cog(CommandErrorHandler(bot))
 
 
 # rename to error.py
 class CommandErrorHandler(commands.Cog):
-    def __init__(self: Self, bot: Dwello) -> None:
+    def __init__(self: Self, bot: Bot) -> None:
         self.bot = bot
 
     @commands.Cog.listener()
-    async def on_command_error(
-        self: Self, ctx: DwelloContext, error: Exception
-    ) -> Optional[discord.Message]:
+    async def on_command_error(self: Self, ctx: Context, error: Exception) -> Optional[discord.Message]:
         """The event triggered when an error is raised while invoking a command.
         Parameters
         ------------
@@ -40,9 +34,7 @@ class CommandErrorHandler(commands.Cog):
             The Exception raised.
         """
 
-        perm_url = (
-            "https://discordpy.readthedocs.io/en/stable/api.html#discord.Permissions"
-        )
+        perm_url = "https://discordpy.readthedocs.io/en/stable/api.html#discord.Permissions"
 
         # This prevents any commands with local handlers being handled here in on_command_error.
         if hasattr(ctx.command, "on_error"):
@@ -71,9 +63,7 @@ class CommandErrorHandler(commands.Cog):
 
         elif isinstance(error, commands.NoPrivateMessage):
             try:
-                await ctx.author.send(
-                    f"{ctx.command} can not be used in Private Messages."
-                )
+                await ctx.author.send(f"{ctx.command} can not be used in Private Messages.")
             except discord.HTTPException:  # handle exception http
                 pass
 
@@ -87,9 +77,7 @@ class CommandErrorHandler(commands.Cog):
             pass  # type: ignore
 
         elif isinstance(error, commands.CommandOnCooldown):
-            await ctx.reply(
-                f"You are on cooldown. Try again in {error.retry_after:.2f}s"
-            )
+            await ctx.reply(f"You are on cooldown. Try again in {error.retry_after:.2f}s")
 
         elif isinstance(error, commands.MissingPermissions):
             description = (
@@ -104,9 +92,7 @@ class CommandErrorHandler(commands.Cog):
                 description=description,
                 color=cs.WARNING_COLOR,
             )
-            embed.set_image(
-                url="https://media.tenor.com/bIJa2uRURiQAAAAd/lord-of-the-rings-you-shall-not-pass.gif"
-            )
+            embed.set_image(url="https://media.tenor.com/bIJa2uRURiQAAAAd/lord-of-the-rings-you-shall-not-pass.gif")
             return await ctx.reply(embed=embed, user_mistake=True)
 
         elif isinstance(error, commands.BotMissingPermissions):
@@ -136,9 +122,7 @@ class CommandErrorHandler(commands.Cog):
                 description=f"```py\n{error}```\nThe developers have receieved this error and will fix it.",
                 color=0xF02E2E,
             )
-            embed.set_author(
-                name=f"{ctx.author.name}", icon_url=ctx.author.display_avatar
-            )
+            embed.set_author(name=f"{ctx.author.name}", icon_url=ctx.author.display_avatar)
             embed.add_field(
                 name="Information",
                 value=f"Error Name: {type(error).__name__}\nError Type: {type(error)}\nMessage: {ctx.message.content}\n{guild}Channel ID: {ctx.channel.id}",
@@ -148,16 +132,14 @@ class CommandErrorHandler(commands.Cog):
                 f"This error came from {ctx.author} using {ctx.command} in {ctx.guild}.",
                 embed=embed,
             )"""
-            traceback.print_exception(
-                type(error), error, error.__traceback__, file=sys.stderr
-            )
+            traceback.print_exception(type(error), error, error.__traceback__, file=sys.stderr)
             return await ctx.reply(embed=embed)
 
     """Below is an example of a Local Error Handler for our command do_repeat"""
 
     # move to another channel
     @commands.command(name="repeat", aliases=["mimic", "copy"])
-    async def do_repeat(self: Self, ctx: DwelloContext, *, inp: str):
+    async def do_repeat(self: Self, ctx: Context, *, inp: str):
         """A simple command which repeats your input!
         Parameters
         ------------
@@ -167,15 +149,12 @@ class CommandErrorHandler(commands.Cog):
         return await ctx.send(inp)
 
     @do_repeat.error
-    async def do_repeat_handler(self: Self, ctx: DwelloContext, error: Exception):
+    async def do_repeat_handler(self: Self, ctx: Context, error: Exception):
         """A local Error Handler for our command do_repeat.
         This will only listen for errors in do_repeat.
         The global on_command_error will still be invoked after.
         """
 
         # Check if our required argument inp is missing.
-        if (
-            isinstance(error, commands.MissingRequiredArgument)
-            and error.param.name == "inp"
-        ):
+        if isinstance(error, commands.MissingRequiredArgument) and error.param.name == "inp":
             await ctx.send("You forgot to give me input to repeat!")

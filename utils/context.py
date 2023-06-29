@@ -12,14 +12,10 @@ from discord.ext.commands.errors import BadArgument
 from typing_extensions import LiteralString, Self, override
 
 if TYPE_CHECKING:
-    from bot import Dwello
+    pass
 
-else:
-    from discord.ext.commands import Bot as Dwello
 
-target_type = Union[
-    discord.Member, discord.User, discord.PartialEmoji, discord.Guild, discord.Invite
-]
+target_type = Union[discord.Member, discord.User, discord.PartialEmoji, discord.Guild, discord.Invite]
 
 
 def cleanup_code(content):
@@ -103,7 +99,6 @@ class Confirm(discord.ui.View):
 
 
 class DwelloContext(commands.Context):
-    bot: Dwello
     guild: discord.Guild
     me: discord.Member
 
@@ -121,9 +116,7 @@ class DwelloContext(commands.Context):
         embeds: Optional[Sequence[discord.Embed]] = None,
         file: Optional[discord.file.File] = None,
         files: Optional[Sequence[discord.file.File]] = None,
-        reference: Optional[
-            Union[discord.Message, discord.MessageReference, discord.PartialMessage]
-        ] = None,
+        reference: Optional[Union[discord.Message, discord.MessageReference, discord.PartialMessage]] = None,
         mention_author: Optional[bool] = None,
         ephemeral: bool = False,
         **kwargs,
@@ -137,12 +130,8 @@ class DwelloContext(commands.Context):
                 "",
                 (str(content) or "") + str((embed.to_dict() if embed else "")),
             )
-            if self.bot.http.token in test_string.replace("\u200b", "").replace(
-                " ", ""
-            ):
-                raise commands.BadArgument(
-                    "Could not send message as it contained the bot's token!"
-                )
+            if self.bot.http.token in test_string.replace("\u200b", "").replace(" ", ""):
+                raise commands.BadArgument("Could not send message as it contained the bot's token!")
 
         """if embed:
             colors = {embed.color} - {discord.Color.default(), None}
@@ -185,16 +174,12 @@ class DwelloContext(commands.Context):
 
         if user_mistake:
             if any((mention_author, ephemeral, permission_cmd)):
-                raise BadArgument(
-                    "Cannot pass mention_author, ephemeral, or permission_cmd when user_mistake = True."
-                )
+                raise BadArgument("Cannot pass mention_author, ephemeral, or permission_cmd when user_mistake = True.")
             mention, ephemeral = True, True
 
         elif permission_cmd:
             if any((mention_author, ephemeral, user_mistake)):
-                raise BadArgument(
-                    "Cannot pass mention_author, ephemeral, or user_mistake when permission_cmd = True."
-                )
+                raise BadArgument("Cannot pass mention_author, ephemeral, or user_mistake when permission_cmd = True.")
             mention, ephemeral = False, True
 
         if not self.interaction:
@@ -206,18 +191,12 @@ class DwelloContext(commands.Context):
                 **kwargs,
             )
         else:
-            return await self.send(
-                content, mention_author=mention, ephemeral=ephemeral, **kwargs
-            )
+            return await self.send(content, mention_author=mention, ephemeral=ephemeral, **kwargs)
 
     async def confirm(
         self,
         message: str = "Do you want to confirm?",
-        buttons: typing.Optional[
-            typing.Tuple[
-                typing.Union[discord.PartialEmoji, str], str, discord.ButtonStyle
-            ]
-        ] = None,
+        buttons: typing.Optional[typing.Tuple[typing.Union[discord.PartialEmoji, str], str, discord.ButtonStyle]] = None,
         timeout: int = 30,
         delete_after_confirm: bool = False,
         delete_after_timeout: bool = False,
@@ -226,11 +205,7 @@ class DwelloContext(commands.Context):
     ) -> typing.Union[bool, typing.Tuple[bool, discord.Message]]:
         """A confirmation menu."""
 
-        delete_after_cancel = (
-            delete_after_cancel
-            if delete_after_cancel is not None
-            else delete_after_confirm
-        )
+        delete_after_cancel = delete_after_cancel if delete_after_cancel is not None else delete_after_confirm
 
         view = Confirm(
             buttons=buttons
@@ -246,74 +221,45 @@ class DwelloContext(commands.Context):
         if False in (delete_after_cancel, delete_after_confirm, delete_after_timeout):
             view._children = [view.children[0]]
             for c in view.children:
-                c.disabled = True
-                if view.value is False:
-                    c.label = "Cancelled!"
-                    c.emoji = None
-                    c.style = discord.ButtonStyle.red
-                elif view.value is True:
-                    c.label = "Confirmed!"
-                    c.emoji = None
-                    c.style = discord.ButtonStyle.green
-                else:
-                    c.label = "Timed out!"
-                    c.emoji = "⏰"
-                    c.style = discord.ButtonStyle.gray
+                if isinstance(c, discord.ui.Button):
+                    c.disabled = True
+                    if view.value is False:
+                        c.label = "Cancelled!"
+                        c.emoji = None
+                        c.style = discord.ButtonStyle.red
+                    elif view.value is True:
+                        c.label = "Confirmed!"
+                        c.emoji = None
+                        c.style = discord.ButtonStyle.green
+                    else:
+                        c.label = "Timed out!"
+                        c.emoji = "⏰"
+                        c.style = discord.ButtonStyle.gray
         view.stop()
         if view.value is None:
             try:
                 if not return_message:
-                    await message.delete() if delete_after_timeout else await message.edit(
-                        view=view
-                    )
+                    await message.delete() if delete_after_timeout else await message.edit(view=view)
             except (discord.Forbidden, discord.HTTPException):
                 pass
-            return (
-                (None, message) if not delete_after_timeout and return_message else None
-            )
+            return (None, message) if not delete_after_timeout and return_message else None
 
         elif view.value:
             try:
                 if not return_message:
-                    await message.delete() if delete_after_confirm else await message.edit(
-                        view=view
-                    )
+                    await message.delete() if delete_after_confirm else await message.edit(view=view)
             except (discord.Forbidden, discord.HTTPException):
                 pass
-            return (
-                (True, message) if not delete_after_confirm and return_message else True
-            )
+            return (True, message) if not delete_after_confirm and return_message else True
 
         else:
             try:
                 if not return_message:
-                    (
-                        await message.edit(view=view)
-                    ) if delete_after_cancel is False else (await message.delete())
+                    (await message.edit(view=view)) if delete_after_cancel is False else (await message.delete())
             except (discord.Forbidden, discord.HTTPException):
                 pass
 
-            return (
-                (False, message)
-                if delete_after_cancel is False and return_message
-                else False
-            )
-
-    '''@property
-    def color(self):
-        """Returns DuckBot's color, or the author's color. Falls back to blurple"""
-        return (
-            self.me.color
-            if self.me.color not in (discord.Color.default(), None, None)
-            else self.author.color
-            if self.author.color not in (discord.Color.default(), None, None)
-            else discord.Color.blurple()
-        )'''
-
-    '''@property
-    def colour(self):
-        """Returns DuckBot's color, or the author's color. Falls back to blurple"""
-        return self.color'''
+            return (False, message) if delete_after_cancel is False and return_message else False
 
     async def trigger_typing(self) -> None:
         try:

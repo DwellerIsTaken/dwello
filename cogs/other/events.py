@@ -1,22 +1,19 @@
 from __future__ import annotations
 
-from typing import Any
-
 import asyncpg
 import discord
 from discord.ext import commands
 from typing_extensions import Self
 
-from bot import Dwello, DwelloContext
-from utils import BaseCog
+from core import Bot, Cog, Context
 
 
-class Events(BaseCog):
-    def __init__(self: Self, bot: Dwello, *args: Any, **kwargs: Any):
-        super().__init__(bot, *args, **kwargs)
+class Events(Cog):
+    def __init__(self: Self, bot: Bot):
+        self.bot = bot
 
     @commands.hybrid_command(name="table", with_app_command=False)
-    async def test(self: Self, ctx: DwelloContext):
+    async def test(self: Self, ctx: Context):
         await self.bot.listeners.bot_join(ctx.guild)
 
     @commands.Cog.listener()
@@ -28,9 +25,7 @@ class Events(BaseCog):
         await self.bot.levelling.increase_xp(message)
 
         if message.content == f"<@{self.bot.user.id}>" and not message.author.bot:
-            content: str = (
-                f"Hello there! I'm {self.bot.user.name}. Use `dw.help` for more."
-            )
+            content: str = f"Hello there! I'm {self.bot.user.name}. Use `dw.help` for more."
             await message.reply(content=content)
 
         if message.author == self.bot.user:
@@ -53,9 +48,7 @@ class Events(BaseCog):
     channel_type_list = ["category", "all", "member", "bot"]
 
     @commands.Cog.listener()
-    async def on_guild_channel_delete(
-        self: Self, channel: discord.abc.GuildChannel
-    ) -> None:
+    async def on_guild_channel_delete(self: Self, channel: discord.abc.GuildChannel) -> None:
         async with self.bot.pool.acquire() as conn:
             conn: asyncpg.Connection
             async with conn.transaction():

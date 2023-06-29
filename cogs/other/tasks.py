@@ -2,29 +2,25 @@ from __future__ import annotations
 
 import asyncio
 from datetime import datetime
-from typing import Any
 
 import asyncpg
 from discord.ext import tasks
 from pytz import timezone
 from typing_extensions import Self
 
-from bot import Dwello
-from utils import BaseCog
+from core import Bot, Cog
 
 
-class Tasks(BaseCog):
-    def __init__(self: Self, bot: Dwello, *args: Any, **kwargs: Any):
-        super().__init__(bot, *args, **kwargs)
+class Tasks(Cog):
+    def __init__(self: Self, bot: Bot) -> None:
+        self.bot = bot
         self.stats_loop.start()
         self.eco_loop.start()  # maybe start it in bot_base.py instead
 
     @tasks.loop(minutes=10)
     async def stats_loop(self: Self) -> None:
         for guild in self.bot.guilds:
-            await self.bot.otherutils.exe_sql(
-                guild
-            )  # in case join/leave won't work because of rate limitations
+            await self.bot.otherutils.exe_sql(guild)  # in case join/leave won't work because of rate limitations
 
     @tasks.loop(seconds=1)
     async def eco_loop(self: Self) -> None:

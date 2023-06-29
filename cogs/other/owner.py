@@ -3,7 +3,7 @@
 
 from __future__ import annotations
 
-from typing import Any, Literal, Optional, Union
+from typing import Literal, Optional, Union
 
 import asyncpg
 import discord
@@ -11,28 +11,27 @@ from discord.ext import commands
 from typing_extensions import Self
 
 import constants as cs
-from bot import Dwello, DwelloContext
-from utils import BaseCog
+from core import Bot, Cog, Context
 
 
-async def setup(bot: Dwello):
+async def setup(bot: Bot):
     await bot.add_cog(Owner(bot))
 
 
 mk = discord.utils.escape_markdown
 
 
-class Owner(BaseCog):
+class Owner(Cog):
     # make it a separate vog that will inhirrit from other owner classes?
 
-    def __init__(self: Self, bot: Dwello, *args: Any, **kwargs: Any):
-        super().__init__(bot, *args, **kwargs)
+    def __init__(self: Self, bot: Bot) -> None:
+        self.bot = bot
 
     @commands.is_owner()
     @commands.group(name="blacklist", invoke_without_command=True, hidden=True)
     async def blacklist_group(
         self: Self,
-        ctx: DwelloContext,
+        ctx: Context,
         user: Union[discord.User, int] = None,
         *,
         reason: str = None,
@@ -46,7 +45,7 @@ class Owner(BaseCog):
     @blacklist_group.command(name="add", hidden=True)
     async def add(
         self: Self,
-        ctx: DwelloContext,
+        ctx: Context,
         user: Union[discord.User, int],
         *,
         reason: str = None,
@@ -67,13 +66,11 @@ class Owner(BaseCog):
             return await ctx.reply("Already blacklisted.")
 
         self.bot.blacklisted_users[user_id] = reason
-        return await ctx.reply(
-            f"Blacklisted **{mk(user.name, as_needed=False)}** successfully."
-        )
+        return await ctx.reply(f"Blacklisted **{mk(user.name, as_needed=False)}** successfully.")
 
     @commands.is_owner()
     @blacklist_group.command(name="display", hidden=True)
-    async def display(self: Self, ctx: DwelloContext) -> discord.Message:
+    async def display(self: Self, ctx: Context) -> discord.Message:
         records = await self.bot.pool.fetch("SELECT * FROM blacklist")
 
         embed: discord.Embed = discord.Embed(
@@ -94,9 +91,7 @@ class Owner(BaseCog):
 
     @commands.is_owner()
     @blacklist_group.command(name="remove", hidden=True)
-    async def remove(
-        self: Self, ctx: DwelloContext, user: Union[discord.User, int]
-    ) -> discord.Message:
+    async def remove(self: Self, ctx: Context, user: Union[discord.User, int]) -> discord.Message:
         user_id = user if isinstance(user, int) else user.id
         async with ctx.bot.safe_connection() as conn:
             query = """
@@ -117,7 +112,7 @@ class Owner(BaseCog):
     @commands.guild_only()
     async def sync(
         self: Self,
-        ctx: DwelloContext,
+        ctx: Context,
         guilds: commands.Greedy[discord.Object],
         spec: Optional[Literal["~", "*", "^"]] = None,
     ) -> Optional[discord.Message]:
@@ -135,9 +130,7 @@ class Owner(BaseCog):
             else:
                 synced = await bot.tree.sync()
 
-            await ctx.send(
-                f"Synced {len(synced)} commands {'globally' if spec is None else 'to the current guild.'}"
-            )
+            await ctx.send(f"Synced {len(synced)} commands {'globally' if spec is None else 'to the current guild.'}")
             return
 
         ret = 0
@@ -155,11 +148,11 @@ class Owner(BaseCog):
     @commands.command()
     @commands.is_owner()
     @commands.guild_only()
-    async def list_eventsubs(self: Self, ctx: DwelloContext):
+    async def list_eventsubs(self: Self, ctx: Context):
         return self.bot.twitch.event_subscription_list()
 
     @commands.command()
     @commands.is_owner()
     @commands.guild_only()
-    async def wipe_all_eventsubs(self: Self, ctx: DwelloContext):
+    async def wipe_all_eventsubs(self: Self, ctx: Context):
         return self.bot.twitch.unsubscribe_from_all_eventsubs()
