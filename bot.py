@@ -2,13 +2,11 @@ from __future__ import annotations
 
 import asyncio
 import logging
+from typing import TYPE_CHECKING, Generic, Optional, Tuple, TypeVar
 
 import aiohttp
 import asyncpg
 from dotenv import load_dotenv
-
-from typing import TYPE_CHECKING, Generic, Optional, Tuple, TypeVar
-
 from typing_extensions import Self
 
 from utils.bases.bot_base import DwelloBase, get_or_fail
