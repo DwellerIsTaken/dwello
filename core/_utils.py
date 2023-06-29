@@ -7,7 +7,7 @@ import asyncpg
 if TYPE_CHECKING:
     from asyncpg import Connection, Pool
     from asyncpg.transaction import Transaction
-    from .bot import Bot
+    from .bot import Dwello
 
 import string
 from string import Template
@@ -16,14 +16,14 @@ import discord
 from aiohttp import web
 from discord.app_commands import Choice
 
-T = TypeVar("T")
+import constants as cs  # noqa: E402
+from utils import ENV, DataBaseOperations, Twitch  # noqa: F401, E402
 
-import constants as cs
-from utils import ENV, DataBaseOperations, Twitch  # noqa: F401 # pylint: disable=unused-import
+T = TypeVar("T")
 
 
 class AiohttpWeb:
-    def __init__(self, bot: Bot):
+    def __init__(self, bot: Dwello):
         self.bot = bot
         self.app: web.Application = web.Application()
         self.app.router.add_post("/api/post", self.handle_post)
@@ -49,15 +49,21 @@ class AiohttpWeb:
 
 
 class LevellingUtils:
-    def __init__(self, bot: Bot):
+    def __init__(self, bot: Dwello):
         self.bot = bot
 
     async def create_user(self, user_id: int, guild_id: int) -> None:
         async with self.bot.pool.acquire() as conn:
             conn: asyncpg.Connection
             async with conn.transaction():
+                query: str = (
+                    """
+                    INSERT INTO users(user_id, guild_id, event_type) VALUES($1, $2, 'server'), ($1, $2, 'bot') 
+                    ON CONFLICT (user_id, guild_id, event_type) DO NOTHING
+                    """
+                )
                 await conn.execute(
-                    "INSERT INTO users(user_id, guild_id, event_type) VALUES($1, $2, 'server'), ($1, $2, 'bot') ON CONFLICT (user_id, guild_id, event_type) DO NOTHING",
+                    query,
                     user_id,
                     guild_id,
                 )
@@ -96,7 +102,8 @@ class LevellingUtils:
 
                     xp_till_next_level = int(new_level_formula - 0)
 
-                    level_embed_dis = f"*Your new level is: {new_level}*\n*Xp until your next level: {xp_till_next_level}*"  # xp until next level
+                    # xp until next level
+                    level_embed_dis = f"*Your new level is: {new_level}*\n*Xp until your next level: {xp_till_next_level}*" 
 
                     level_embed = discord.Embed(
                         title="Congratulations with your new level!",
@@ -119,9 +126,11 @@ class LevellingUtils:
 
                     except discord.HTTPException:
                         pass"""
+                    
+                    query = "UPDATE users SET xp = $1, total_xp = $2, level = $3, messages = $4 WHERE user_id = $5 AND guild_id = $6"  # noqa: E501
 
                     await conn.execute(
-                        "UPDATE users SET xp = $1, total_xp = $2, level = $3, messages = $4 WHERE user_id = $5 AND guild_id = $6",
+                        query,
                         xp * 0,
                         total_xp + rate,
                         new_level,
@@ -182,7 +191,7 @@ class LevellingUtils:
 
 
 class AutoComplete:
-    def __init__(self, bot: Bot):
+    def __init__(self, bot: Dwello):
         self.bot = bot
 
     async def choice_autocomplete(
@@ -228,11 +237,11 @@ class AutoComplete:
 
 class ContextManager(Generic[T]):
     if TYPE_CHECKING:
-        from .bot import Bot
+        from .bot import Dwello
 
     __slots__: tuple[str, ...] = ("bot", "timeout", "_pool", "_conn", "_tr")
 
-    def __init__(self, bot: Bot, *, timeout: float = 10.0) -> None:
+    def __init__(self, bot: Dwello, *, timeout: float = 10.0) -> None:
         self.bot = bot
         self.timeout: float = timeout
         self._pool: Pool = bot.pool
@@ -277,7 +286,7 @@ LOADABLE_EXTENSIONS = [
 
 
 class ListenersFunctions:
-    def __init__(self, bot: Bot):
+    def __init__(self, bot: Dwello):
         self.bot = bot
 
     async def bot_join(self, guild: discord.Guild) -> None:
@@ -327,7 +336,10 @@ class ListenersFunctions:
                 if str(name) == "welcome":
                     member_welcome_embed = discord.Embed(
                         title="You have successfully joined the guild!",
-                        description=f"```Guild joined: {guild.name}\nMember joined: {member}\nGuild id: {guild.id}\nMember id: {member.id}```",
+                        description=(
+                            f"```Guild joined: {guild.name}\nMember joined: {member}\n"
+                            f"Guild id: {guild.id}\nMember id: {member.id}```"
+                        ),
                         color=discord.Color.random(),
                     )
                     member_welcome_embed.set_thumbnail(
@@ -349,7 +361,10 @@ class ListenersFunctions:
                         print(e)
 
                     if not second_result[0]:  # type: ignore
-                        _message = f"You are the __*{len(list(member.guild.members))}th*__ user on this server. \nI hope that you will enjoy your time on this server. Have a good day!"
+                        _message = (
+                            f"You are the __*{len(list(member.guild.members))}th*__ user on this server.\n"
+                            "I hope that you will enjoy your time on this server. Have a good day!"
+                        )
 
                     _title = f"Welcome to {member.guild.name}!"
 
@@ -378,15 +393,21 @@ class ListenersFunctions:
 
 
 class OtherUtils:
-    def __init__(self, bot: Bot) -> None:
+    def __init__(self, bot: Dwello) -> None:
         self.bot = bot
 
     async def exe_sql(self, guild: discord.Guild) -> None:
         async with self.bot.pool.acquire() as conn:
             conn: asyncpg.Connection
             async with conn.transaction():
+                query: str = (
+                    """
+                    SELECT channel_id, counter_name FROM server_data WHERE guild_id = $1 AND channel_id IS NOT NULL 
+                    AND event_type = 'counter' AND counter_name != 'category'
+                    """
+                )
                 channels = await conn.fetch(
-                    "SELECT channel_id, counter_name FROM server_data WHERE guild_id = $1 AND channel_id IS NOT NULL AND event_type = 'counter' AND counter_name != 'category'",
+                    query,
                     guild.id,
                 )
 

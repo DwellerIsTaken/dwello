@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from core import Bot
+from core import Dwello
 
 from .bot_eco import Bot_Economy
 from .guild_eco import Guild_Economy
@@ -8,7 +8,8 @@ from .guild_eco import Guild_Economy
 
 class Economy(Bot_Economy, Guild_Economy, name="Economy"):
     """
-    💸 Includes economy commands for both bot- and guild-side.
+    💸 
+    Includes economy commands for both bot- and guild-side.
     """
 
     def __init__(self, *args, **kwargs):
@@ -17,5 +18,10 @@ class Economy(Bot_Economy, Guild_Economy, name="Economy"):
         self.select_brief = "Commands for managing an economy system."
 
 
-async def setup(bot: Bot):
+async def setup(bot: Dwello):
     await bot.add_cog(Economy(bot))
+
+# REDO ECO
+# MAKE GLOBAL ECO
+# MORE ADVANCED
+# MORE ADVANCED SQL TOO

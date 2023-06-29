@@ -8,15 +8,15 @@ import asyncpg
 import discord
 
 import constants as cs
-from core import Bot, Context
+from core import Dwello, DwelloContext
 
 
 class SharedEcoUtils:
-    def __init__(self, bot: Bot):
+    def __init__(self, bot: Dwello):
         self.bot = bot
 
     async def fetch_basic_job_data_by_username(
-        self, ctx: Context, member: discord.Member = None
+        self, ctx: DwelloContext, member: discord.Member = None
     ) -> Optional[Tuple[Optional[str], Optional[int], Union[str, None], Optional[int]]]:
         async with self.bot.pool.acquire() as conn:
             conn: asyncpg.Connection
@@ -79,7 +79,7 @@ class SharedEcoUtils:
 
                 return balance
 
-    async def work(self, ctx: Context, name: str) -> Optional[discord.Message]:
+    async def work(self, ctx: DwelloContext, name: str) -> Optional[discord.Message]:
         async with self.bot.pool.acquire() as conn:
             conn: asyncpg.Connection
             async with conn.transaction():
@@ -103,7 +103,8 @@ class SharedEcoUtils:
                 if worked:
                     embed: discord.Embed = discord.Embed(
                         title="→ \U0001d5e6\U0001d5fc\U0001d5ff\U0001d5ff\U0001d606 ←",
-                        description=f"Your have already worked{' *on this server* ' if name == 'server' else ' '}today!\nYour next workday begins {discord.utils.format_dt(my_datetime, style='R')}",
+                        description=f"Your have already worked{' *on this server* ' if name == 'server' else ' '}today!\n"
+                                    f"Your next workday begins {discord.utils.format_dt(my_datetime, style='R')}",
                         color=cs.RANDOM_COLOR,
                     )
                     return await ctx.reply(embed=embed)

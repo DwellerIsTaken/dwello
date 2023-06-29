@@ -7,12 +7,12 @@ from discord.app_commands import Choice
 from discord.ext import commands
 
 import constants as cs
-from core import Bot, Cog, Context
+from core import BaseCog, Dwello, DwelloContext
 from utils import HandleHTTPException, member_check
 
 
-class StandardModeration(Cog):
-    def __init__(self, bot: Bot) -> None:
+class StandardModeration(BaseCog):
+    def __init__(self, bot: Dwello) -> None:
         self.bot = bot
 
     @commands.hybrid_command(name="ban", help="Bans users with bad behaviour.", with_app_command=True)
@@ -21,7 +21,7 @@ class StandardModeration(Cog):
     @commands.guild_only()
     async def ban(
         self,
-        ctx: Context,
+        ctx: DwelloContext,
         member: discord.Member,
         *,
         reason: Optional[str] = None,
@@ -75,7 +75,9 @@ class StandardModeration(Cog):
     @commands.bot_has_permissions(send_messages=True, view_audit_log=True, ban_members=True)
     @commands.has_guild_permissions(ban_members=True)
     @commands.guild_only()
-    async def unban(self, ctx: Context, member_object: str) -> Union[discord.Message, discord.InteractionMessage, None]:
+    async def unban(
+        self, ctx: DwelloContext, member_object: str
+    ) -> Union[discord.Message, discord.InteractionMessage, None]:
         async with ctx.typing(ephemeral=True):
             member = discord.Object(id=member_object)  # member_object type str?
 
@@ -120,7 +122,7 @@ class StandardModeration(Cog):
     @commands.guild_only()
     async def kick(
         self,
-        ctx: Context,
+        ctx: DwelloContext,
         member: discord.Member,
         *,
         reason: Optional[str] = None,
@@ -154,7 +156,7 @@ class StandardModeration(Cog):
     @commands.guild_only()
     async def nick(
         self,
-        ctx: Context,
+        ctx: DwelloContext,
         member: discord.Member,
         *,
         nickname: Optional[str] = None,

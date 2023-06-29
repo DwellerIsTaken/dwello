@@ -5,15 +5,15 @@ import discord
 from discord.ext import commands
 from typing_extensions import Self
 
-from core import Bot, Cog, Context
+from core import BaseCog, Dwello, DwelloContext
 
 
-class Events(Cog):
-    def __init__(self, bot: Bot):
+class Events(BaseCog):
+    def __init__(self, bot: Dwello):
         self.bot = bot
 
     @commands.hybrid_command(name="table", with_app_command=False)
-    async def test(self, ctx: Context):
+    async def test(self, ctx: DwelloContext):
         await self.bot.listeners.bot_join(ctx.guild)
 
     @commands.Cog.listener()
@@ -39,11 +39,11 @@ class Events(Cog):
 
             response = requests.post("https://api.openai.com/v1/engines/davinci/completions",json={"prompt":prompt, "temperature":0.5, "max_tokens":100},headers=headers)
 
-            await message.reply(embed=discord.Embed(description= response.json()["choices"][0]['text'], color=discord.Color.random()), mention_author=False)"""
+            await message.reply(embed=discord.Embed(description= response.json()["choices"][0]['text'], color=discord.Color.random()), mention_author=False)"""  # noqa: E501
 
     """@commands.Cog.listener()
     async def on_interaction(self, interaction: discord.interactions.Interaction):
-        await levelling.create_user(interaction.user.id, interaction.guild.id)"""  # because on_member_join exist | can use this as a backup
+        await levelling.create_user(interaction.user.id, interaction.guild.id)"""  # because on_member_join exist | can use this as a backup  # noqa: E501
 
     channel_type_list = ["category", "all", "member", "bot"]
 
@@ -56,7 +56,7 @@ class Events(Cog):
 
                 for i in self.channel_type_list:
                     record = await conn.fetchrow(
-                        "SELECT channel_id FROM server_data WHERE guild_id = $1 AND event_type = 'counter' AND counter_name = $2",
+                        "SELECT channel_id FROM server_data WHERE guild_id = $1 AND event_type = 'counter' AND counter_name = $2",  # noqa: E501
                         channel.guild.id,
                         str(i),
                     )
@@ -66,7 +66,7 @@ class Events(Cog):
                     try:
                         if channel.id == int(j[1]):
                             await conn.execute(
-                                "UPDATE server_data SET channel_id = NULL WHERE channel_id IS NOT NULL AND guild_id = $1 AND event_type = 'counter' AND counter_name = $2",
+                                "UPDATE server_data SET channel_id = NULL WHERE channel_id IS NOT NULL AND guild_id = $1 AND event_type = 'counter' AND counter_name = $2",  # noqa: E501
                                 channel.guild.id,
                                 str(j[0]),
                             )

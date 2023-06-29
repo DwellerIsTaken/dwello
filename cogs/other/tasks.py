@@ -8,11 +8,11 @@ from discord.ext import tasks
 from pytz import timezone
 from typing_extensions import Self
 
-from core import Bot, Cog
+from core import BaseCog, Dwello, DwelloContext  # noqa: F401
 
 
-class Tasks(Cog):
-    def __init__(self, bot: Bot) -> None:
+class Tasks(BaseCog):
+    def __init__(self, bot: Dwello) -> None:
         self.bot = bot
         self.stats_loop.start()
         self.eco_loop.start()  # maybe start it in bot_base.py instead

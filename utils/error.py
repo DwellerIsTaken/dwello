@@ -10,20 +10,20 @@ from discord.ext import commands
 import constants as cs
 
 if TYPE_CHECKING:
-    from core import Bot, Context
+    from core import Dwello, DwelloContext
 
 
-async def setup(bot: Bot):
+async def setup(bot: Dwello):
     await bot.add_cog(CommandErrorHandler(bot))
 
 
 # rename to error.py
 class CommandErrorHandler(commands.Cog):
-    def __init__(self, bot: Bot) -> None:
+    def __init__(self, bot: Dwello) -> None:
         self.bot = bot
 
     @commands.Cog.listener()
-    async def on_command_error(self, ctx: Context, error: Exception) -> Optional[discord.Message]:
+    async def on_command_error(self, ctx: DwelloContext, error: Exception) -> Optional[discord.Message]:
         """The event triggered when an error is raised while invoking a command.
         Parameters
         ------------
@@ -124,7 +124,10 @@ class CommandErrorHandler(commands.Cog):
             embed.set_author(name=f"{ctx.author.name}", icon_url=ctx.author.display_avatar)
             embed.add_field(
                 name="Information",
-                value=f"Error Name: {type(error).__name__}\nError Type: {type(error)}\nMessage: {ctx.message.content}\n{guild}Channel ID: {ctx.channel.id}",
+                value=(
+                f"Error Name: {type(error).__name__}\nError Type: {type(error)}\n"
+                f"Message: {ctx.message.content}\n{guild}Channel ID: {ctx.channel.id}"
+                ),
             )
 
             """await ctx.channel.send(
@@ -138,7 +141,7 @@ class CommandErrorHandler(commands.Cog):
 
     # move to another channel
     @commands.command(name="repeat", aliases=["mimic", "copy"])
-    async def do_repeat(self, ctx: Context, *, inp: str):
+    async def do_repeat(self, ctx: DwelloContext, *, inp: str):
         """A simple command which repeats your input!
         Parameters
         ------------
@@ -148,7 +151,7 @@ class CommandErrorHandler(commands.Cog):
         return await ctx.send(inp)
 
     @do_repeat.error
-    async def do_repeat_handler(self, ctx: Context, error: Exception):
+    async def do_repeat_handler(self, ctx: DwelloContext, error: Exception):
         """A local Error Handler for our command do_repeat.
         This will only listen for errors in do_repeat.
         The global on_command_error will still be invoked after.

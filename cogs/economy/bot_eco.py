@@ -7,16 +7,16 @@ import discord
 from discord.ext import commands
 
 import constants as cs
-from core import Bot, Cog, Context
+from core import BaseCog, Dwello, DwelloContext
 
 from .shared import SharedEcoUtils
 
 
 class BotEcoUtils:
-    def __init__(self, bot: Bot):
+    def __init__(self, bot: Dwello):
         self.bot = bot
 
-    async def balance_check(self, ctx: Context, amount: int, name: str) -> Optional[bool]:
+    async def balance_check(self, ctx: DwelloContext, amount: int, name: str) -> Optional[bool]:
         async with self.bot.pool.acquire() as conn:
             conn: asyncpg.Connection
             async with conn.transaction():
@@ -41,8 +41,8 @@ class BotEcoUtils:
         return True
 
 
-class Bot_Economy(Cog):
-    def __init__(self, bot: Bot):
+class Bot_Economy(BaseCog):
+    def __init__(self, bot: Dwello):
         self.bot = bot
         self.be: BotEcoUtils = BotEcoUtils(self.bot)
         self.se: SharedEcoUtils = SharedEcoUtils(self.bot)
@@ -51,5 +51,5 @@ class Bot_Economy(Cog):
         name="work",
         description="A boring job with a basic income. Gives some of the bot's currency in return.",
     )
-    async def work_bot(self, ctx: Context):
+    async def work_bot(self, ctx: DwelloContext):
         return await self.se.work(ctx, "bot")

@@ -9,19 +9,20 @@ import discord
 from discord.ext import commands
 
 import constants as cs
-from core import Bot, Cog, Context
+
 from utils import ENV
+from core import BaseCog, Dwello, DwelloContext
 
 
-class Fun(Cog):
-    def __init__(self, bot: Bot) -> None:
+class Fun(BaseCog):
+    def __init__(self, bot: Dwello) -> None:
         self.bot = bot
 
     # https://developer.spotify.com/dashboard
 
     async def retrieve_subreddit(
         self,
-        ctx: Context,
+        ctx: DwelloContext,
         subreddit: str,
         /,
         listing: str = "hot",
@@ -50,7 +51,7 @@ class Fun(Cog):
         aliases=["tenor"],
         with_app_command=True,
     )
-    async def gif(self, ctx: Context, *, gif: str = "dankmeme") -> Optional[discord.Message]:
+    async def gif(self, ctx: DwelloContext, *, gif: str = "dankmeme") -> Optional[discord.Message]:
         key: str = ENV["TENOR_KEY"]
         limit: int = 1
         ckey: str = self.bot.user.id
@@ -83,7 +84,7 @@ class Fun(Cog):
         return await ctx.reply(embed=embed)
 
     @commands.hybrid_command(name="meme", help="Returns a subreddit meme.", with_app_command=True)
-    async def meme(self, ctx: Context) -> Optional[discord.Message]:
+    async def meme(self, ctx: DwelloContext) -> Optional[discord.Message]:
         data = await self.retrieve_subreddit(ctx, "dankmeme")
         if isinstance(data, discord.Message):
             return
@@ -102,7 +103,7 @@ class Fun(Cog):
         return await ctx.reply(embed=embed)
 
     @commands.hybrid_command(name="reddit", help="Returns a subreddit.", with_app_command=True)
-    async def reddit(self, ctx: Context, subreddit: str) -> Optional[discord.Message]:
+    async def reddit(self, ctx: DwelloContext, subreddit: str) -> Optional[discord.Message]:
         data: Dict[str, Any] = await self.retrieve_subreddit(ctx, subreddit)
         if isinstance(data, discord.Message):
             return
@@ -131,7 +132,7 @@ class Fun(Cog):
         help="Shows the song member is listening to.",
         with_app_command=True,
     )
-    async def spotify(self, ctx: Context, *, member: discord.Member = commands.Author) -> Optional[discord.Message]:
+    async def spotify(self, ctx: DwelloContext, *, member: discord.Member = commands.Author) -> Optional[discord.Message]:
         spotify: discord.Spotify = discord.utils.find(
             lambda activity: isinstance(activity, discord.Spotify),
             member.activities,
@@ -160,5 +161,6 @@ class Fun(Cog):
         )
         embed.set_image(url="attachment://spotify.png")
         # embed.set_thumbnail(url="https://logospng.org/download/spotify/logo-spotify-icon-4096.png")
+        # add some cool footer with spotify icon
 
         return await ctx.reply(embed=embed, file=file)

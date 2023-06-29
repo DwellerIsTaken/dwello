@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from core import Bot, Cog
+from core import BaseCog, Dwello, DwelloContext  # noqa: F401
 
 # from colorthief import ColorThief
 # import matplotlib.colors as clr
@@ -13,8 +13,8 @@ from core import Bot, Cog
 # REFACTOR TO PILLOW
 
 
-class UserInfo(Cog):
-    def __init__(self, bot: Bot) -> None:
+class UserInfo(BaseCog):
+    def __init__(self, bot: Dwello) -> None:
         self.bot = bot
         # self.levelling = LevellingUtils(bot)
         # self.eco = GuildEcoUtils(bot)
@@ -91,7 +91,7 @@ class UserInfo(Cog):
 
                     embed.set_footer(text=cs.footer)
 
-            return await ctx.reply(embed=embed, mention_author = False)"""
+            return await ctx.reply(embed=embed, mention_author = False)"""  # noqa: E501
 
     # OPTIMIZE | TO PIL
     """@commands.hybrid_command(name = 'rank', description="Shows your rank or another member's rank.",with_app_command=True) 
@@ -277,7 +277,7 @@ class UserInfo(Cog):
                         image.save("avatar.png")
 
             await ctx.reply(file=file1,mention_author=False)
-        return os.remove("avatar.png")"""
+        return os.remove("avatar.png")"""  # noqa: E501
 
     """@commands.hybrid_command(name = 'leaderboard', description="Shows the level leaderboard.",with_app_command=True) 
     async def leaderboard(self, ctx: commands.Context):
@@ -630,4 +630,4 @@ class UserInfo(Cog):
                     image.save("avatar_1.png")
 
                 await ctx.reply(file=file1, mention_author=False)
-                return os.remove("avatar_1.png")"""
+                return os.remove("avatar_1.png")"""  # noqa: E501

@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-import os
+import os  # noqa: F401
 from typing import TYPE_CHECKING, Any, Dict, Literal, Optional, Tuple, Union
 
 import aiohttp
@@ -9,20 +9,19 @@ import discord
 from typing_extensions import Self, Type
 
 import constants as cs
-
-# import requests
+from utils import ENV
 
 
 if TYPE_CHECKING:
-    from core import Bot, Context
+    from core import Dwello, DwelloContext
 
 
-CLIENT_ID = os.getenv("TWITCH_CLIENT_ID")
-CLIENT_SECRET = os.getenv("TWITCH_CLIENT_SECRET")
+CLIENT_ID = ENV["TWITCH_CLIENT_ID"]
+CLIENT_SECRET = ENV["TWITCH_CLIENT_SECRET"]
 HELIX_URL = "https://api.twitch.tv/helix/eventsub/subscriptions"
 
 
-async def get_access_token(bot: Bot):
+async def get_access_token(bot: Dwello):
     body = {
         "client_id": CLIENT_ID,
         "client_secret": CLIENT_SECRET,
@@ -37,13 +36,13 @@ async def get_access_token(bot: Bot):
 
 class Twitch:
     # FIX ACCESS TOKEN ISSUE. CREATE LOOP BASED ON EXPIRATION DATE AND REQUEST NEW ONE WHENEVER ONE EXPIRES
-    def __init__(self, access_token: str, bot: Bot) -> None:
+    def __init__(self, access_token: str, bot: Dwello) -> None:
         self.bot = bot
         self.session = bot.session
         self.access_token = access_token
 
     @classmethod
-    async def create_access_token(cls: Type[Self], bot: Bot) -> Self:
+    async def create_access_token(cls: Type[Self], bot: Dwello) -> Self:
         access_token = await get_access_token(bot)
         return cls(access_token, bot)
 
@@ -83,7 +82,9 @@ class Twitch:
 
         return _username
 
-    async def event_subscription(self, ctx: Context, type_: str, username: str) -> Union[Tuple[discord.Message, dict], Any]:
+    async def event_subscription(
+        self, ctx: DwelloContext, type_: str, username: str
+    ) -> Union[Tuple[discord.Message, dict], Any]:
         async with self.bot.pool.acquire() as conn:
             conn: asyncpg.Connection
             async with conn.transaction():
@@ -162,7 +163,7 @@ class Twitch:
                     int(user_id),
                     ctx.guild.id,
                 )
-                # await conn.execute("UPDATE server_data SET twitch_id = $1 WHERE guild_id = $2 AND event_type = 'twitch'", user_id, ctx.guild.id)
+                # await conn.execute("UPDATE server_data SET twitch_id = $1 WHERE guild_id = $2 AND event_type = 'twitch'", user_id, ctx.guild.id)  # noqa: E501
                 # Print the response to confirm whether the subscription was created successfully or not
 
         await self.bot.db.fetch_table_data("twitch_users")
@@ -174,7 +175,7 @@ class Twitch:
         # type_ = stream.online
 
     # return a list of users the guild is subscribed to
-    async def guild_twitch_subscriptions(self, ctx: Context) -> Optional[discord.Message]:
+    async def guild_twitch_subscriptions(self, ctx: DwelloContext) -> Optional[discord.Message]:
         async with self.bot.pool.acquire() as conn:
             conn: asyncpg.Connection
             async with conn.transaction():
@@ -205,7 +206,7 @@ class Twitch:
         return await ctx.reply(embed=twitch_embed)
 
     async def twitch_unsubscribe_from_streamer(
-        self, ctx: Context, username: Union[str, Literal["all"]]
+        self, ctx: DwelloContext, username: Union[str, Literal["all"]]
     ) -> Optional[
         discord.Message
     ]:  # IF ALL: GET ALL TWITCH USERS THAT GUILD IS SUBSCRIBED TO AND UNSUB (what if the same user for multiple guilds)

@@ -7,19 +7,20 @@ import discord
 from discord.ext import commands
 
 import constants as cs
-from core import Bot, Cog, Context
+from core import BaseCog, Dwello, DwelloContext
 
 from .shared import SharedEcoUtils
 
 
 class GuildEcoUtils:
-    def __init__(self, bot: Bot):
+    def __init__(self, bot: Dwello):
         self.bot = bot
         self.se: SharedEcoUtils = SharedEcoUtils(self.bot)
 
     async def fetch_basic_job_data_by_job_name(
-        self, ctx: Context, name: str
+        self, ctx: DwelloContext, name: str
     ) -> Optional[Tuple[Optional[int], Optional[str]]]:
+        
         async with self.bot.pool.acquire() as conn:
             conn: asyncpg.Connection
             async with conn.transaction():
@@ -31,7 +32,10 @@ class GuildEcoUtils:
 
         return data[0], data[1]
 
-    async def server_job_create(self, ctx: Context, name: str, salary: int, description: str) -> Optional[discord.Message]:
+    async def server_job_create(
+        self, ctx: DwelloContext, name: str, salary: int, description: str
+    ) -> Optional[discord.Message]:
+        
         async with self.bot.pool.acquire() as conn:
             conn: asyncpg.Connection
             async with conn.transaction():
@@ -84,7 +88,7 @@ class GuildEcoUtils:
         # while new_job_id in existing_id_list is True:
         # new_job_id_list.append(str(''.join(["{}".format(random.randint(0, 9)) for num in range(0, limit)])))
 
-    async def jobs_display(self, ctx: Context) -> Optional[discord.Message]:
+    async def jobs_display(self, ctx: DwelloContext) -> Optional[discord.Message]:
         async with self.bot.pool.acquire() as conn:
             conn: asyncpg.Connection
             async with conn.transaction():
@@ -121,7 +125,7 @@ class GuildEcoUtils:
 
         return await ctx.reply(embed=job_embed, mention_author=False)
 
-    async def server_job_remove(self, ctx: Context, member: Optional[discord.Member]) -> Optional[discord.Message]:
+    async def server_job_remove(self, ctx: DwelloContext, member: Optional[discord.Member]) -> Optional[discord.Message]:
         async with self.bot.pool.acquire() as conn:
             conn: asyncpg.Connection
             async with conn.transaction():
@@ -143,24 +147,27 @@ class GuildEcoUtils:
                     ) = await self.se.fetch_basic_job_data_by_username(ctx, member)
 
                 except TypeError:
-                    return  # that means that secondary function probably already returned discord.Message, so handle it to prevent any further issues | TRY TO HANDLE THIS OTHERWISE
+                    return  
+                # that means that secondary function probably already returned discord.Message, so handle it to prevent any
+                # further issues | TRY TO HANDLE THIS OTHERWISE
 
                 await conn.execute(
-                    "UPDATE users SET job_id = NULL WHERE job_id = $1 AND guild_id = $2 AND user_id = $3 AND event_type = 'server'",
+                    "UPDATE users SET job_id = NULL WHERE job_id = $1 AND guild_id = $2 AND user_id = $3 AND event_type = 'server'",  # noqa: E501
                     job_id,
                     ctx.guild.id,
                     member.id,
                 )
 
-        # MAYBE CREATE SOME LOG FOR CMDS WITHIN SERVER AND STORE UNOFFICIAL MANAGEMENT THERE, SO IT WOULD BE SEEN WHO CREATED/REMOVED THE JOB(S)
+        # MAYBE CREATE SOME LOG FOR CMDS WITHIN SERVER AND STORE UNOFFICIAL MANAGEMENT THERE, SO IT WOULD BE SEEN WHO CREATED/REMOVED THE JOB(S)  # noqa: E501
         embed: discord.Embed = discord.Embed(
             description=f"{'Your job' if member == ctx.author else f'The job of {member}'} is removed.\n"
-            f"\n**Details**\nJob name: {name}\nSalary: {salary}\nDescription: {f'```{description}```' if description else description}",
+                        f"\n**Details**\nJob name: {name}\nSalary: {salary}\n"
+                        f"Description: {f'```{description}```' if description else description}",
             color=cs.RANDOM_COLOR,
         )
         return await ctx.reply(embed=embed)
 
-    async def server_job_delete(self, ctx: Context, name: Union[str, Literal["all"]]) -> Optional[discord.Message]:
+    async def server_job_delete(self, ctx: DwelloContext, name: Union[str, Literal["all"]]) -> Optional[discord.Message]:
         async with self.bot.pool.acquire() as conn:
             conn: asyncpg.Connection
             async with conn.transaction():
@@ -228,12 +235,12 @@ class GuildEcoUtils:
         await self.bot.db.fetch_table_data("jobs", "users")
         return await ctx.reply(
             embed=public_embed, mention_author=False
-        )  # KEEP IT PUBLIC? ADMIN COULD REMOVE IT AND NO ONE WILL KNOW WHO DID IT. MAYBE MAKE BOT/JOB LOGS TO ADD SIMILAIR ACTIONS TO THEM
+        )  # KEEP IT PUBLIC? ADMIN COULD REMOVE IT AND NO ONE WILL KNOW WHO DID IT. MAYBE MAKE BOT/JOB LOGS TO ADD SIMILAIR ACTIONS TO THEM  # noqa: E501
 
 
-class Guild_Economy(Cog):
-    def __init__(self, bot: Bot) -> None:
-        self.bot: Bot = bot
+class Guild_Economy(BaseCog):
+    def __init__(self, bot: Dwello) -> None:
+        self.bot: Dwello = bot
         self.ge: GuildEcoUtils = GuildEcoUtils(self.bot)
         self.se: SharedEcoUtils = SharedEcoUtils(self.bot)
 
@@ -241,7 +248,7 @@ class Guild_Economy(Cog):
     # DECIDE PERMISSIONS NEEDED FOR JOBS CREATION/REMOVAL
 
     @commands.hybrid_group(name="server", invoke_without_command=True, with_app_command=True)
-    async def server(self, ctx: Context) -> Optional[discord.Message]:
+    async def server(self, ctx: DwelloContext) -> Optional[discord.Message]:
         embed = discord.Embed(
             title="Denied",
             description="```$server [subgroup name]```",
@@ -250,7 +257,7 @@ class Guild_Economy(Cog):
         return await ctx.reply(embed=embed)
 
     @server.group(name="job", invoke_without_command=True, with_app_command=True)
-    async def jobs(self, ctx: Context) -> Optional[discord.Message]:
+    async def jobs(self, ctx: DwelloContext) -> Optional[discord.Message]:
         embed = discord.Embed(title="Denied", description="```$job list```", color=cs.RANDOM_COLOR)
         return await ctx.reply(embed=embed)
 
@@ -258,14 +265,14 @@ class Guild_Economy(Cog):
         name="list",
         description="Shows a list of available jobs on the server set by the server administrator.",
     )
-    async def job_list(self, ctx: Context) -> Optional[discord.Message]:
+    async def job_list(self, ctx: DwelloContext) -> Optional[discord.Message]:
         return await self.ge.jobs_display(ctx)
 
     @jobs.command(name="create", description="Creating a job.")
     @commands.has_permissions(administrator=True)
     async def job_create(
         self,
-        ctx: Context,
+        ctx: DwelloContext,
         name: str,
         salary: commands.Range[int, 2000, 20000],
         description: Optional[str],
@@ -274,15 +281,15 @@ class Guild_Economy(Cog):
 
     @jobs.command(name="delete", description="Purges job(s) from the guild.")
     @commands.has_permissions(administrator=True)
-    async def job_delete(self, ctx: Context, name: str):
+    async def job_delete(self, ctx: DwelloContext, name: str):
         return await self.ge.server_job_delete(ctx, name)
 
     @job_delete.autocomplete("name")
-    async def autocomplete_callback(self, interaction: discord.Interaction, current: str):
+    async def autocomplete_callback_job_delete(self, interaction: discord.Interaction, current: str):
         return await self.bot.autocomplete.choice_autocomplete(interaction, current, "jobs", "name", None, True)
 
     @jobs.command(name="set", description="You can set your server job here!")  # MAYBE PUT THIS IN ECONOMY.PY
-    async def job_set(self, ctx: Context, name: str) -> Optional[discord.Message]:
+    async def job_set(self, ctx: DwelloContext, name: str) -> Optional[discord.Message]:
         async with self.bot.pool.acquire() as conn:
             conn: asyncpg.Connection
             async with conn.transaction():
@@ -322,15 +329,15 @@ class Guild_Economy(Cog):
         )
 
     @job_set.autocomplete("name")
-    async def autocomplete_callback(self, interaction: discord.Interaction, current: str):
+    async def autocomplete_callback_job_set(self, interaction: discord.Interaction, current: str):
         return await self.bot.autocomplete.choice_autocomplete(interaction, current, "jobs", "name", None, False)
 
     @jobs.command(name="remove", description="Removes member's job. | Admin-associated")  # thus only one param is for admins
-    async def job_remove(self, ctx: Context, member: discord.Member = None):
+    async def job_remove(self, ctx: DwelloContext, member: discord.Member = None):
         return await self.ge.server_job_remove(ctx, member)
 
     @jobs.command(name="display", description="Displays member's current job.")
-    async def display(self, ctx: Context, member: discord.Member = None) -> Optional[discord.Message]:
+    async def display(self, ctx: DwelloContext, member: discord.Member = None) -> Optional[discord.Message]:
         try:
             (
                 name,
@@ -349,5 +356,5 @@ class Guild_Economy(Cog):
             return
 
     @jobs.command(name="work", description="Your server work.")
-    async def server_work(self, ctx: Context):
+    async def server_work(self, ctx: DwelloContext):
         return await self.se.work(ctx, "server")

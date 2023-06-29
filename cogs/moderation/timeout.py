@@ -8,13 +8,13 @@ from discord.app_commands import Choice
 from discord.ext import commands
 
 import constants as cs
-from core import Bot, Cog, Context
+from core import BaseCog, Dwello, DwelloContext
 from utils import HandleHTTPException, member_check
 
 
 async def tempmute(
-    bot: Bot,
-    ctx: Context,
+    bot: Dwello,
+    ctx: DwelloContext,
     member: discord.Member,
     duration: int,
     period: Optional[str] = None,
@@ -39,9 +39,11 @@ async def tempmute(
 
     embed: discord.Embed = discord.Embed(
         title="Timed out",
-        description=f"Guten tag! \nYou have been timed out in **{ctx.channel.guild.name}**, in case you were wondering. "
+        description= (
+        f"Guten tag! \nYou have been timed out in **{ctx.channel.guild.name}**, in case you were wondering. "
         f"You must have said something wrong or it's just an administrator whom is playing with his toys. "
-        f"In any way, Make Yourself Great Again.\n \n Reason: **{reason}**\n\nTimed out for: `{time_delta}`",
+        f"In any way, Make Yourself Great Again.\n \n Reason: **{reason}**\n\nTimed out for: `{time_delta}`"
+        ),
         color=cs.WARNING_COLOR,
         timestamp=discord.utils.utcnow(),
     )
@@ -69,8 +71,8 @@ async def tempmute(
     return await ctx.send(embed=embed)
 
 
-class Timeout(Cog):
-    def __init__(self, bot: Bot) -> None:
+class Timeout(BaseCog):
+    def __init__(self, bot: Dwello) -> None:
         self.bot = bot
 
     @commands.hybrid_command(name="mute", help="Mutes member.", with_app_command=True)
@@ -88,7 +90,7 @@ class Timeout(Cog):
     @commands.guild_only()
     async def mute(
         self,
-        ctx: Context,
+        ctx: DwelloContext,
         member: discord.Member,
         duration: int,
         period: Optional[Choice[str]],
@@ -102,13 +104,16 @@ class Timeout(Cog):
     @mute.error
     async def mute_error(
         self,
-        ctx: Context,
+        ctx: DwelloContext,
         error: Union[commands.MissingPermissions, commands.BotMissingPermissions, Any],
     ):
         if isinstance(error, commands.MissingPermissions):
             missing_permissions_embed = discord.Embed(
                 title="Permission Denied.",
-                description=f"You (or the bot) don't have permission to use this command. It should have __*{error.missing_permissions}*__ permission(s) to be able to use this command.",
+                description= (
+                    f"You (or the bot) don't have permission to use this command."
+                    f"It should have __*{error.missing_permissions}*__ permission(s) to be able to use this command."
+                ),
                 color=cs.WARNING_COLOR,
             )
             missing_permissions_embed.set_image(
@@ -147,7 +152,7 @@ class Timeout(Cog):
     @commands.bot_has_permissions(moderate_members=True)
     @commands.has_permissions(moderate_members=True)
     @commands.guild_only()
-    async def unmute(self, ctx: Context, member: discord.Member) -> Optional[discord.Message]:
+    async def unmute(self, ctx: DwelloContext, member: discord.Member) -> Optional[discord.Message]:
         async with ctx.typing(ephemeral=True):
             if member.id == self.bot.user.id:
                 return await ctx.reply(
@@ -192,7 +197,7 @@ class Timeout(Cog):
     )  # MODERATION OR MEMBER-FRIENDLY (PERMS)?
     @commands.bot_has_permissions(view_audit_log=True)
     @commands.guild_only()
-    async def timed_out(self, ctx: Context) -> Optional[discord.Message]:
+    async def timed_out(self, ctx: DwelloContext) -> Optional[discord.Message]:
         async with ctx.typing(ephemeral=True):
             timed_out_list: List[discord.Member] = []
             reason_list: List[str] = []

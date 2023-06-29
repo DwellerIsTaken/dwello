@@ -8,17 +8,17 @@ from discord.ext import commands
 from discord.ui import Button, View, button
 
 import constants as cs
-from core import Bot, Cog, Context
 from utils import HandleHTTPException
+from core import BaseCog, Dwello, DwelloContext
 
 
 class ChannelsFunctions:
-    def __init__(self, bot: Bot):
-        self.bot = bot
+    def __init__(self, bot: Dwello):
+        self.bot: Dwello = bot
 
     async def counter_func(
         self,
-        ctx: Context,
+        ctx: DwelloContext,
         name: Literal["all", "member", "bot", "category"],
     ) -> Optional[
         Union[discord.VoiceChannel, discord.CategoryChannel]
@@ -57,7 +57,7 @@ class ChannelsFunctions:
                     counter_channel = await ctx.guild.create_category("📊 Server Counters 📊", reason=None)
                     await counter_channel.edit(position=0)
                     await conn.execute(
-                        "UPDATE server_data SET channel_id = $1 WHERE counter_name = $2 AND event_type = 'counter' AND guild_id = $3",
+                        "UPDATE server_data SET channel_id = $1 WHERE counter_name = $2 AND event_type = 'counter' AND guild_id = $3",  # noqa: E501
                         counter_channel.id,
                         name,
                         ctx.guild.id,
@@ -68,7 +68,8 @@ class ChannelsFunctions:
                     )
                     return counter_channel
 
-                query = "SELECT channel_id, deny_clicked FROM server_data WHERE guild_id = $1 AND event_type = 'counter' AND counter_name = $2"  # maybe create a category func after all
+                # maybe create a category func after all (?)
+                query = "SELECT channel_id, deny_clicked FROM server_data WHERE guild_id = $1 AND event_type = 'counter' AND counter_name = $2"  # noqa: E501
                 row = await conn.fetchrow(query, ctx.guild.id, name)
                 channel_id, deny_result = (row[0], row[1]) if row else (None, None)
 
@@ -81,7 +82,8 @@ class ChannelsFunctions:
 
                 if channel_id:
                     return await ctx.reply(
-                        "This counter already exists! Please provide another type of counter if you need to, otherwise __**please don`t create a counter that already exists**__.",
+                        "This counter already exists! Please provide another type of counter if you need to, "
+                        "otherwise __**please don`t create a counter that already exists**__.",
                         user_mistake=True,
                     )  # return embed instead (?)
 
@@ -107,7 +109,7 @@ class ChannelsFunctions:
                         category=counter_category,
                     )
                     await conn.execute(
-                        "UPDATE server_data SET channel_id = $1 WHERE event_type = 'counter' AND counter_name = $2 AND guild_id = $3",
+                        "UPDATE server_data SET channel_id = $1 WHERE event_type = 'counter' AND counter_name = $2 AND guild_id = $3",  # noqa: E501
                         counter_channel.id,
                         name,
                         ctx.guild.id,
@@ -122,12 +124,12 @@ class ChannelsFunctions:
         )  # DISPLAEYD IN DISCORD LOGS
         return counter_channel
 
-    async def move_channel(self, ctx: Context, category: discord.CategoryChannel, *args: str) -> None:
+    async def move_channel(self, ctx: DwelloContext, category: discord.CategoryChannel, *args: str) -> None:
         async with self.bot.pool.acquire() as conn:
             conn: asyncpg.Connection
             async with conn.transaction():
                 placeholders = ",".join([f"${i + 2}" for i in range(len(args))])
-                query = f"SELECT channel_id FROM server_data WHERE guild_id = $1 AND event_type = 'counter' AND counter_name IN ({placeholders})"
+                query = f"SELECT channel_id FROM server_data WHERE guild_id = $1 AND event_type = 'counter' AND counter_name IN ({placeholders})"  # noqa: E501
 
                 rows = await conn.fetch(query, ctx.guild.id, *args)
 
@@ -139,7 +141,7 @@ class ChannelsFunctions:
 
 
 class Stats_View(View):
-    def __init__(self, bot: Bot, ctx: Context, name: str, *, timeout: int = None):
+    def __init__(self, bot: Dwello, ctx: DwelloContext, name: str, *, timeout: int = None):
         super().__init__(timeout=timeout)
         self.bot = bot
         self.ctx = ctx
@@ -197,9 +199,9 @@ class Stats_View(View):
                 return await interaction.response.edit_message(content=None, view=None)
 
 
-class Channels(Cog):
-    def __init__(self, bot: Bot):
-        self.bot = bot
+class Channels(BaseCog):
+    def __init__(self, bot: Dwello):
+        self.bot: Dwello = bot
         self.cf: ChannelsFunctions = ChannelsFunctions(self.bot)
 
     @commands.hybrid_group(
@@ -211,7 +213,7 @@ class Channels(Cog):
     @commands.bot_has_permissions(manage_channels=True)
     @commands.has_permissions(manage_channels=True)
     @commands.guild_only()
-    async def counter(self, ctx: Context):
+    async def counter(self, ctx: DwelloContext):
         async with ctx.typing(ephemeral=True):
             embed: discord.Embed = discord.Embed(description="```$counter [counter type]```", color=cs.WARNING_COLOR)
             return await ctx.reply(embed=embed, user_mistake=True)
@@ -220,30 +222,30 @@ class Channels(Cog):
         name="all",
         help="Creates a [voice] channel with all-user (bots included) count on this server.",
     )
-    async def all(self, ctx: Context):
+    async def all(self, ctx: DwelloContext):
         return await self.cf.counter_func(ctx, "all")
 
     @counter.command(
         name="members",
         help="Creating a [voice] channel with all-member count on this specific server.",
     )
-    async def members(self, ctx: Context):
+    async def members(self, ctx: DwelloContext):
         return await self.cf.counter_func(ctx, "member")
 
     @counter.command(
         name="bots",
         help="Creating a [voice] channel with all-bot count on this specific server.",
     )
-    async def bots(self, ctx: Context):
+    async def bots(self, ctx: DwelloContext):
         return await self.cf.counter_func(ctx, "bot")
 
     @counter.command(name="category", help="Creates a category where your counter(s) will be stored.")
-    async def category(self, ctx: Context):
+    async def category(self, ctx: DwelloContext):
         category = await self.cf.counter_func(ctx, "category")
         return await self.cf.move_channel(ctx, category[1], "all", "member", "bot")
 
     @counter.command(name="list", help="Shows a list of counters you can create.")
-    async def list(self, ctx: Context):
+    async def list(self, ctx: DwelloContext):
         async with ctx.typing(ephemeral=True):
             embed: discord.Embed = discord.Embed(
                 title=":bar_chart: AVAILABLE COUNTERS :bar_chart:",

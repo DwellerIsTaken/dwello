@@ -2,18 +2,16 @@ from __future__ import annotations
 
 from discord.ext import commands
 
-from core import Bot
+from core import Dwello
 
 from .standard import StandardModeration
 from .timeout import Timeout
 from .warnings import Warnings
 
-# from typing import TYPE_CHECKING
-
-
 class Moderation(StandardModeration, Timeout, Warnings, name="Moderation"):
     """
-    🛡️ Tools for server moderation, as well as various utilities designed specifically for administrators and moderators.
+    🛡️ 
+    Tools for server moderation, as well as various utilities designed specifically for administrators and moderators.
     """
 
     def __init__(self, *args, **kwargs):
@@ -27,5 +25,5 @@ class Moderation(StandardModeration, Timeout, Warnings, name="Moderation"):
         return True
 
 
-async def setup(bot: Bot):
+async def setup(bot: Dwello):
     await bot.add_cog(Moderation(bot))

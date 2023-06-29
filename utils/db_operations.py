@@ -7,11 +7,11 @@ import asyncpg
 from typing_extensions import Self
 
 if TYPE_CHECKING:
-    from core import Bot
+    from core import Dwello
 
 
 class DataBaseOperations:
-    def __init__(self, bot: Bot):
+    def __init__(self, bot: Dwello):
         self.bot = bot
 
     async def create_tables(self: Self) -> List[str]:

@@ -12,7 +12,7 @@ from discord.ext import commands
 from typing_extensions import Self
 
 import constants as cs
-from core import Bot, Cog, Context
+from core import BaseCog, Dwello, DwelloContext
 from utils import get_unix_timestamp, is_discord_link
 
 # from utils import DuckCog, group
@@ -170,11 +170,11 @@ class NewsViewer(discord.ui.View):
 
     if TYPE_CHECKING:
         message: discord.Message
-        ctx: Optional[Context]
+        ctx: Optional[DwelloContext]
 
     def __init__(
         self,
-        obj: Union[Context, discord.Interaction[Bot]],
+        obj: Union[DwelloContext, discord.Interaction[Dwello]],
         news: List[asyncpg.Record] = None,
         /,
         embed: discord.Embed = None,
@@ -182,14 +182,14 @@ class NewsViewer(discord.ui.View):
     ):
         super().__init__()
 
-        if isinstance(obj, Context):
+        if isinstance(obj, DwelloContext):
             self.author = obj.author
-            self.bot: Bot = obj.bot
+            self.bot: Dwello = obj.bot
             self.ctx = obj
         else:
             self.ctx = None
             self.author = obj.user
-            self.bot: Bot = obj.client
+            self.bot: Dwello = obj.client
 
         self.embed = embed
         self.old_view = old_view
@@ -212,7 +212,7 @@ class NewsViewer(discord.ui.View):
 
             self.add_item(self.go_back)
 
-    async def interaction_check(self, interaction: discord.Interaction[Bot]) -> Optional[bool]:
+    async def interaction_check(self, interaction: discord.Interaction[Dwello]) -> Optional[bool]:
         if val := interaction.user == self.author:
             return val
         else:
@@ -286,7 +286,7 @@ class NewsViewer(discord.ui.View):
     @classmethod
     async def start(
         cls: Type[NVT],
-        ctx: Context,
+        ctx: DwelloContext,
         news: List[asyncpg.Record] = None,
         /,
         embed: discord.Embed = None,
@@ -311,7 +311,7 @@ class NewsViewer(discord.ui.View):
     @classmethod
     async def from_interaction(
         cls: Type[NVT],
-        interaction: discord.Interaction[Bot],
+        interaction: discord.Interaction[Dwello],
         news: List[asyncpg.Record] = None,
         /,
         embed: discord.Embed = None,
@@ -347,19 +347,19 @@ class NewsViewer(discord.ui.View):
         super().stop()"""
 
 
-class News(Cog):
-    def __init__(self, bot: Bot) -> None:
+class News(BaseCog):
+    def __init__(self, bot: Dwello) -> None:
         self.bot = bot
 
     @commands.group(invoke_without_command=True)
-    async def news(self, ctx: Context) -> NewsViewer:
+    async def news(self, ctx: DwelloContext) -> NewsViewer:
         news = await self.bot.pool.fetch("SELECT * FROM news ORDER BY news_id DESC")
 
         return await NewsViewer.start(ctx, news)
 
     @commands.is_owner()
     @news.command(hidden=True, aliases=["publish"])
-    async def add(self, ctx: Context, link: str, *, title: str):
+    async def add(self, ctx: DwelloContext, link: str, *, title: str):
         if not await ctx.bot.is_owner(ctx.author):
             return await self.news(ctx)
 
@@ -401,7 +401,7 @@ class News(Cog):
 
     @commands.is_owner()
     @news.command(hidden=True)
-    async def remove(self, ctx: Context, news_id: int):
+    async def remove(self, ctx: DwelloContext, news_id: int):
         if not await ctx.bot.is_owner(ctx.author):
             return await self.news(ctx)
 

@@ -17,27 +17,27 @@ from discord.ui import Select, button, select
 from typing_extensions import Self, override
 
 import constants as cs
-from core import Bot, Context
+from core import Dwello, DwelloContext
 
 from .news import NewsViewer
 
 newline = "\n"
 
 
-async def setup(bot: Bot):
+async def setup(bot: Dwello):
     await bot.add_cog(About(bot))
 
 
 class HelpCentre(discord.ui.View):
     def __init__(
         self,
-        ctx: Context,
+        ctx: DwelloContext,
         other_view: discord.ui.View,
     ):
         super().__init__()
         self.embed = None
         self.ctx = ctx
-        self.bot: Bot = self.ctx.bot
+        self.bot: Dwello = self.ctx.bot
         self.other_view = other_view
 
     @discord.ui.button(emoji="🏠", label="Go Back", style=discord.ButtonStyle.blurple)
@@ -108,13 +108,13 @@ class HelpCentre(discord.ui.View):
 class HelpView(discord.ui.View):
     def __init__(
         self,
-        ctx: Context,
+        ctx: DwelloContext,
         data: Dict[commands.Cog, List[commands.Command]],
         help_command: commands.HelpCommand,
     ):
         super().__init__()
         self.ctx = ctx
-        self.bot: Bot = self.ctx.bot
+        self.bot: Dwello = self.ctx.bot
         self.data = data
         self.current_page = 0
         self.help_command = help_command
@@ -288,7 +288,7 @@ class HelpView(discord.ui.View):
 class MyHelp(commands.HelpCommand):
     def __init__(self, **options):
         super().__init__(**options)
-        self.context: Context = None
+        self.context: DwelloContext = None
 
     @override
     def get_bot_mapping(self):
@@ -423,7 +423,10 @@ class MyHelp(commands.HelpCommand):
                 title=f"{getattr(cog, 'select_emoji', '')} `{cog.qualified_name}` category commands",
                 description="**Description:**\n" + cog.description.replace("%PRE%", self.context.clean_prefix),
             )
-            embed.description = f"{embed.description}\n\n**Commands:**\n```css\n{newline.join(data)}\n```\n`[G]` means group, these have sub-commands.\n`(C)` means command, these do not have sub-commands."
+            embed.description = (
+                f"{embed.description}\n\n**Commands:**\n```css\n{newline.join(data)}\n```\n"
+                f"`[G]` means group, these have sub-commands.\n`(C)` means command, these do not have sub-commands."
+            )
             await self.context.send(embed=embed)
         else:
             await self.context.send(f"No commands found in {cog.qualified_name}")
@@ -445,7 +448,7 @@ class MyHelp(commands.HelpCommand):
             formatted = "\n".join([self.get_minimal_command_signature(c) for c in group.commands])
             embed.add_field(
                 name="Sub-commands for this command:",
-                value=f"```css\n{formatted}\n```\n**Do `{self.context.clean_prefix}help command subcommand` for more info on a sub-command**",
+                value=f"```css\n{formatted}\n```\n**Do `{self.context.clean_prefix}help command subcommand` for more info on a sub-command**",  # noqa: E501
                 inline=False,
             )
         # noinspection PyBroadException
@@ -503,7 +506,7 @@ class MyHelp(commands.HelpCommand):
     @override
     async def send_error_message(self, error):
         if matches := difflib.get_close_matches(error, self.context.bot.cogs.keys()):
-            confirm = await self.context.confirm(
+            confirm = await self.context.confirm( # look into this
                 message=f"Sorry but i couldn't recognise {error} as one of my categories!"
                 f"\n{f'**did you mean... `{matches[0]}`?**' if matches else ''}",
                 delete_after_confirm=True,
@@ -570,8 +573,8 @@ class About(commands.Cog):
     😮 Commands related to the bot itself, that have the only purpose to show information.
     """
 
-    def __init__(self, bot: Bot) -> None:
-        self.bot: Bot = bot
+    def __init__(self, bot: Dwello) -> None:
+        self.bot: Dwello = bot
         help_command = MyHelp()
         help_command.command_attrs = {
             "help": "Shows help about a command or category, it can also display other useful information, such as "
@@ -608,7 +611,7 @@ class About(commands.Cog):
 
     # make uptime: add here -> trigger on mention in on_message
     @commands.hybrid_command(name="hello", aliases=cs.HELLO_ALIASES, with_app_command=True)
-    async def hello(self, ctx: Context) -> Optional[discord.Message]:
+    async def hello(self, ctx: DwelloContext) -> Optional[discord.Message]:
         # make variations for the response
         content: str = f"Hello there! I'm {self.bot.user.name}. Use `dw.help` for more."  # {self.bot.help_command}?
         return await ctx.send(content=content)  # display more info about bot
@@ -617,7 +620,7 @@ class About(commands.Cog):
     # add some latency too or smth
     # get available bot info i guess
     @commands.hybrid_command(name="about", aliases=["botinfo", "info", "bi"], with_app_command=True)
-    async def about(self, ctx: Context) -> Optional[discord.Message]:
+    async def about(self, ctx: DwelloContext) -> Optional[discord.Message]:
         information: discord.AppInfo = await self.bot.application_info()
         print(information)
 
@@ -643,7 +646,7 @@ class About(commands.Cog):
         return await ctx.send(embed=embed)
 
     @commands.hybrid_command(name="uptime", help="Returns bot's uptime.", with_app_command=True)
-    async def uptime(self, ctx: Context) -> Optional[discord.Message]:
+    async def uptime(self, ctx: DwelloContext) -> Optional[discord.Message]:
         days, hours, minutes, seconds = self.get_uptime()
         timestamp = self.get_startup_timestamp()
 
@@ -660,7 +663,7 @@ class About(commands.Cog):
         help="Pong.",
         with_app_command=True,
     )
-    async def ping(self, ctx: Context) -> Optional[discord.Message]:  # work on return design?
+    async def ping(self, ctx: DwelloContext) -> Optional[discord.Message]:  # work on return design?
         typing_start = time.monotonic()
         await ctx.typing()
         typing_end = time.monotonic()
@@ -697,7 +700,7 @@ class About(commands.Cog):
         )
 
     @commands.hybrid_command(name="stats", help="Returns some of the bot's stats", with_app_command=True)
-    async def stats(self, ctx: Context) -> Optional[discord.Message]:
+    async def stats(self, ctx: DwelloContext) -> Optional[discord.Message]:
         typing_start = time.monotonic()
         await ctx.typing()
         typing_end = time.monotonic()
@@ -746,7 +749,7 @@ class About(commands.Cog):
         return await ctx.reply(embed=embed)
 
     @commands.hybrid_command(name="source", help="Returns command's source.", with_app_command=True)
-    async def source(self, ctx: Context, *, command_name: Optional[str]) -> Optional[discord.Message]:
+    async def source(self, ctx: DwelloContext, *, command_name: Optional[str]) -> Optional[discord.Message]:
         git = cs.GITHUB
         if not command_name:
             return await ctx.reply(git)
@@ -853,7 +856,7 @@ class About(commands.Cog):
 
 # SOME USELESS PIECE OF SHIT
 class ManualHelp:
-    def __init__(self, bot: Bot = None):
+    def __init__(self, bot: Dwello = None):
         self.bot = bot
         self.ignored_cogs = ["CommandErrorHandler", "Other", "Jishaku"]
 
@@ -948,7 +951,7 @@ class ManualHelp:
         }
 
     def new_bot_mapping(self) -> Dict[commands.Cog, List[commands.Command]]:
-        """Retrieves full bot mapping that includes every (user-) available command: all command/parent groups are unpacked."""
+        """Retrieves full bot mapping that includes every (user-) available command: all command/parent groups are unpacked."""  # noqa: E501
 
         bot = self.bot
         mapping = {}

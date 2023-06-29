@@ -2,7 +2,9 @@ from __future__ import annotations
 
 import asyncio
 import datetime
+import logging
 import os
+import sys
 from typing import Any
 import jishaku  # noqa: F401  # pylint: disable=unused-import
 import aiohttp
@@ -32,18 +34,57 @@ from ._utils import (
     OtherUtils,
     Twitch,
 )
-from .context import Context
+from .context import DwelloContext
 
+logging.basicConfig(
+    format='%(asctime)s [%(levelname)s] - %(name)s: %(message)s',
+    level=logging.INFO,
+    datefmt='%Y-%m-%d %H:%M:%S %Z%z',  # CET timezone format
+)
 
-def blacklist_check(ctx: Context) -> bool:
+"""initial_extensions = ("jishaku",)
+extensions = [
+    "cogs.economy",
+    "cogs.entertainment",
+    "cogs.information",
+    "cogs.moderation", 
+    "cogs.information.help",
+    "cogs.guild", 
+    "cogs.other",
+    "utils.error",
+]"""
+
+def col(color=None, /, *, fmt=0, bg=False):
+    base = "\u001b["
+    if fmt != 0:
+        base += "{fmt};"
+    if color is None:
+        base += "{color}m"
+        color = 0
+    else:
+        if bg is True:
+            base += "4{color}m"
+        else:
+            base += "3{color}m"
+    return base.format(fmt=fmt, color=color)
+
+def blacklist_check(ctx: DwelloContext) -> bool:
     return not ctx.bot.is_blacklisted(ctx.author.id)
 
 
-class Bot(commands.AutoShardedBot):
+class Dwello(commands.AutoShardedBot):
     DEFAULT_PREFIXES = ["dw.", "dwello."]
     http_session: aiohttp.ClientSession
 
-    def __init__(self, pool: asyncpg.Pool, **kwargs):
+    logger = logging.getLogger("logging")
+    _ext_log = logging.getLogger("extensions")
+
+    def __init__(
+        self,
+        pool: asyncpg.Pool,
+        session: aiohttp.ClientSession,
+        **kwargs
+    ) -> None:
         super().__init__(
             command_prefix=self.get_prefix,  # type: ignore
             strip_after_prefix=True,
@@ -60,6 +101,7 @@ class Bot(commands.AutoShardedBot):
 
         self._BotBase__cogs = commands.core._CaseInsensitiveDict()
         self.pool = pool
+        self.session = session
 
         self.reply_count: int = 0
         self._was_ready = False
@@ -111,7 +153,9 @@ class Bot(commands.AutoShardedBot):
         return commands.when_mentioned_or(*prefixes)(self, message)
 
     async def on_ready(self) -> None:
-        print(f"Logged in as {self.user} ({self.user.id})")  # type: ignore
+        self.logger.info(f"{col()}Python Version: {sys.version} {col()}")
+        self.logger.info(f"{col()}Discord Version: {discord.__version__} {col()}")
+        self.logger.info(f"{col(2, bg=True)}Logged in as {self.user} {col()}")
         self._was_ready = True
 
         if not hasattr(self, "uptime"):
@@ -127,9 +171,7 @@ async def runner():
         "port": ENV["pg_port"],
     }
 
-    async with asyncpg.create_pool(**credentials) as pool, aiohttp.ClientSession() as session, Bot(  # type: ignore
-        pool
-    ) as bot:
+    async with asyncpg.create_pool(**credentials) as pool, aiohttp.ClientSession() as session, Dwello(pool, session) as bot:
         bot.http_session = session
         await bot.start(ENV["token"])  # type: ignore
 

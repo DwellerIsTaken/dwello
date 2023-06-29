@@ -1,9 +1,9 @@
 from __future__ import annotations
 
 
-from core import Bot, Cog
+from core import BaseCog, Dwello, DwelloContext  # noqa: F401
 
 
-class BotConfig(Cog):
-    def __init__(self, bot: Bot) -> None:
+class BotConfig(BaseCog):
+    def __init__(self, bot: Dwello) -> None:
         self.bot = bot

@@ -1,4 +1,4 @@
-from __future__ import annotations
+"""from __future__ import annotations
 
 import difflib
 import json
@@ -95,4 +95,4 @@ class Weather(Cog):
 
         return await ctx.reply(embed=weather_embed, ephemeral=False)
 
-        # await ctx.message.delete()
+        # await ctx.message.delete()"""

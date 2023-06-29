@@ -10,17 +10,18 @@ from discord.ext import commands
 from discord.ui import Button, View, button
 
 import constants as cs
-from core import Bot, Cog, Context
+from core import BaseCog, Dwello, DwelloContext
 from utils import apostrophize, interaction_check, member_check
 
 from .timeout import tempmute
 
 
+
 class TimeoutSuggestion(View):
     def __init__(
         self,
-        bot: Bot,
-        ctx: Context,
+        bot: Dwello,
+        ctx: DwelloContext,
         member: discord.Member,
         reason: str,
         timeout: int = None,
@@ -49,12 +50,12 @@ class TimeoutSuggestion(View):
         return await interaction.message.delete()
 
 
-class Warnings(Cog):
-    def __init__(self, bot: Bot) -> None:
+class Warnings(BaseCog):
+    def __init__(self, bot: Dwello) -> None:
         self.bot = bot
 
     @commands.hybrid_group(invoke_without_command=True, with_app_command=True)
-    async def warning(self, ctx: Context):
+    async def warning(self, ctx: DwelloContext):
         embed = discord.Embed(
             description=f"```{ctx.clean_prefix}warning [command_name]```",
             color=cs.WARNING_COLOR,
@@ -67,7 +68,7 @@ class Warnings(Cog):
     @commands.guild_only()
     async def warn(
         self,
-        ctx: Context,
+        ctx: DwelloContext,
         member: discord.Member,
         reason: Optional[str] = None,
     ) -> Optional[discord.Message]:
@@ -100,8 +101,11 @@ class Warnings(Cog):
             warns = sum(bool(result["warn_text"]) for result in results)
             embed: discord.Embed = discord.Embed(
                 title="Warned",
-                description=f"Goede morgen! \nYou have been warned. Try to avoid being warned next time or it might get bad...\n\n"
-                f"Reason: **{reason}**\n\nYour amount of warnings: `{warns}`",
+                description= (
+                    "Goede morgen!\n"
+                    "You have been warned. Try to avoid being warned next time or it might get bad...\n\n"
+                    f"Reason: **{reason}**\n\nYour amount of warnings: `{warns}`"
+                ),
                 color=cs.WARNING_COLOR,
                 timestamp=discord.utils.utcnow(),
             )
@@ -128,7 +132,7 @@ class Warnings(Cog):
     @warning.command(name="warnings", help="Shows member's warnings.", with_app_command=True)
     @commands.bot_has_permissions(moderate_members=True)
     @commands.guild_only()
-    async def warnings(self, ctx: Context, member: discord.Member = None) -> Optional[discord.Message]:
+    async def warnings(self, ctx: DwelloContext, member: discord.Member = None) -> Optional[discord.Message]:
         async with ctx.typing(ephemeral=True):
             async with self.bot.pool.acquire() as conn:
                 conn: asyncpg.Connection
@@ -221,7 +225,7 @@ class Warnings(Cog):
     @commands.bot_has_permissions(moderate_members=True)
     @commands.has_permissions(moderate_members=True)
     @commands.guild_only()
-    async def remove_warn(self, ctx: Context, member: discord.Member, warning: str) -> Optional[discord.Message]:
+    async def remove_warn(self, ctx: DwelloContext, member: discord.Member, warning: str) -> Optional[discord.Message]:
         async with ctx.typing(ephemeral=True):
             async with self.bot.pool.acquire() as conn:
                 conn: asyncpg.Connection
@@ -239,10 +243,11 @@ class Warnings(Cog):
                     if not await member_check(ctx, member, self.bot):
                         return
 
-                    # records = await conn.fetch("SELECT * FROM warnings WHERE guild_id = $1 AND user_id = $2", ctx.guild.id, member.id)
+                    """
+                    records = await conn.fetch("SELECT * FROM warnings WHERE guild_id = $1 AND user_id = $2", ctx.guild.id, member.id)
 
-                    # warnings = await conn.fetch("SELECT COUNT(*) FROM warnings WHERE guild_id = $1 AND user_id = $2", ctx.guild.id, member.id)
-                    """warns = 0
+                    warnings = await conn.fetch("SELECT COUNT(*) FROM warnings WHERE guild_id = $1 AND user_id = $2", ctx.guild.id, member.id)
+                    warns = 0
                     for result in records:
                         if result["warn_text"]:
                             warns += 1
@@ -253,11 +258,11 @@ class Warnings(Cog):
 
                     else:
                         await conn.execute("DELETE FROM warnings WHERE warn_text = $1 AND guild_id = $2 AND user_id = $3", warning, ctx.guild.id, member.id)
-                        warnings += 1"""
+                        warnings += 1"""  # noqa: E501
 
                     if warning == "all":
                         warnings = await conn.fetchval(
-                            "DELETE FROM warnings WHERE warn_text IS NOT NULL AND guild_id = $1 AND user_id = $2 RETURNING COUNT(*)",
+                            "DELETE FROM warnings WHERE warn_text IS NOT NULL AND guild_id = $1 AND user_id = $2 RETURNING COUNT(*)",  # noqa: E501
                             ctx.guild.id,
                             member.id,
                         )
@@ -273,7 +278,9 @@ class Warnings(Cog):
 
             embed: discord.Embed = discord.Embed(
                 title="Removed",
-                description=f"*Removed by:* {ctx.author.mention} \n \nSuccessfully removed *{warnings}* warning(s) from {member}.",
+                description=(
+                    f"*Removed by:* {ctx.author.mention} \n \nSuccessfully removed *{warnings}* warning(s) from {member}."
+                ),
                 color=cs.RANDOM_COLOR,
                 timestamp=discord.utils.utcnow(),
             )

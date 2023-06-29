@@ -12,11 +12,11 @@ from discord.ext import commands
 T = TypeVar("T")
 
 
-class Context(commands.Context[commands.Bot], Generic[T]):
+class DwelloContext(commands.Context[commands.Bot], Generic[T]):
     if TYPE_CHECKING:
-        from .bot import Bot
+        from .bot import Dwello
 
-    bot: Bot
+    bot: Dwello
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
@@ -50,7 +50,7 @@ class Context(commands.Context[commands.Bot], Generic[T]):
                         "Bot don't have either Embed Links/Send Messages permission in that channel. "
                         "Please give sufficient permissions to the bot."
                     ),
-                    view=self.send_view(),
+                    view=self.send_view(), # create that (?)
                 )
                 return None
         if bold:
@@ -63,7 +63,7 @@ class Context(commands.Context[commands.Bot], Generic[T]):
         return await super().send(str(content)[:1990] if content else None, **kwargs)
 
     async def reply(self, content: str | None = None, **kwargs: Any) -> discord.Message | None:
-        try:
+        try: # reply to reference author if there is reference
             return await self.send(content, reference=kwargs.get("reference") or self.message, **kwargs)
         except discord.HTTPException:  # message deleted
             return await self.send(content, **kwargs)

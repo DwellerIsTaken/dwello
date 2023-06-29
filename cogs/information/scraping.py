@@ -14,8 +14,8 @@ from typing_extensions import Self
 from yarl import URL
 
 import constants as cs
-from core import Bot, Context
-from utils import capitalize_greek_numbers, get_unix_timestamp
+from core import BaseCog, Dwello, DwelloContext
+from utils import ENV, capitalize_greek_numbers, get_unix_timestamp
 
 mk = discord.utils.escape_markdown
 
@@ -24,6 +24,7 @@ STEAM_KEY = ENV["STEAM_API_KEY"]
 WEATHER_KEY = ENV["OPENWEATHERMAP_KEY"]
 SPOTIFY_CLIENT_ID = ENV["SPOTIFY_CLIENT_ID"]
 SPOTIFY_CLIENT_SECRET = ENV["SPOTIFY_CLIENT_SECRET"]
+UNSPLASH_DEMO_ACCESS_KEY = ENV["UNSPLASH_DEMO_ACCESS_KEY"]
 
 # create simple response handler class
 
@@ -40,7 +41,7 @@ class GameNotFound(Exception):  # <- look into it
 class OptionSelectView(discord.ui.View):
     def __init__(
         self,
-        ctx: Context,
+        ctx: DwelloContext,
         options: List[Tuple[str, discord.Embed]],
     ):
         super().__init__()
@@ -79,8 +80,9 @@ class OptionSelectView(discord.ui.View):
 
 
 class Scraping(BaseCog):
-    def __init__(self, bot: Bot, *args: Any, **kwargs: Any):
+    def __init__(self, bot: Dwello, *args: Any, **kwargs: Any):
         super().__init__(bot, *args, **kwargs)
+        self.bot = bot
 
         self.spotify_client: SpotifyClient = SpotifyClient(
             SPOTIFY_CLIENT_ID,
@@ -90,8 +92,7 @@ class Scraping(BaseCog):
 
     @property
     def tmdb_key(self: Self) -> str:
-        _key: str = get_or_fail("TMDB_API_TOKEN")
-        return _key
+        return TMDB_KEY
 
     @property
     def tmdb_headers(self: Self) -> Dict[str, str]:
@@ -142,7 +143,7 @@ class Scraping(BaseCog):
         return _token, _expires"""
 
     @commands.command()
-    async def test(self, ctx: Context):
+    async def test(self, ctx: DwelloContext):
         message = await ctx.author.fetch_message(1119035015842504744)
         return await ctx.reply(message.content)
 
@@ -152,12 +153,11 @@ class Scraping(BaseCog):
         aliases=["images"],
         with_app_command=True,
     )
-    async def image(self, ctx: Context, *, image: str) -> Optional[discord.Message]:
-        access_key = get_or_fail("UNSPLASH_DEMO_ACCESS_KEY")
+    async def image(self, ctx: DwelloContext, *, image: str) -> Optional[discord.Message]:
         url: URL = "https://api.unsplash.com/photos/random"
 
         headers = {
-            "Authorization": f"Client-ID {access_key}",
+            "Authorization": f"Client-ID {UNSPLASH_DEMO_ACCESS_KEY}",
         }
 
         params = {
@@ -196,7 +196,7 @@ class Scraping(BaseCog):
         aliases=["albums"],
         with_app_command=True,
     )
-    async def album(self, ctx: Context, *, album: str) -> Optional[discord.Message]:
+    async def album(self, ctx: DwelloContext, *, album: str) -> Optional[discord.Message]:
         data: SearchResult = await self.spotify_client.search(query=album, types=[ObjectType.Album], limit=5)
 
         albums: List[Dict[str, Any]] = data._data["albums"]["items"]
@@ -304,7 +304,7 @@ class Scraping(BaseCog):
             embeds.append((name, embed))
     
         view = OptionSelectView(ctx, embeds)
-        return await view.start()"""
+        return await view.start()"""  # noqa: E501
 
     @commands.hybrid_command(
         name="artist",
@@ -312,7 +312,7 @@ class Scraping(BaseCog):
         aliases=["artists"],
         with_app_command=True,
     )
-    async def artist(self, ctx: Context, *, artist: str) -> Optional[discord.Message]:
+    async def artist(self, ctx: DwelloContext, *, artist: str) -> Optional[discord.Message]:
         data: SearchResult = await self.spotify_client.search(query=artist, types=[ObjectType.Artist], limit=5)
 
         artists: List[Artist] = data.artists.items
@@ -381,7 +381,7 @@ class Scraping(BaseCog):
         aliases=["playlists"],
         with_app_command=True,
     )
-    async def playlist(self, ctx: Context, *, playlist: str) -> Optional[discord.Message]:
+    async def playlist(self, ctx: DwelloContext, *, playlist: str) -> Optional[discord.Message]:
         data: SearchResult = await self.spotify_client.search(query=playlist, types=[ObjectType.Playlist], limit=5)
 
         playlists: List[Dict[str, Any]] = data._data["playlists"]["items"]
@@ -415,7 +415,7 @@ class Scraping(BaseCog):
         return await ctx.reply(embed=embed)
 
     @commands.hybrid_command(name="track", help="Returns a track.", aliases=["tracks"], with_app_command=True)
-    async def track(self, ctx: Context, *, track: str) -> Optional[discord.Message]:
+    async def track(self, ctx: DwelloContext, *, track: str) -> Optional[discord.Message]:
         data: SearchResult = await self.spotify_client.search(query=track, types=[ObjectType.Track], limit=5)
 
         tracks: List[Track] = data.tracks.items
@@ -479,7 +479,7 @@ class Scraping(BaseCog):
         raise GameNotFound(name)
 
     @commands.hybrid_command(name="game", help="Returns a game.", aliases=["games"], with_app_command=True)
-    async def game(self, ctx: Context, *, game: str) -> Optional[discord.Message]:
+    async def game(self, ctx: DwelloContext, *, game: str) -> Optional[discord.Message]:
         # start = time.time()
         # end = time.time()
         # await ctx.send(f"Executed in: {end-start}") # Idea for a time per func to calculate overall latency/response time?
@@ -536,7 +536,7 @@ class Scraping(BaseCog):
         aliases=["actors", "actress", "actresses"],
         with_app_command=True,
     )  # amybe people alias, but later if there are no other ppl aliases
-    async def movie_person(self, ctx: Context, *, person: str) -> Optional[discord.Message]:
+    async def movie_person(self, ctx: DwelloContext, *, person: str) -> Optional[discord.Message]:
         pages: int = 1
         url: URL = (
             f"https://api.themoviedb.org/3/search/person?query={person}&include_adult=True&language=en-US&page={pages}"
@@ -592,7 +592,7 @@ class Scraping(BaseCog):
         help="Returns a movie by its title.",
         aliases=["film", "films", "movies"],
     )
-    async def movie(self, ctx: Context, *, movie: str) -> Optional[discord.Message]:
+    async def movie(self, ctx: DwelloContext, *, movie: str) -> Optional[discord.Message]:
         # Docs: https://developer.themoviedb.org/reference/intro/getting-started
 
         pages: int = 1
@@ -630,7 +630,7 @@ class Scraping(BaseCog):
         return await ctx.reply(embed=embed)
 
     @app_commands.command(name="movie", description="Returns a movie by its title.")
-    async def _movie(self, ctx: Context, *, movie: str, year: int = None) -> Optional[discord.Message]:
+    async def _movie(self, ctx: DwelloContext, *, movie: str, year: int = None) -> Optional[discord.Message]:
         pages: int = 1
 
         url: URL = f"https://api.themoviedb.org/3/search/movie?query={movie}&include_adult=True&language=en-US&primary_release_year={year}&page={pages}"
@@ -671,7 +671,7 @@ class Scraping(BaseCog):
         return await ctx.reply(embed=embed)
 
     @commands.command(name="show", help="Returns a TV show by its title.", aliases=["series", "shows"])
-    async def show(self, ctx: Context, *, show: str) -> Optional[discord.Message]:
+    async def show(self, ctx: DwelloContext, *, show: str) -> Optional[discord.Message]:
         pages: int = 1
         url: URL = f"https://api.themoviedb.org/3/search/tv?query={show}&include_adult=True&language=en-US&page={pages}"
         async with self.bot.http_session.get(url=url, headers=self.tmdb_headers) as response:
@@ -707,7 +707,7 @@ class Scraping(BaseCog):
         return await ctx.reply(embed=embed)
 
     @app_commands.command(name="show", description="Returns a TV show by its title.")
-    async def _show(self, ctx: Context, *, show: str, year: int = None) -> Optional[discord.Message]:
+    async def _show(self, ctx: DwelloContext, *, show: str, year: int = None) -> Optional[discord.Message]:
         pages: int = 1
 
         url: URL = f"https://api.themoviedb.org/3/search/movie?query={show}&include_adult=True&language=en-US&primary_release_year={year}&page={pages}"
@@ -752,7 +752,7 @@ class Scraping(BaseCog):
         help="Shows you the temparature in the city you've typed in.",
         with_app_command=True,
     )
-    async def weather(self, ctx: Context, *, city: str) -> Optional[discord.Message]:
+    async def weather(self, ctx: DwelloContext, *, city: str) -> Optional[discord.Message]:
         if not city:
             return await ctx.reply("Please provide a city or a contry.", mention_author=True)
 

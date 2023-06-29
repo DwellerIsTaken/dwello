@@ -7,7 +7,9 @@ from .fun import Fun
 
 class Entertainment(Fun, name="Entertainment"):
     """
-    🎲 Includes commands and tools for entertainment and recreation purposes, such as games, quizzes, memes, music streaming, and other fun features designed to engage and entertain users within the server.
+    🎲 
+    Includes commands and tools for entertainment and recreation purposes, such as games, quizzes, memes, music streaming, 
+    and other fun features designed to engage and entertain users within the server.
     """
 
     def __init__(self, *args, **kwargs):

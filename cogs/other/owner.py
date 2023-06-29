@@ -10,27 +10,27 @@ import discord
 from discord.ext import commands
 
 import constants as cs
-from core import Bot, Cog, Context
+from core import BaseCog, Dwello, DwelloContext
 
 
-async def setup(bot: Bot):
+async def setup(bot: Dwello):
     await bot.add_cog(Owner(bot))
 
 
 mk = discord.utils.escape_markdown
 
 
-class Owner(Cog):
+class Owner(BaseCog):
     # make it a separate vog that will inhirrit from other owner classes?
 
-    def __init__(self, bot: Bot) -> None:
+    def __init__(self, bot: Dwello) -> None:
         self.bot = bot
 
     @commands.is_owner()
     @commands.group(name="blacklist", invoke_without_command=True, hidden=True)
     async def blacklist_group(
         self,
-        ctx: Context,
+        ctx: DwelloContext,
         user: Union[discord.User, int] = None,
         *,
         reason: str = None,
@@ -44,7 +44,7 @@ class Owner(Cog):
     @blacklist_group.command(name="add", hidden=True)
     async def add(
         self,
-        ctx: Context,
+        ctx: DwelloContext,
         user: Union[discord.User, int],
         *,
         reason: str = None,
@@ -69,7 +69,7 @@ class Owner(Cog):
 
     @commands.is_owner()
     @blacklist_group.command(name="display", hidden=True)
-    async def display(self, ctx: Context) -> discord.Message:
+    async def display(self, ctx: DwelloContext) -> discord.Message:
         records = await self.bot.pool.fetch("SELECT * FROM blacklist")
 
         embed: discord.Embed = discord.Embed(
@@ -90,7 +90,7 @@ class Owner(Cog):
 
     @commands.is_owner()
     @blacklist_group.command(name="remove", hidden=True)
-    async def remove(self, ctx: Context, user: Union[discord.User, int]) -> discord.Message:
+    async def remove(self, ctx: DwelloContext, user: Union[discord.User, int]) -> discord.Message:
         user_id = user if isinstance(user, int) else user.id
         async with ctx.bot.safe_connection() as conn:
             query = """
@@ -111,7 +111,7 @@ class Owner(Cog):
     @commands.guild_only()
     async def sync(
         self,
-        ctx: Context,
+        ctx: DwelloContext,
         guilds: commands.Greedy[discord.Object],
         spec: Optional[Literal["~", "*", "^"]] = None,
     ) -> Optional[discord.Message]:
@@ -147,11 +147,11 @@ class Owner(Cog):
     @commands.command()
     @commands.is_owner()
     @commands.guild_only()
-    async def list_eventsubs(self, ctx: Context):
+    async def list_eventsubs(self, ctx: DwelloContext):
         return self.bot.twitch.event_subscription_list()
 
     @commands.command()
     @commands.is_owner()
     @commands.guild_only()
-    async def wipe_all_eventsubs(self, ctx: Context):
+    async def wipe_all_eventsubs(self, ctx: DwelloContext):
         return self.bot.twitch.unsubscribe_from_all_eventsubs()
