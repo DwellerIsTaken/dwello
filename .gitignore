@@ -2,3 +2,4 @@
 *.env
 main.sqlite
 .venv
+.vscode
