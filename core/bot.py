@@ -6,10 +6,11 @@ import logging
 import os
 import sys
 from typing import Any
-import jishaku  # noqa: F401  # pylint: disable=unused-import
+
 import aiohttp
 import asyncpg
 import discord
+import jishaku  # noqa: F401  # pylint: disable=unused-import
 from discord.ext import commands
 
 if os.name == "nt":
