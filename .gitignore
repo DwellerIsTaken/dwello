@@ -3,3 +3,4 @@
 main.sqlite
 .venv
 .vscode
+.ruff_cache
