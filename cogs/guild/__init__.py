@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from core import Bot
+from core import Dwello
 
 from .config import Config
 from .manage_channels import Channels
@@ -20,5 +20,5 @@ class Guild(Config, Channels, Messages, name="Guild Management"):
         self.select_brief = "Commands for guild customization, configuration, and management."
 
 
-async def setup(bot: Bot):
+async def setup(bot: Dwello):
     await bot.add_cog(Guild(bot))

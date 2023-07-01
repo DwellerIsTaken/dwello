@@ -5,12 +5,13 @@ import datetime
 import logging
 import os
 import sys
-from typing import Any
+from typing import TYPE_CHECKING, Any, Set, List, ClassVar, Tuple, TypeVar, Generic, Optional
 import jishaku  # noqa: F401  # pylint: disable=unused-import
 import aiohttp
 import asyncpg
 import discord
 from discord.ext import commands
+from typing_extensions import override
 
 if os.name == "nt":
     asyncio.set_event_loop_policy(asyncio.WindowsSelectorEventLoopPolicy())
@@ -24,10 +25,8 @@ else:
 
 from ._utils import (
     ENV,
-    LOADABLE_EXTENSIONS,
     AiohttpWeb,
     AutoComplete,
-    ContextManager,
     DataBaseOperations,
     LevellingUtils,
     ListenersFunctions,
@@ -36,14 +35,21 @@ from ._utils import (
 )
 from .context import DwelloContext
 
+if TYPE_CHECKING:
+    from asyncpg import Connection, Pool
+    from asyncpg.transaction import Transaction
+
+DBT = TypeVar("DBT", bound="Dwello")
+DCT = TypeVar("DCT", bound="DwelloContext")
+
 logging.basicConfig(
     format='%(asctime)s [%(levelname)s] - %(name)s: %(message)s',
     level=logging.INFO,
     datefmt='%Y-%m-%d %H:%M:%S %Z%z',  # CET timezone format
 )
 
-"""initial_extensions = ("jishaku",)
-extensions = [
+initial_extensions: Tuple[str] = ("jishaku",)
+extensions: Set[str] = {
     "cogs.economy",
     "cogs.entertainment",
     "cogs.information",
@@ -52,7 +58,7 @@ extensions = [
     "cogs.guild", 
     "cogs.other",
     "utils.error",
-]"""
+}
 
 def col(color=None, /, *, fmt=0, bg=False):
     base = "\u001b["
@@ -72,9 +78,44 @@ def blacklist_check(ctx: DwelloContext) -> bool:
     return not ctx.bot.is_blacklisted(ctx.author.id)
 
 
+class ContextManager(Generic[DBT]):
+
+    __slots__: tuple[str, ...] = ("bot", "timeout", "_pool", "_conn", "_tr")
+
+    def __init__(self, bot: Dwello, *, timeout: float = 10.0) -> None:
+        self.bot: DBT = bot
+        self.timeout: float = timeout
+        self._pool: Pool = bot.pool
+        self._conn: Connection | None = None
+        self._tr: Transaction | None = None
+
+    async def acquire(self) -> Connection:
+        return await self.__aenter__()
+
+    async def release(self) -> None:
+        return await self.__aexit__(None, None, None)
+
+    async def __aenter__(self) -> Connection:
+        self._conn = conn = await self._pool.acquire(timeout=self.timeout)  # type: ignore
+        conn: Connection
+        self._tr = conn.transaction()
+        await self._tr.start()
+        return conn  # type: ignore
+
+    async def __aexit__(self, exc_type, exc, tb):
+        if exc and self._tr:
+            await self._tr.rollback()
+
+        elif not exc and self._tr:
+            await self._tr.commit()
+
+        if self._conn is not None:
+            await self._pool.release(self._conn)
+
+
 class Dwello(commands.AutoShardedBot):
-    DEFAULT_PREFIXES = ["dw.", "dwello."]
-    http_session: aiohttp.ClientSession
+
+    DEFAULT_PREFIXES: ClassVar[List[str]] = ["dw.", "Dw.", "dwello.", "Dwello."]
 
     logger = logging.getLogger("logging")
     _ext_log = logging.getLogger("extensions")
@@ -101,7 +142,7 @@ class Dwello(commands.AutoShardedBot):
 
         self._BotBase__cogs = commands.core._CaseInsensitiveDict()
         self.pool = pool
-        self.session = session
+        self.http_session = session
 
         self.reply_count: int = 0
         self._was_ready = False
@@ -116,12 +157,15 @@ class Dwello(commands.AutoShardedBot):
         self.otherutils = OtherUtils(self)
         self.web = AiohttpWeb(self)
 
-    async def setup_hook(self) -> None:
-        for ext in LOADABLE_EXTENSIONS:
-            try:
-                await self.load_extension(ext)
-            except Exception:
-                pass
+    async def setup_hook(self) -> None:    
+        try:
+            for ext in initial_extensions:
+                await self.load_extension(ext, _raise=False)
+
+            for ext in extensions:
+                await self.load_extension(ext, _raise=False)
+        except Exception as e:
+            raise e
 
         self.tables = await self.db.create_tables()
         self.db_data = await self.db.fetch_table_data()
@@ -143,6 +187,11 @@ class Dwello(commands.AutoShardedBot):
     def is_blacklisted(self, user_id: int) -> bool:
         return user_id in self.blacklisted_users  # rewrite member and user and put it there as a property
 
+    @override
+    async def get_context(self, message, *, cls: Any = DwelloContext):
+        return await super().get_context(message, cls=cls)
+    
+    @override
     async def get_prefix(self, message: discord.Message) -> list[str]:
         if guild_prefixes := self.guild_prefixes.get(message.guild.id):  # type: ignore
             prefixes = []
@@ -161,6 +210,42 @@ class Dwello(commands.AutoShardedBot):
         if not hasattr(self, "uptime"):
             self.uptime = datetime.datetime.now(datetime.timezone.utc)
 
+    @override
+    async def load_extension(self, name: str, *, package: Optional[str] = None, _raise: bool = True) -> None:
+        self._ext_log.info(f"{col(7)}Attempting to load {col(7, fmt=4)}{name}{col()}")
+        try:
+            await super().load_extension(name, package=package)
+            self._ext_log.info(f"{col(2)}Loaded extension {col(2, fmt=4)}{name}{col()}")
+
+        except Exception as e:
+            self._ext_log.error(f"Failed to load extension {name}", exc_info=e)
+            if _raise:
+                raise e
+
+    @override
+    async def unload_extension(self, name: str, *, package: Optional[str] = None, _raise: bool = True) -> None:
+        self._ext_log.info(f"{col(7)}Attempting to unload extension {col(7, fmt=4)}{name}{col()}")
+        try:
+            await super().unload_extension(name, package=package)
+            self._ext_log.info(f"{col(2)}Unloaded extension {col(2, fmt=4)}{name}{col()}")
+
+        except Exception as e:
+            self._ext_log.error(f"Failed to unload extension {name}", exc_info=e)
+            if _raise:
+                raise e
+
+    @override
+    async def reload_extension(self, name: str, *, package: Optional[str] = None, _raise: bool = True) -> None:
+        self._ext_log.info(f"{col(7)}Attempting to reload extension {col(7, fmt=4)}{name}{col()}")
+        try:
+            await super().reload_extension(name, package=package)
+            self._ext_log.info(f"{col(2)}Reloaded extension {col(2, fmt=4)}{name}{col()}")
+
+        except Exception as e:
+            self._ext_log.error(f"Failed to reload extension {name}", exc_info=e)
+            if _raise:
+                raise e
+
 
 async def runner():
     credentials = {
@@ -172,7 +257,6 @@ async def runner():
     }
 
     async with asyncpg.create_pool(**credentials) as pool, aiohttp.ClientSession() as session, Dwello(pool, session) as bot:
-        bot.http_session = session
         await bot.start(ENV["token"])  # type: ignore
 
 

@@ -1,12 +1,10 @@
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Any, Generic, Literal, TypeVar
+from typing import TYPE_CHECKING, Any, Literal
 
 import asyncpg
 
 if TYPE_CHECKING:
-    from asyncpg import Connection, Pool
-    from asyncpg.transaction import Transaction
     from .bot import Dwello
 
 import string
@@ -18,8 +16,6 @@ from discord.app_commands import Choice
 
 import constants as cs  # noqa: E402
 from utils import ENV, DataBaseOperations, Twitch  # noqa: F401, E402
-
-T = TypeVar("T")
 
 
 class AiohttpWeb:
@@ -233,56 +229,6 @@ class AutoComplete:
             elif current.startswith(str(value_)[:item]):
                 choices.append(Choice(name=str(name_), value=str(value_)))
         return choices[:5] if len(choices) > 5 else choices
-
-
-class ContextManager(Generic[T]):
-    if TYPE_CHECKING:
-        from .bot import Dwello
-
-    __slots__: tuple[str, ...] = ("bot", "timeout", "_pool", "_conn", "_tr")
-
-    def __init__(self, bot: Dwello, *, timeout: float = 10.0) -> None:
-        self.bot = bot
-        self.timeout: float = timeout
-        self._pool: Pool = bot.pool
-        self._conn: Connection | None = None
-        self._tr: Transaction | None = None
-
-    async def acquire(self) -> Connection:
-        return await self.__aenter__()
-
-    async def release(self) -> None:
-        return await self.__aexit__(None, None, None)
-
-    async def __aenter__(self) -> Connection:
-        self._conn = conn = await self._pool.acquire(timeout=self.timeout)  # type: ignore
-        conn: Connection
-        self._tr = conn.transaction()
-        await self._tr.start()
-        return conn  # type: ignore
-
-    async def __aexit__(self, exc_type, exc, tb):
-        if exc and self._tr:
-            await self._tr.rollback()
-
-        elif not exc and self._tr:
-            await self._tr.commit()
-
-        if self._conn is not None:
-            await self._pool.release(self._conn)
-
-
-LOADABLE_EXTENSIONS = [
-    "jishaku",
-    # "cogs.economy",  # TODO: Fix cogs
-    # "cogs.entertainment",
-    # "cogs.information",
-    # "cogs.moderation",
-    # "cogs.information.help",
-    # "cogs.guild",
-    # "cogs.other",
-    # "utils.error",
-]
 
 
 class ListenersFunctions:

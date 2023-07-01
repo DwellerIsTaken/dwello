@@ -38,7 +38,7 @@ class Twitch:
     # FIX ACCESS TOKEN ISSUE. CREATE LOOP BASED ON EXPIRATION DATE AND REQUEST NEW ONE WHENEVER ONE EXPIRES
     def __init__(self, access_token: str, bot: Dwello) -> None:
         self.bot = bot
-        self.session = bot.session
+        self.session = bot.http_session
         self.access_token = access_token
 
     @classmethod

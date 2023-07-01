@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from core import Bot
+from core import Dwello
 
 from .fun import Fun
 
@@ -19,5 +19,5 @@ class Entertainment(Fun, name="Entertainment"):
         self.select_brief = "Commands for providing entertainment and recreational features."
 
 
-async def setup(bot: Bot):
+async def setup(bot: Dwello):
     await bot.add_cog(Entertainment(bot))

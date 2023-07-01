@@ -775,25 +775,6 @@ class About(commands.Cog):
             if _bot_guild_name[0] != _bot_name[0]:
                 _matches.append(_bot_guild_name[0])
 
-        """_members = []
-        for cog in self.bot.cogs.values():
-            if cog.qualified_name == "Jishaku":
-                continue
-            print(cog.qualified_name)
-            members = inspect.getmembers(cog)
-            _members.append(members)
-        for _cog in _members:
-            for name, member in _cog:
-                # Exclude built-in methods from the module where the cog or class is defined
-                if inspect.isfunction(member) and member.__module__ != "discord.ext.commands.cog":
-                    print(name, member)
-                elif inspect.isclass(member):
-                    objects = inspect.getmembers(member)
-                    for _name, obj in objects:
-                        # Exclude built-in methods from the module where the class is defined
-                        if inspect.isfunction(obj) and obj.__module__ != "discord.ext.commands.cog":
-                            print(_name, obj)"""
-
         for command in self.bot.walk_commands():
             _matches.append(command.qualified_name.lower())
 
@@ -806,6 +787,9 @@ class About(commands.Cog):
 
         if _command_name == "help":
             target = type(self.bot.help_command)
+
+        elif _command_name in ["context", "ctx"]:
+            target = ctx.__class__
 
         elif _command_name in _base_words:
             target = self.bot.__class__.__base__

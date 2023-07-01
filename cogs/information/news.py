@@ -3,37 +3,34 @@ from __future__ import annotations
 import contextlib
 import datetime
 import re
-from typing import TYPE_CHECKING, List, NamedTuple, Optional, Tuple, Type, TypeVar, Union
+from typing import TYPE_CHECKING, List, Optional, Tuple, Type, TypeVar, Union  # noqa: F401
 
 import asyncpg
 import discord
 from discord import ButtonStyle
 from discord.ext import commands
+from dataclasses import dataclass
 from typing_extensions import Self
 
 import constants as cs
 from core import BaseCog, Dwello, DwelloContext
 from utils import get_unix_timestamp, is_discord_link
 
-# from utils import DuckCog, group
-# from ._news_viewer import NewsViewer
-# from utils import DuckContext
-
-# T = TypeVar('T')
 
 NVT = TypeVar("NVT", bound="NewsViewer")
 
 fm_ut = get_unix_timestamp
 fm_dt = discord.utils.format_dt
 
-
-class Page(NamedTuple):  # DO SMTH LIKE THIS FOR EVERY CMD IN SCRAPING YO UNPACK EASILY
+@dataclass
+class Page:  # DO SMTH LIKE THIS FOR EVERY CMD IN SCRAPING YO UNPACK EASILY | MAYBE
     """Represents a page of news."""
 
     news_id: int
     title: str
     message_id: int
     channel_id: int
+    cached_message: Optional[discord.Message] = None
 
 
 class NewsFeed:
@@ -58,6 +55,7 @@ class NewsFeed:
         self.news: List[Page] = [Page(**n) for n in news]  # type: ignore
         self.max_pages = len(news)
         self._current_page = 0
+        #self.news.reverse()
 
     def advance(self) -> None:
         """Advance to the next page."""
@@ -218,14 +216,16 @@ class NewsViewer(discord.ui.View):
         else:
             return await interaction.response.send_message(content="Hey! You can't do that!", ephemeral=True)
 
-    # @cachetools.cached(cachetools.LRUCache(maxsize=10))
     async def get_embed(self, page: Page) -> discord.Embed:
         """:class:`discord.Embed`: Used to get the embed for the current page."""
-        print(page)
 
-        # chache message instead
-        channel: discord.TextChannel = await self.bot.fetch_channel(page.channel_id)
-        message: discord.Message = await channel.fetch_message(page.message_id)
+        message: discord.Message | None = page.cached_message
+
+        if not message:
+            channel: discord.TextChannel = await self.bot.fetch_channel(page.channel_id)
+            message: discord.Message = await channel.fetch_message(page.message_id)
+            page.cached_message = message
+
         time: datetime.datetime = message.created_at
 
         embed = discord.Embed(
@@ -273,12 +273,16 @@ class NewsViewer(discord.ui.View):
         await interaction.response.edit_message(embed=self.embed, view=self.old_view)
         self.stop()"""
 
-    def update_labels(self: Self):
+    def update_labels(self):
         """Used to update the internal cache of the view, it will update the labels of the buttons."""
         previous_page_num = self.news.max_pages - self.news.news.index(self.news.previous)
         self.next.disabled = previous_page_num == 1
 
         self.current.label = str(self.news.max_pages - self.news.current_index)
+        '''print(self.news.max_pages, self.news.current_index)
+        print(self.current.label)
+        self.current.label = str(self.news.current_index + 1)
+        print(self.current.label)'''
 
         next_page_num = self.news.max_pages - self.news.news.index(self.news.next)
         self.previous.disabled = next_page_num == self.news.max_pages
@@ -301,7 +305,7 @@ class NewsViewer(discord.ui.View):
             )
         else:
             new.update_labels()
-            _embed: discord.Embed = await new.get_embed(new.news.current)
+            _embed: discord.Embed = await new.get_embed(new.news.news[new.news.current_index])
 
         new.message = await ctx.send(embed=_embed, view=new)
         # new.bot.views.add(new)
