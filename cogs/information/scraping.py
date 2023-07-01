@@ -3,7 +3,7 @@ from __future__ import annotations
 import difflib
 import json
 import re
-from typing import Any, Dict, List, Optional, Tuple, Union
+from typing import TYPE_CHECKING, Any, Dict, List, Optional, Tuple, Union
 
 import discord
 import wikipediaapi
@@ -16,6 +16,9 @@ from yarl import URL
 import constants as cs
 from core import BaseCog, Dwello, DwelloContext
 from utils import ENV, capitalize_greek_numbers, get_unix_timestamp
+
+if TYPE_CHECKING:
+    from discord import Interaction
 
 mk = discord.utils.escape_markdown
 
@@ -142,10 +145,10 @@ class Scraping(BaseCog):
         self.spotify_token = _token
         return _token, _expires"""
 
-    @commands.command()
+    """@commands.command()
     async def test(self, ctx: DwelloContext):
         message = await ctx.author.fetch_message(1119035015842504744)
-        return await ctx.reply(message.content)
+        return await ctx.reply(message.content)"""
 
     @commands.hybrid_command(
         name="image",
@@ -483,6 +486,8 @@ class Scraping(BaseCog):
         # start = time.time()
         # end = time.time()
         # await ctx.send(f"Executed in: {end-start}") # Idea for a time per func to calculate overall latency/response time?
+        # use different api
+        # not enough data ^ and cant search for similair results
 
         try:
             game_id = await self.get_game_by_name(game)
@@ -558,7 +563,7 @@ class Scraping(BaseCog):
 
         embed: discord.Embed = discord.Embed(
             title=person["original_name"],
-            description=page.summary,
+            description=page.summary[:500] + "..." if len(page.summary) > 500 else "",
             url=f"https://www.themoviedb.org/person/{person['id']}",
             color=cs.RANDOM_COLOR,
         )
@@ -630,7 +635,7 @@ class Scraping(BaseCog):
         return await ctx.reply(embed=embed)
 
     @app_commands.command(name="movie", description="Returns a movie by its title.")
-    async def _movie(self, ctx: DwelloContext, *, movie: str, year: int = None) -> Optional[discord.Message]:
+    async def _movie(self, interaction: Interaction, *, movie: str, year: int = None) -> Optional[discord.Message]:
         pages: int = 1
 
         url: URL = f"https://api.themoviedb.org/3/search/movie?query={movie}&include_adult=True&language=en-US&primary_release_year={year}&page={pages}"
@@ -642,13 +647,13 @@ class Scraping(BaseCog):
             data = await response.json()
 
         if response.status != 200:
-            return await ctx.reply("Couldn't connect to the API.", user_mistake=True)
+            return await interaction.response.send_message("Couldn't connect to the API.", ephemeral=True)
 
         try:
             movie = max(data["results"], key=lambda _movie: _movie["vote_count"])
 
         except ValueError:
-            return await ctx.reply(f"Couldn't find a movie by the name of {movie}.", user_mistake=True)
+            return await interaction.response.send_message(f"Couldn't find a movie by the name of {movie}.", ephemeral=True)  # noqa: E501
 
         embed: discord.Embed = discord.Embed(
             title=movie["title"],
@@ -668,7 +673,7 @@ class Scraping(BaseCog):
 
         embed.set_footer(text=f"Popularity: {movie['popularity']}")
 
-        return await ctx.reply(embed=embed)
+        return await interaction.response.send_message(embed=embed)
 
     @commands.command(name="show", help="Returns a TV show by its title.", aliases=["series", "shows"])
     async def show(self, ctx: DwelloContext, *, show: str) -> Optional[discord.Message]:
@@ -707,25 +712,25 @@ class Scraping(BaseCog):
         return await ctx.reply(embed=embed)
 
     @app_commands.command(name="show", description="Returns a TV show by its title.")
-    async def _show(self, ctx: DwelloContext, *, show: str, year: int = None) -> Optional[discord.Message]:
+    async def _show(self, interaction: Interaction, *, show: str, year: int = None) -> Optional[discord.Message]:
         pages: int = 1
 
-        url: URL = f"https://api.themoviedb.org/3/search/movie?query={show}&include_adult=True&language=en-US&primary_release_year={year}&page={pages}"
+        url = f"https://api.themoviedb.org/3/search/tv?query={show}&include_adult=True&language=en-US&primary_release_year={year}&page={pages}"
 
         if not year:
-            url = f"https://api.themoviedb.org/3/search/movie?query={show}&include_adult=True&language=en-US&page={pages}"
+            url = f"https://api.themoviedb.org/3/search/tv?query={show}&include_adult=True&language=en-US&page={pages}"
 
         async with self.bot.http_session.get(url=url, headers=self.tmdb_headers) as response:
             data = await response.json()
 
         if response.status != 200:
-            return await ctx.reply("Couldn't connect to the API.", user_mistake=True)
+            return await interaction.response.send_message("Couldn't connect to the API.", ephemeral=True)
 
         try:
             show = max(data["results"], key=lambda _show: _show["vote_count"])
 
         except ValueError:
-            return await ctx.reply(f"Couldn't find a show by the name of {show}.", user_mistake=True)
+            return await interaction.response.send_message(f"Couldn't find a show by the name of {show}.", ephemeral=True)
 
         embed: discord.Embed = discord.Embed(
             title=show["original_name"],
@@ -745,7 +750,7 @@ class Scraping(BaseCog):
 
         embed.set_footer(text=f"Popularity: {show['popularity']}")
 
-        return await ctx.reply(embed=embed)
+        return await interaction.response.send_message(embed=embed)
 
     @commands.hybrid_command(
         name="weather",

@@ -74,8 +74,13 @@ def col(color=None, /, *, fmt=0, bg=False):
             base += "3{color}m"
     return base.format(fmt=fmt, color=color)
 
+# GLOBAL CHECKS
 def blacklist_check(ctx: DwelloContext) -> bool:
     return not ctx.bot.is_blacklisted(ctx.author.id)
+
+# CONTEXT MENUS
+async def my_cool_context_menu(interaction: discord.Interaction, message: discord.Message):
+    await interaction.response.send_message('Very cool message!', ephemeral=True)
 
 
 class ContextManager(Generic[DBT]):
@@ -178,6 +183,17 @@ class Dwello(commands.AutoShardedBot):
             self.blacklisted_users[record["user_id"]] = record["reason"]
 
         self.add_check(blacklist_check)
+
+        '''self.ctx_menu = discord.app_commands.ContextMenu(
+            name='Cool Command Name',
+            callback=my_cool_context_menu,
+        )'''
+        self.tree.add_command(
+            discord.app_commands.ContextMenu(
+                name='Cool Command Name',
+                callback=my_cool_context_menu,
+            )
+        )
 
         asyncio.create_task(self.web.run(port=8081))
 

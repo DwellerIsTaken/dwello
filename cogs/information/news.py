@@ -7,7 +7,7 @@ from typing import TYPE_CHECKING, List, Optional, Tuple, Type, TypeVar, Union  #
 
 import asyncpg
 import discord
-from discord import ButtonStyle
+from discord import ButtonStyle, app_commands
 from discord.ext import commands
 from dataclasses import dataclass
 from typing_extensions import Self
@@ -206,7 +206,7 @@ class NewsViewer(discord.ui.View):
             self.news = news
 
         if self.old_view and self.embed:
-            self.go_back = NewsGoBackButton(emoji="🏠", label="Go Back", style=discord.ButtonStyle.blurple)
+            self.go_back = NewsGoBackButton(emoji="🏠", style=discord.ButtonStyle.blurple)
 
             self.add_item(self.go_back)
 
@@ -243,49 +243,16 @@ class NewsViewer(discord.ui.View):
 
         return embed
 
-    """@discord.ui.button(style=discord.ButtonStyle.blurple, label='\u226a')
-    async def previous(self, interaction: discord.Interaction[Bot], button: discord.ui.Button) -> None:
-        self.news.advance()
-        page = self.news.current
-        self.update_labels()
-        embed: discord.Embed = await self.get_embed(page)
-        return await interaction.response.edit_message(embed=embed, view=self)"""
-
-    """@discord.ui.button(style=discord.ButtonStyle.red)
-    async def current(self, interaction: discord.Interaction[Bot], button: discord.ui.Button) -> None:
-        self.stop()
-        await self.message.delete()
-
-        if self.ctx and isinstance(self.ctx, commands.Context):
-            with contextlib.suppress(discord.HTTPException):
-                await self.ctx.message.add_reaction(":white_check_mark:")"""
-
-    """@discord.ui.button(style=discord.ButtonStyle.blurple, label='\u226b')
-    async def next(self, interaction: discord.Interaction[Bot], button: discord.ui.Button):
-        self.news.go_back()
-        page = self.news.current
-        self.update_labels()
-        embed: discord.Embed = await self.get_embed(page)
-        await interaction.response.edit_message(embed=embed, view=self)"""
-
-    """@discord.ui.button(emoji="🏠", label="Go Back", style=discord.ButtonStyle.blurple)
-    async def go_back(self, interaction: discord.Interaction, _):
-        await interaction.response.edit_message(embed=self.embed, view=self.old_view)
-        self.stop()"""
-
     def update_labels(self):
         """Used to update the internal cache of the view, it will update the labels of the buttons."""
-        previous_page_num = self.news.max_pages - self.news.news.index(self.news.previous)
-        self.next.disabled = previous_page_num == 1
 
-        self.current.label = str(self.news.max_pages - self.news.current_index)
-        '''print(self.news.max_pages, self.news.current_index)
-        print(self.current.label)
+        previous_page_num = self.news.max_pages - self.news.news.index(self.news.previous)
+        self.previous.disabled = previous_page_num == 1
+
         self.current.label = str(self.news.current_index + 1)
-        print(self.current.label)'''
 
         next_page_num = self.news.max_pages - self.news.news.index(self.news.next)
-        self.previous.disabled = next_page_num == self.news.max_pages
+        self.next.disabled = next_page_num == self.news.max_pages
 
     @classmethod
     async def start(
@@ -354,6 +321,12 @@ class NewsViewer(discord.ui.View):
 class News(BaseCog):
     def __init__(self, bot: Dwello) -> None:
         self.bot = bot
+
+    @app_commands.command(name="news", description="Displays latest news on the bot.")
+    async def app_news(self, interaction: discord.Interaction) -> NewsViewer:
+        news = await self.bot.pool.fetch("SELECT * FROM news ORDER BY news_id DESC")
+
+        return await NewsViewer.from_interaction(interaction, news)
 
     @commands.group(invoke_without_command=True)
     async def news(self, ctx: DwelloContext) -> NewsViewer:

@@ -126,12 +126,16 @@ class Fun(BaseCog):
 
         return await ctx.reply(embed=embed)
 
+    @commands.guild_only()
     @commands.hybrid_command(
         name="spotify",
         help="Shows the song member is listening to.",
         with_app_command=True,
     )
     async def spotify(self, ctx: DwelloContext, *, member: discord.Member = commands.Author) -> Optional[discord.Message]:
+        if ctx.interaction:
+            member: discord.Member = ctx.guild.get_member(member.id)
+
         spotify: discord.Spotify = discord.utils.find(
             lambda activity: isinstance(activity, discord.Spotify),
             member.activities,
@@ -145,6 +149,7 @@ class Fun(BaseCog):
             "duration_seconds": spotify.duration.seconds,
             "start_timestamp": spotify.start.timestamp(),
             "artists": spotify.artists,
+
         }
         async with self.bot.http_session.get("https://api.jeyy.xyz/discord/spotify", params=params) as response:
             bytes = io.BytesIO(await response.read())
