@@ -22,6 +22,7 @@ NVT = TypeVar("NVT", bound="NewsViewer")
 fm_ut = get_unix_timestamp
 fm_dt = discord.utils.format_dt
 
+
 @dataclass
 class Page:  # DO SMTH LIKE THIS FOR EVERY CMD IN SCRAPING YO UNPACK EASILY | MAYBE
     """Represents a page of news."""
@@ -55,7 +56,7 @@ class NewsFeed:
         self.news: List[Page] = [Page(**n) for n in news]  # type: ignore
         self.max_pages = len(news)
         self._current_page = 0
-        #self.news.reverse()
+        # self.news.reverse()
 
     def advance(self) -> None:
         """Advance to the next page."""
@@ -279,10 +280,10 @@ class NewsViewer(discord.ui.View):
         self.next.disabled = previous_page_num == 1
 
         self.current.label = str(self.news.max_pages - self.news.current_index)
-        '''print(self.news.max_pages, self.news.current_index)
+        """print(self.news.max_pages, self.news.current_index)
         print(self.current.label)
         self.current.label = str(self.news.current_index + 1)
-        print(self.current.label)'''
+        print(self.current.label)"""
 
         next_page_num = self.news.max_pages - self.news.news.index(self.news.next)
         self.previous.disabled = next_page_num == self.news.max_pages

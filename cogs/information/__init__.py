@@ -12,8 +12,8 @@ if TYPE_CHECKING:
 
 class Information(Scraping, UserInfo, News, name="Information"):
     """
-    📚 
-    Includes commands and tools that provide information to users, such as server and user statistics, weather updates, 
+    📚
+    Includes commands and tools that provide information to users, such as server and user statistics, weather updates,
     news feeds, and other relevant information.
     """
 

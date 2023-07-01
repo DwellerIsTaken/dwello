@@ -14,7 +14,7 @@ if TYPE_CHECKING:
 
 class Moderation(StandardModeration, Timeout, Warnings, name="Moderation"):
     """
-    🛡️ 
+    🛡️
     Tools for server moderation, as well as various utilities designed specifically for administrators and moderators.
     """
 

@@ -80,7 +80,7 @@ class Environment:
         return self.parse_entity(self.__dict.get(name))
 
     def parse_entity(self, entity: Any, *, to_raise: bool = True) -> ANY:
-        #old_entity = entity
+        # old_entity = entity
         if entity is None:
             return Null()
 

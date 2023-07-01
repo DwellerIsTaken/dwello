@@ -43,9 +43,9 @@ DBT = TypeVar("DBT", bound="Dwello")
 DCT = TypeVar("DCT", bound="DwelloContext")
 
 logging.basicConfig(
-    format='%(asctime)s [%(levelname)s] - %(name)s: %(message)s',
+    format="%(asctime)s [%(levelname)s] - %(name)s: %(message)s",
     level=logging.INFO,
-    datefmt='%Y-%m-%d %H:%M:%S %Z%z',  # CET timezone format
+    datefmt="%Y-%m-%d %H:%M:%S %Z%z",  # CET timezone format
 )
 
 initial_extensions: Tuple[str] = ("jishaku",)
@@ -53,12 +53,13 @@ extensions: Set[str] = {
     "cogs.economy",
     "cogs.entertainment",
     "cogs.information",
-    "cogs.moderation", 
+    "cogs.moderation",
     "cogs.information.help",
-    "cogs.guild", 
+    "cogs.guild",
     "cogs.other",
     "utils.error",
 }
+
 
 def col(color=None, /, *, fmt=0, bg=False):
     base = "\u001b["
@@ -74,12 +75,12 @@ def col(color=None, /, *, fmt=0, bg=False):
             base += "3{color}m"
     return base.format(fmt=fmt, color=color)
 
+
 def blacklist_check(ctx: DwelloContext) -> bool:
     return not ctx.bot.is_blacklisted(ctx.author.id)
 
 
 class ContextManager(Generic[DBT]):
-
     __slots__: tuple[str, ...] = ("bot", "timeout", "_pool", "_conn", "_tr")
 
     def __init__(self, bot: Dwello, *, timeout: float = 10.0) -> None:
@@ -114,18 +115,12 @@ class ContextManager(Generic[DBT]):
 
 
 class Dwello(commands.AutoShardedBot):
-
     DEFAULT_PREFIXES: ClassVar[List[str]] = ["dw.", "Dw.", "dwello.", "Dwello."]
 
     logger = logging.getLogger("logging")
     _ext_log = logging.getLogger("extensions")
 
-    def __init__(
-        self,
-        pool: asyncpg.Pool,
-        session: aiohttp.ClientSession,
-        **kwargs
-    ) -> None:
+    def __init__(self, pool: asyncpg.Pool, session: aiohttp.ClientSession, **kwargs) -> None:
         super().__init__(
             command_prefix=self.get_prefix,  # type: ignore
             strip_after_prefix=True,
@@ -157,7 +152,7 @@ class Dwello(commands.AutoShardedBot):
         self.otherutils = OtherUtils(self)
         self.web = AiohttpWeb(self)
 
-    async def setup_hook(self) -> None:    
+    async def setup_hook(self) -> None:
         try:
             for ext in initial_extensions:
                 await self.load_extension(ext, _raise=False)
@@ -190,7 +185,7 @@ class Dwello(commands.AutoShardedBot):
     @override
     async def get_context(self, message, *, cls: Any = DwelloContext):
         return await super().get_context(message, cls=cls)
-    
+
     @override
     async def get_prefix(self, message: discord.Message) -> list[str]:
         if guild_prefixes := self.guild_prefixes.get(message.guild.id):  # type: ignore

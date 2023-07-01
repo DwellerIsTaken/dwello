@@ -7,19 +7,19 @@ from operator import attrgetter
 import random
 import re
 from typing import (
-    TYPE_CHECKING, 
-    Any, 
+    TYPE_CHECKING,
+    Any,
     Callable,
-    Generic,   # noqa: F401
+    Generic,  # noqa: F401
     LiteralString,
     Optional,
     Sequence,
-    Iterable, 
-    TypeVar, 
+    Iterable,
+    TypeVar,
     Tuple,
     Union,
 )
-from typing_extensions import override 
+from typing_extensions import override
 
 import discord
 from discord.ext import commands
@@ -28,6 +28,7 @@ T = TypeVar("T")
 
 if TYPE_CHECKING:
     from discord import Interaction, ButtonStyle
+
 
 class ConfirmButton(discord.ui.Button):
     def __init__(self, label: str, emoji: str, button_style: ButtonStyle):
@@ -79,7 +80,7 @@ class Confirm(discord.ui.View):
     async def interaction_check(self, interaction: Interaction) -> bool:
         if interaction.user == self.ctx.author:
             return True
-        messages = [ # should be defined someplace else in constants
+        messages = [  # should be defined someplace else in constants
             "Oh no you can't do that! This belongs to **{user}**",
             "This is **{user}**'s confirmation, sorry! 💢",
             "😒 Does this look yours? **No**. This is **{user}**'s confirmation button",
@@ -99,7 +100,7 @@ class Confirm(discord.ui.View):
         return False
 
 
-class DwelloContext(commands.Context): #[commands.Bot], Generic[T]
+class DwelloContext(commands.Context):  # [commands.Bot], Generic[T]
     if TYPE_CHECKING:
         from .bot import Dwello
 
@@ -137,7 +138,6 @@ class DwelloContext(commands.Context): #[commands.Bot], Generic[T]
         underline: bool = False,
         **kwargs: Any,
     ) -> Optional[discord.Message]:
-        
         assert isinstance(self.me, discord.Member)
 
         perms: discord.Permissions = self.channel.permissions_for(self.me)
@@ -148,10 +148,10 @@ class DwelloContext(commands.Context): #[commands.Bot], Generic[T]
                         "Bot don't have either Embed Links/Send Messages permission in that channel. "
                         "Please give sufficient permissions to the bot."
                     ),
-                    view=self.send_view(), # create that (?)
+                    view=self.send_view(),  # create that (?)
                 )
                 return None
-            
+
         if embed and embeds:
             raise commands.BadArgument("cannot pass both embed and embeds parameter to send()")
 
@@ -180,8 +180,8 @@ class DwelloContext(commands.Context): #[commands.Bot], Generic[T]
         content = str(content)[:1990] if content else None
         return await super().send(content=content, embeds=embeds, **kwargs)
 
-    @override # ritik check this and leave all the features but u can rewrite
-    async def reply( # add things and cleanup
+    @override  # ritik check this and leave all the features but u can rewrite
+    async def reply(  # add things and cleanup
         self,
         content: Optional[str] = None,
         *,
@@ -204,12 +204,16 @@ class DwelloContext(commands.Context): #[commands.Bot], Generic[T]
 
         if user_mistake:
             if any((mention_author, ephemeral, permission_cmd)):
-                raise commands.BadArgument("Cannot pass mention_author, ephemeral, or permission_cmd when user_mistake = True.")  # noqa: E501
+                raise commands.BadArgument(
+                    "Cannot pass mention_author, ephemeral, or permission_cmd when user_mistake = True."
+                )  # noqa: E501
             mention, ephemeral = True, True
 
         elif permission_cmd:
             if any((mention_author, ephemeral, user_mistake)):
-                raise commands.BadArgument("Cannot pass mention_author, ephemeral, or user_mistake when permission_cmd = True.")  # noqa: E501
+                raise commands.BadArgument(
+                    "Cannot pass mention_author, ephemeral, or user_mistake when permission_cmd = True."
+                )  # noqa: E501
             mention, ephemeral = False, True
 
         if not self.interaction:
@@ -222,7 +226,7 @@ class DwelloContext(commands.Context): #[commands.Bot], Generic[T]
             )
         else:
             return await self.send(content, mention_author=mention, ephemeral=ephemeral, **kwargs)
-        
+
     async def error(self, *args: Any, **kwargs: Any) -> Optional[discord.Message]:
         """Similar to send, but if the original message is deleted, it will delete the error message as well."""
         embed: Optional[discord.Embed] = kwargs.get("embed")
@@ -246,7 +250,7 @@ class DwelloContext(commands.Context): #[commands.Bot], Generic[T]
             else:
                 return await msg.delete(delay=0)
         return msg
-    
+
     def outer_check(
         self,
         check: Callable[..., bool] | None = None,

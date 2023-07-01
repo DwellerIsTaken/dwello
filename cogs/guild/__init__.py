@@ -12,8 +12,8 @@ if TYPE_CHECKING:
 
 class Guild(Config, Channels, Messages, name="Guild Management"):
     """
-    📝 
-    Includes commands and tools for managing guilds or communities, such as guild creation and configuration tools, role 
+    📝
+    Includes commands and tools for managing guilds or communities, such as guild creation and configuration tools, role
     and permission management features, and tools for customizing the guild experience.
     """
 
