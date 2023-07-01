@@ -16,7 +16,6 @@ from utils import apostrophize, interaction_check, member_check
 from .timeout import tempmute
 
 
-
 class TimeoutSuggestion(View):
     def __init__(
         self,

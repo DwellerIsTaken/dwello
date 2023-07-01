@@ -9,9 +9,8 @@ import discord
 from discord.ext import commands
 
 import constants as cs
-
-from utils import ENV
 from core import BaseCog, Dwello, DwelloContext
+from utils import ENV
 
 
 class Fun(BaseCog):

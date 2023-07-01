@@ -7,3 +7,6 @@ aiohttp
 asyncpg
 uvloop
 pillow
+aiospotify
+jishaku
+wikipedia-api
