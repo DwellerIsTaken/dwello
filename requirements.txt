@@ -11,3 +11,4 @@ aiospotify
 jishaku
 wikipedia-api
 pytz
+typing_extensions
