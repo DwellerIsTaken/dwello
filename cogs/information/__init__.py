@@ -1,10 +1,13 @@
 from __future__ import annotations
 
-from core import Dwello
+from typing import TYPE_CHECKING
 
 from .news import News
 from .scraping import Scraping
 from .user_info import UserInfo
+
+if TYPE_CHECKING:
+    from core import Dwello
 
 
 class Information(Scraping, UserInfo, News, name="Information"):

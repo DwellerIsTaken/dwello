@@ -1,10 +1,12 @@
 from __future__ import annotations
 
-from core import Dwello
+from typing import TYPE_CHECKING
 
 from .bot_eco import Bot_Economy
 from .guild_eco import Guild_Economy
 
+if TYPE_CHECKING:
+    from core import Dwello
 
 class Economy(Bot_Economy, Guild_Economy, name="Economy"):
     """

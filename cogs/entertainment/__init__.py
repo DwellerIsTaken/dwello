@@ -1,9 +1,11 @@
 from __future__ import annotations
 
-from core import Dwello
+from typing import TYPE_CHECKING
 
 from .fun import Fun
 
+if TYPE_CHECKING:
+    from core import Dwello
 
 class Entertainment(Fun, name="Entertainment"):
     """

@@ -1,13 +1,14 @@
 from __future__ import annotations
 
-from core import Dwello
+from typing import TYPE_CHECKING
 
 from .botconfig import BotConfig
 from .events import Events
 from .owner import Owner
 from .tasks import Tasks
 
-# from typing import TYPE_CHECKING
+if TYPE_CHECKING:
+    from core import Dwello
 
 
 class Other(Owner, Events, Tasks, BotConfig):

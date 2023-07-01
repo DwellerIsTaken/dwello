@@ -2,11 +2,14 @@ from __future__ import annotations
 
 from discord.ext import commands
 
-from core import Dwello
+from typing import TYPE_CHECKING
 
 from .standard import StandardModeration
 from .timeout import Timeout
 from .warnings import Warnings
+
+if TYPE_CHECKING:
+    from core import Dwello
 
 
 class Moderation(StandardModeration, Timeout, Warnings, name="Moderation"):

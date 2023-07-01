@@ -1,10 +1,13 @@
 from __future__ import annotations
 
-from core import Dwello
+from typing import TYPE_CHECKING
 
 from .config import Config
 from .manage_channels import Channels
 from .manage_messages import Messages
+
+if TYPE_CHECKING:
+    from core import Dwello
 
 
 class Guild(Config, Channels, Messages, name="Guild Management"):
