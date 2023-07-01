@@ -6,10 +6,9 @@ import os
 from typing import Any
 
 with contextlib.suppress(ImportError):
-    from dotenv import dotenv_values, load_dotenv  # type: ignore
+    from dotenv import load_dotenv
 
     load_dotenv()
-    dotenv_values(".env")
 
 
 def convert_bool(entiry: str) -> bool | None:
