@@ -2,32 +2,21 @@ from __future__ import annotations
 
 import asyncio
 import functools
-from contextlib import suppress
-from operator import attrgetter
 import random
 import re
-from typing import (
-    TYPE_CHECKING,
-    Any,
-    Callable,
-    Generic,  # noqa: F401
-    LiteralString,
-    Optional,
-    Sequence,
-    Iterable,
-    TypeVar,
-    Tuple,
-    Union,
-)
-from typing_extensions import override
+from contextlib import suppress
+from operator import attrgetter
+from typing import Generic  # noqa: F401
+from typing import TYPE_CHECKING, Any, Callable, Iterable, LiteralString, Optional, Sequence, Tuple, TypeVar, Union
 
 import discord
 from discord.ext import commands
+from typing_extensions import override
 
 T = TypeVar("T")
 
 if TYPE_CHECKING:
-    from discord import Interaction, ButtonStyle
+    from discord import ButtonStyle, Interaction
 
 
 class ConfirmButton(discord.ui.Button):

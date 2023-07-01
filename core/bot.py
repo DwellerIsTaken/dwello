@@ -5,11 +5,12 @@ import datetime
 import logging
 import os
 import sys
-from typing import TYPE_CHECKING, Any, Set, List, ClassVar, Tuple, TypeVar, Generic, Optional
-import jishaku  # noqa: F401  # pylint: disable=unused-import
+from typing import TYPE_CHECKING, Any, ClassVar, Generic, List, Optional, Set, Tuple, TypeVar
+
 import aiohttp
 import asyncpg
 import discord
+import jishaku  # noqa: F401  # pylint: disable=unused-import
 from discord.ext import commands
 from typing_extensions import override
 
@@ -23,16 +24,7 @@ else:
     else:
         asyncio.set_event_loop_policy(uvloop.EventLoopPolicy())
 
-from ._utils import (
-    ENV,
-    AiohttpWeb,
-    AutoComplete,
-    DataBaseOperations,
-    LevellingUtils,
-    ListenersFunctions,
-    OtherUtils,
-    Twitch,
-)
+from ._utils import ENV, AiohttpWeb, AutoComplete, DataBaseOperations, LevellingUtils, ListenersFunctions, OtherUtils, Twitch
 from .context import DwelloContext
 
 if TYPE_CHECKING:

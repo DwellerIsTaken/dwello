@@ -1,8 +1,8 @@
 from __future__ import annotations
 
-from discord.ext import commands
-
 from typing import TYPE_CHECKING
+
+from discord.ext import commands
 
 from .standard import StandardModeration
 from .timeout import Timeout
