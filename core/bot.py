@@ -155,6 +155,12 @@ class Dwello(commands.AutoShardedBot):
         self.blacklisted_users: dict[int, str] = {}
         self.bypass_cooldown_users: list[int] = []
 
+        self.launch_time: datetime.datetime = datetime.datetime.utcnow()
+        
+        self.cooldown: commands.CooldownMapping[discord.Message] = commands.CooldownMapping.from_cooldown(
+            1, 1.5, commands.BucketType.member,
+        )
+
         self.autocomplete = AutoComplete(self)
         self.listeners = ListenersFunctions(self)
         self.levelling = LevellingUtils(self)

@@ -109,7 +109,7 @@ class HelpView(discord.ui.View):
     def __init__(
         self,
         ctx: DwelloContext,
-        data: Dict[commands.Cog, List[commands.Command]],
+        data: Dict[commands.Cog, List[Union[commands.Command, discord.app_commands.Command]]],
         help_command: commands.HelpCommand,
     ):
         super().__init__()
@@ -145,28 +145,49 @@ class HelpView(discord.ui.View):
         for cog_, comm in self.data.items():
             if cog_ != cog:
                 continue
-
+            
+            description_clean: str = ' '.join(cog.description.splitlines()) if cog.description else "No description provided."  # noqa: E501
             embed: discord.Embed = discord.Embed(
                 title=f"{cog.qualified_name} commands [{len(comm)}]",
                 color=cs.RANDOM_COLOR,
-                description=cog.description or "No description provided",
+                description=description_clean,
             )
 
             for cmd in comm:
-                if cmd.extras.get("nsfw", False):
-                    embed.add_field(
-                        name=f"{cmd.name}",
-                        value="See help for this command in an NSFW channel.",
-                        inline=False,
-                    )
+                if isinstance(cmd, discord.app_commands.Command):
+                    if cmd.extras.get("nsfw", False):
+                        embed.add_field(
+                            name=f"{cmd.name}",
+                            value="See help for this command in an NSFW channel.",
+                            inline=False,
+                        )
+                    else:
+                        # somehow get signature with cmd.parameters
+                        embed.add_field(
+                            name=f"`{cmd.name}`",
+                            value=("> " + (cmd.description or "No help given..."))
+                            + (f"\n> Parent: `{cmd.parent}`" if cmd.parent else "")[:1024],
+                            inline=False,
+                        )
                 else:
-                    embed.add_field(
-                        name=f"`{cmd.name}{f' {cmd.signature}`' if cmd.signature else '`'}",
-                        value=("> " + (cmd.brief or cmd.help or "No help given..."))
-                        + (f"\n> Parent: `{cmd.parent}`" if cmd.parent else "")[:1024],
-                        inline=False,
-                    )
+                    if cmd.hidden:
+                        continue
+                    
+                    if cmd.extras.get("nsfw", False):
+                        embed.add_field(
+                            name=f"{cmd.name}",
+                            value="See help for this command in an NSFW channel.",
+                            inline=False,
+                        )
+                    else:
+                        embed.add_field(
+                            name=f"`{cmd.name}{f' {cmd.signature}`' if cmd.signature else '`'}",
+                            value=("> " + (cmd.brief or cmd.help or "No help given..."))
+                            + (f"\n> Parent: `{cmd.parent}`" if cmd.parent else "")[:1024],
+                            inline=False,
+                        )
                 embed.set_footer(text='For more info on a command run "help [command]"')
+
                 if len(embed.fields) == 5:
                     embeds.append(embed)
                     embed = discord.Embed(
@@ -174,6 +195,7 @@ class HelpView(discord.ui.View):
                         color=cs.RANDOM_COLOR,
                         description=(cog.description or "No description provided"),
                     )
+
             if len(embed.fields) > 0:
                 embeds.append(embed)
 
@@ -306,7 +328,7 @@ class MyHelp(commands.HelpCommand):
             if cog.qualified_name in ignored_cogs:
                 continue
 
-            commands_list: List[commands.Command] = []
+            commands_list: List[Union[commands.Command, discord.app_commands.Command]] = []
             for command in cog.walk_commands():
                 if isinstance(command, commands.Group):
                     subcommands = command.commands
@@ -324,6 +346,15 @@ class MyHelp(commands.HelpCommand):
                 else:
                     commands_list.append(command)
 
+            for app_command in cog.walk_app_commands():
+                allowed = 1
+                for i in commands_list:
+                    if app_command.name == i.name:
+                        if not isinstance(i, commands.Group):
+                            allowed = 0
+                if allowed:
+                    commands_list.append(app_command)
+                
             mapping[cog] = commands_list
 
         return mapping
@@ -343,9 +374,9 @@ class MyHelp(commands.HelpCommand):
     @override
     async def send_command_help(self, command: commands.Command):
         embed = discord.Embed(
-            title=f"information about: `{self.context.clean_prefix}{command}`",
-            description="**Description:**\n"
-            + (command.help or "No help given...").replace("%PRE%", self.context.clean_prefix),
+            title=f"`{self.context.clean_prefix}{command}`",
+            description="**Description:**\n" + 
+            (command.help or command.description or "No help given...").replace("%PRE%", self.context.clean_prefix),
         )
         embed.add_field(
             name="Command usage:",
@@ -353,7 +384,7 @@ class MyHelp(commands.HelpCommand):
         )
         try:
             preview = command.__original_kwargs__["preview"]
-            embed.set_image(url=preview)
+            embed.set_image(url=preview) # 
         except KeyError:
             pass
         if command.aliases:
@@ -419,9 +450,10 @@ class MyHelp(commands.HelpCommand):
     async def send_cog_help(self, cog: commands.Cog):
         if entries := cog.get_commands():
             data = [self.get_minimal_command_signature(entry) for entry in entries]
+            description_clean: str = ' '.join(cog.description.splitlines()) if cog.description else "No description provided."   # noqa: E501
             embed = discord.Embed(
-                title=f"{getattr(cog, 'select_emoji', '')} `{cog.qualified_name}` category commands",
-                description="**Description:**\n" + cog.description.replace("%PRE%", self.context.clean_prefix),
+                title=f"`{cog.qualified_name}` category commands",
+                description="**Description:**\n" + description_clean.replace("%PRE%", self.context.clean_prefix),
             )
             embed.description = (
                 f"{embed.description}\n\n**Commands:**\n```css\n{newline.join(data)}\n```\n"
@@ -434,23 +466,39 @@ class MyHelp(commands.HelpCommand):
     @override
     async def send_group_help(self, group: commands.Group):
         embed = discord.Embed(
-            title=f"information about: `{self.context.clean_prefix}{group}`",
+            title=f"`{self.context.clean_prefix}{group}`",
             description="**Description:**\n"
-            + (group.help or "No help given...").replace("%PRE%", self.context.clean_prefix),
+            + (group.help or group.description or "No help given...").replace("%PRE%", self.context.clean_prefix),
         )
         embed.add_field(
-            name="Command usage:",
+            name="Group usage:",
             value=f"```css\n{self.get_minimal_command_signature(group)}\n```",
         )
         if group.aliases:
             embed.description = f'{embed.description}\n\n**Aliases:**\n`{"`, `".join(group.aliases)}`'
         if group.commands:
-            formatted = "\n".join([self.get_minimal_command_signature(c) for c in group.commands])
-            embed.add_field(
-                name="Sub-commands for this command:",
-                value=f"```css\n{formatted}\n```\n**Do `{self.context.clean_prefix}help command subcommand` for more info on a sub-command**",  # noqa: E501
-                inline=False,
-            )
+            subgroups: List[commands.Group] = []
+            subcommands: List[commands.Command] = []
+            for c in group.commands:
+                if isinstance(c, commands.Group):
+                    subgroups.append(c)
+                else:
+                    subcommands.append(c)
+            
+            if subcommands:
+                c_formatted = "\n".join([self.get_minimal_command_signature(command) for command in subcommands])
+                embed.add_field(
+                    name="Sub-commands for this command:",
+                    value=f"```css\n{c_formatted}\n```",
+                    inline=False,
+                )
+            if subgroups:
+                g_formatted = "\n".join([self.get_minimal_command_signature(group) for group in subgroups])
+                embed.add_field(
+                    name="Sub-groups for this command:",
+                    value=f"```css\n{g_formatted}\n```\n**Do `{self.context.clean_prefix}help command subcommand` for more info on a sub-command**",  # noqa: E501
+                    inline=False,
+                )
         # noinspection PyBroadException
         try:
             await group.can_run(self.context)
@@ -570,7 +618,8 @@ class MyHelp(commands.HelpCommand):
 
 class About(commands.Cog):
     """
-    😮 Commands related to the bot itself, that have the only purpose to show information.
+    😮
+    Commands related to the bot itself, that have the only purpose to show information.
     """
 
     def __init__(self, bot: Dwello) -> None:
@@ -590,7 +639,7 @@ class About(commands.Cog):
     def get_uptime(self: Self) -> Tuple[int, int, int, int]:
         """Return format: days, hours, minutes, seconds."""
 
-        uptime = datetime.datetime.now(datetime.timezone.utc) - self.bot.launch_time
+        uptime = datetime.datetime.utcnow() - self.bot.launch_time
 
         hours, remainder = divmod(int(uptime.total_seconds()), 3600)
         minutes, seconds = divmod(remainder, 60)
@@ -651,10 +700,11 @@ class About(commands.Cog):
         timestamp = self.get_startup_timestamp()
 
         embed: discord.Embed = discord.Embed(
-            title="Current Uptime",
-            description=f"Uptime: {days}d, {hours}h, {minutes}m, {seconds}s\n" f"\nStartup Time: {timestamp}",
+            title="Current Uptime", 
+            description=f"**{days} days, {hours} hours, {minutes} minutes, {seconds} seconds**",
             color=cs.RANDOM_COLOR,
         )
+        embed.add_field(name="Startup Time", value=timestamp, inline=False)
         return await ctx.reply(embed=embed)
 
     @commands.hybrid_command(

@@ -55,11 +55,7 @@ class Warnings(BaseCog):
 
     @commands.hybrid_group(invoke_without_command=True, with_app_command=True)
     async def warning(self, ctx: DwelloContext):
-        embed = discord.Embed(
-            description=f"```{ctx.clean_prefix}warning [command_name]```",
-            color=cs.WARNING_COLOR,
-        )  # prefix?
-        return await ctx.reply(embed=embed)
+        return await ctx.send_help(ctx.command)
 
     @warning.command(name="warn", help="Gives member a warning.", with_app_command=True)
     @commands.bot_has_permissions(moderate_members=True)

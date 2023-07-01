@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from typing import List, Literal, Optional, Union
+from typing import Dict, List, Literal, Optional, Union
 
 import asyncpg
 import discord
@@ -285,6 +285,8 @@ class Config(BaseCog):
         self._channel: ChannelConfig = ChannelConfig(self.bot)
         self._prefix: PrefixConfig = PrefixConfig(self.bot)
 
+        self.extra_help: Dict[str, str] = {} # add later for each group
+
     # set perms per command instead
     @commands.hybrid_group(aliases=["prefixes"], invoke_without_command=True, with_app_command=False)
     @commands.guild_only()
@@ -322,10 +324,7 @@ class Config(BaseCog):
     @commands.guild_only()  # perms aren't active if invoke without cmd is active, so gotta set them per cmd
     async def welcome(self, ctx: DwelloContext) -> Optional[discord.Message]:
         async with ctx.typing(ephemeral=True):
-
-            #add comprehensive help per group instead
-            embed = discord.Embed(description="```$welcome [command name]```", color=cs.WARNING_COLOR)
-            return await ctx.reply(embed=embed, user_mistake=True)
+            return await ctx.send_help(ctx.command)
 
     @welcome.group(invoke_without_command=True, with_app_command=True, name="message")
     async def w_message(self, ctx: DwelloContext):
@@ -375,8 +374,8 @@ class Config(BaseCog):
     async def welcome_channel_remove(self, ctx: DwelloContext):
         return await self._channel.remove(ctx, "welcome")
 
-    @welcome.command(name="help", description="Welcome help.")
-    async def help(self, ctx: DwelloContext):
+    """@welcome.command(name="help", description="Welcome help.")
+    async def help(self, ctx: DwelloContext): # maybe add a dict attribute to this class and save it like {'welcome': "extra description on formatting etc"}  # noqa: E501
         async with ctx.typing(ephemeral=True):
             help_welcome_help_embed = discord.Embed(
                 title="✨ COMPREHENSIVE WELCOME/LEAVE HELP ✨",
@@ -388,7 +387,7 @@ class Config(BaseCog):
             )
             help_welcome_help_embed.set_footer(text=cs.FOOTER)
 
-            return await ctx.reply(embed=help_welcome_help_embed)  # add to help cmd instead
+            return await ctx.reply(embed=help_welcome_help_embed)  # add to help cmd instead"""# noqa: E501
 
     @commands.hybrid_group(invoke_without_command=True, with_app_command=True)
     @commands.bot_has_permissions(manage_channels=True, manage_messages=True)
@@ -396,10 +395,7 @@ class Config(BaseCog):
     @commands.guild_only()
     async def leave(self, ctx: DwelloContext):
         async with ctx.typing(ephemeral=True):
-
-            # comprehensive help in help cmd instead
-            embed = discord.Embed(description="```$leave [command name]```", color=cs.WARNING_COLOR)
-            return await ctx.reply(embed=embed, user_mistake=True)
+           return ctx.send_help(ctx.command)
 
     @leave.group(invoke_without_command=True, with_app_command=True, name="message")
     async def l_message(self, ctx: DwelloContext):
@@ -449,7 +445,7 @@ class Config(BaseCog):
     async def leave_channel_remove(self, ctx: DwelloContext):
         return await self._channel.remove(ctx, "leave")
 
-    @leave.command(name="help", description="Leave help.")
+    """@leave.command(name="help", description="Leave help.")
     async def l_help(self, ctx: commands.Context):
         async with ctx.typing(ephemeral=True):
             help_leave_help_embed = discord.Embed(
@@ -462,7 +458,7 @@ class Config(BaseCog):
             )
             help_leave_help_embed.set_footer(text=cs.FOOTER)
 
-            return await ctx.reply(embed=help_leave_help_embed)
+            return await ctx.reply(embed=help_leave_help_embed)"""
 
     @commands.hybrid_group(invoke_without_command=True, with_app_command=True)
     @commands.bot_has_permissions(manage_channels=True, manage_messages=True)
@@ -470,8 +466,7 @@ class Config(BaseCog):
     @commands.guild_only()
     async def twitch(self, ctx: DwelloContext):
         async with ctx.typing(ephemeral=True):
-            embed = discord.Embed(description="```$twitch [command name]```", color=cs.WARNING_COLOR)
-            return await ctx.reply(embed=embed, user_mistake=True)
+            return ctx.send_help(ctx.command)
 
     @twitch.group(invoke_without_command=True, with_app_command=True, name="message")
     async def t_message(self, ctx: DwelloContext):

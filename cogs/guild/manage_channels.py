@@ -215,8 +215,7 @@ class Channels(BaseCog):
     @commands.guild_only()
     async def counter(self, ctx: DwelloContext):
         async with ctx.typing(ephemeral=True):
-            embed: discord.Embed = discord.Embed(description="```$counter [counter type]```", color=cs.WARNING_COLOR)
-            return await ctx.reply(embed=embed, user_mistake=True)
+            return await ctx.send_help(ctx.command)
 
     @counter.command(
         name="all",
@@ -244,7 +243,7 @@ class Channels(BaseCog):
         category = await self.cf.counter_func(ctx, "category")
         return await self.cf.move_channel(ctx, category[1], "all", "member", "bot")
 
-    @counter.command(name="list", help="Shows a list of counters you can create.")
+    @counter.command(name="list", aliases=["show", "display"], help="Shows a list of counters you can create.")
     async def list(self, ctx: DwelloContext):
         async with ctx.typing(ephemeral=True):
             embed: discord.Embed = discord.Embed(
