@@ -125,8 +125,8 @@ class CommandErrorHandler(commands.Cog):
             embed.add_field(
                 name="Information",
                 value=(
-                f"Error Name: {type(error).__name__}\nError Type: {type(error)}\n"
-                f"Message: {ctx.message.content}\n{guild}Channel ID: {ctx.channel.id}"
+                    f"Error Name: {type(error).__name__}\nError Type: {type(error)}\n"
+                    f"Message: {ctx.message.content}\n{guild}Channel ID: {ctx.channel.id}"
                 ),
             )
 

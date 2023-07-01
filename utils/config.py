@@ -6,10 +6,9 @@ import os
 from typing import Any
 
 with contextlib.suppress(ImportError):
-    from dotenv import dotenv_values, load_dotenv  # type: ignore
+    from dotenv import load_dotenv
 
     load_dotenv()
-    dotenv_values(".env")
 
 
 def convert_bool(entiry: str) -> bool | None:
@@ -81,7 +80,7 @@ class Environment:
         return self.parse_entity(self.__dict.get(name))
 
     def parse_entity(self, entity: Any, *, to_raise: bool = True) -> ANY:
-        #old_entity = entity
+        # old_entity = entity
         if entity is None:
             return Null()
 

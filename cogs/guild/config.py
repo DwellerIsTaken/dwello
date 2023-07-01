@@ -132,13 +132,11 @@ class ChannelConfig:
                     ctx.guild.id,
                     name,
                 )
-                
-                query: str = (
-                    """
+
+                query: str = """
                     UPDATE server_data SET message_text = $1, event_type = COALESCE(event_type, $2) 
                     WHERE guild_id = $3 AND COALESCE(event_type, $2) = $2
                     """
-                )
                 await conn.execute(
                     query,
                     text,
@@ -167,7 +165,7 @@ class ChannelConfig:
                     name,
                 )
 
-                status = 'updated' if (result[0] if result else None) else 'set'
+                status = "updated" if (result[0] if result else None) else "set"
                 string = f"The channel has been {status} to {channel.mention}"
 
                 if (result[0] if result else None) == channel.id:
@@ -539,11 +537,11 @@ class Config(BaseCog):
     async def twitch_streamer_remove(self, ctx: DwelloContext, username: str):  # add choice to delete all
         return await self.bot.twitch.twitch_unsubscribe_from_streamer(ctx, username)
 
-    @twitch_streamer_remove.autocomplete("username") # make it global
+    @twitch_streamer_remove.autocomplete("username")  # make it global
     async def autocomplete_callback_twitch_remove(self, interaction: discord.Interaction, current: str):
         return await self.bot.autocomplete.choice_autocomplete(
             interaction, current, "twitch_users", "username", "user_id", True
-        ) # autocoplete per cmd or global?
+        )  # autocoplete per cmd or global?
 
 
 # RESTRUCTURE GROUP-SUBGROUP CONNECTIONS LIKE: welcome set channel/message | welcome display channel/message (?)

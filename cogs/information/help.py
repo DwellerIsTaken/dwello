@@ -554,7 +554,7 @@ class MyHelp(commands.HelpCommand):
     @override
     async def send_error_message(self, error):
         if matches := difflib.get_close_matches(error, self.context.bot.cogs.keys()):
-            confirm = await self.context.confirm( # look into this
+            confirm = await self.context.confirm(  # look into this
                 message=f"Sorry but i couldn't recognise {error} as one of my categories!"
                 f"\n{f'**did you mean... `{matches[0]}`?**' if matches else ''}",
                 delete_after_confirm=True,

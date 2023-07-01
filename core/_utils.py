@@ -52,12 +52,10 @@ class LevellingUtils:
         async with self.bot.pool.acquire() as conn:
             conn: asyncpg.Connection
             async with conn.transaction():
-                query: str = (
-                    """
+                query: str = """
                     INSERT INTO users(user_id, guild_id, event_type) VALUES($1, $2, 'server'), ($1, $2, 'bot') 
                     ON CONFLICT (user_id, guild_id, event_type) DO NOTHING
                     """
-                )
                 await conn.execute(
                     query,
                     user_id,
@@ -99,7 +97,7 @@ class LevellingUtils:
                     xp_till_next_level = int(new_level_formula - 0)
 
                     # xp until next level
-                    level_embed_dis = f"*Your new level is: {new_level}*\n*Xp until your next level: {xp_till_next_level}*" 
+                    level_embed_dis = f"*Your new level is: {new_level}*\n*Xp until your next level: {xp_till_next_level}*"
 
                     level_embed = discord.Embed(
                         title="Congratulations with your new level!",
@@ -122,7 +120,7 @@ class LevellingUtils:
 
                     except discord.HTTPException:
                         pass"""
-                    
+
                     query = "UPDATE users SET xp = $1, total_xp = $2, level = $3, messages = $4 WHERE user_id = $5 AND guild_id = $6"  # noqa: E501
 
                     await conn.execute(
@@ -346,12 +344,10 @@ class OtherUtils:
         async with self.bot.pool.acquire() as conn:
             conn: asyncpg.Connection
             async with conn.transaction():
-                query: str = (
-                    """
+                query: str = """
                     SELECT channel_id, counter_name FROM server_data WHERE guild_id = $1 AND channel_id IS NOT NULL 
                     AND event_type = 'counter' AND counter_name != 'category'
                     """
-                )
                 channels = await conn.fetch(
                     query,
                     guild.id,

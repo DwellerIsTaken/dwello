@@ -104,7 +104,7 @@ class SharedEcoUtils:
                     embed: discord.Embed = discord.Embed(
                         title="→ \U0001d5e6\U0001d5fc\U0001d5ff\U0001d5ff\U0001d606 ←",
                         description=f"Your have already worked{' *on this server* ' if name == 'server' else ' '}today!\n"
-                                    f"Your next workday begins {discord.utils.format_dt(my_datetime, style='R')}",
+                        f"Your next workday begins {discord.utils.format_dt(my_datetime, style='R')}",
                         color=cs.RANDOM_COLOR,
                     )
                     return await ctx.reply(embed=embed)

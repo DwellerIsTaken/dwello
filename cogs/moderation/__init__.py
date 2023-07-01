@@ -1,17 +1,20 @@
 from __future__ import annotations
 
-from discord.ext import commands
+from typing import TYPE_CHECKING
 
-from core import Dwello
+from discord.ext import commands
 
 from .standard import StandardModeration
 from .timeout import Timeout
 from .warnings import Warnings
 
+if TYPE_CHECKING:
+    from core import Dwello
+
 
 class Moderation(StandardModeration, Timeout, Warnings, name="Moderation"):
     """
-    🛡️ 
+    🛡️
     Tools for server moderation, as well as various utilities designed specifically for administrators and moderators.
     """
 

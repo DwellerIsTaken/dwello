@@ -5,11 +5,12 @@ import datetime
 import logging
 import os
 import sys
-from typing import TYPE_CHECKING, Any, Set, List, ClassVar, Tuple, TypeVar, Generic, Optional
-import jishaku  # noqa: F401  # pylint: disable=unused-import
+from typing import TYPE_CHECKING, Any, ClassVar, Generic, List, Optional, Set, Tuple, TypeVar
+
 import aiohttp
 import asyncpg
 import discord
+import jishaku  # noqa: F401  # pylint: disable=unused-import
 from discord.ext import commands
 from typing_extensions import override
 
@@ -23,16 +24,7 @@ else:
     else:
         asyncio.set_event_loop_policy(uvloop.EventLoopPolicy())
 
-from ._utils import (
-    ENV,
-    AiohttpWeb,
-    AutoComplete,
-    DataBaseOperations,
-    LevellingUtils,
-    ListenersFunctions,
-    OtherUtils,
-    Twitch,
-)
+from ._utils import ENV, AiohttpWeb, AutoComplete, DataBaseOperations, LevellingUtils, ListenersFunctions, OtherUtils, Twitch
 from .context import DwelloContext
 
 if TYPE_CHECKING:
@@ -43,9 +35,9 @@ DBT = TypeVar("DBT", bound="Dwello")
 DCT = TypeVar("DCT", bound="DwelloContext")
 
 logging.basicConfig(
-    format='%(asctime)s [%(levelname)s] - %(name)s: %(message)s',
+    format="%(asctime)s [%(levelname)s] - %(name)s: %(message)s",
     level=logging.INFO,
-    datefmt='%Y-%m-%d %H:%M:%S %Z%z',  # CET timezone format
+    datefmt="%Y-%m-%d %H:%M:%S %Z%z",  # CET timezone format
 )
 
 initial_extensions: Tuple[str] = ("jishaku",)
@@ -53,12 +45,13 @@ extensions: Set[str] = {
     "cogs.economy",
     "cogs.entertainment",
     "cogs.information",
-    "cogs.moderation", 
+    "cogs.moderation",
     "cogs.information.help",
-    "cogs.guild", 
+    "cogs.guild",
     "cogs.other",
     "utils.error",
 }
+
 
 def col(color=None, /, *, fmt=0, bg=False):
     base = "\u001b["
@@ -84,7 +77,6 @@ async def my_cool_context_menu(interaction: discord.Interaction, message: discor
 
 
 class ContextManager(Generic[DBT]):
-
     __slots__: tuple[str, ...] = ("bot", "timeout", "_pool", "_conn", "_tr")
 
     def __init__(self, bot: Dwello, *, timeout: float = 10.0) -> None:
@@ -119,18 +111,12 @@ class ContextManager(Generic[DBT]):
 
 
 class Dwello(commands.AutoShardedBot):
-
     DEFAULT_PREFIXES: ClassVar[List[str]] = ["dw.", "Dw.", "dwello.", "Dwello."]
 
     logger = logging.getLogger("logging")
     _ext_log = logging.getLogger("extensions")
 
-    def __init__(
-        self,
-        pool: asyncpg.Pool,
-        session: aiohttp.ClientSession,
-        **kwargs
-    ) -> None:
+    def __init__(self, pool: asyncpg.Pool, session: aiohttp.ClientSession, **kwargs) -> None:
         super().__init__(
             command_prefix=self.get_prefix,  # type: ignore
             strip_after_prefix=True,
@@ -168,7 +154,7 @@ class Dwello(commands.AutoShardedBot):
         self.otherutils = OtherUtils(self)
         self.web = AiohttpWeb(self)
 
-    async def setup_hook(self) -> None:    
+    async def setup_hook(self) -> None:
         try:
             for ext in initial_extensions:
                 await self.load_extension(ext, _raise=False)
@@ -212,7 +198,7 @@ class Dwello(commands.AutoShardedBot):
     @override
     async def get_context(self, message, *, cls: Any = DwelloContext):
         return await super().get_context(message, cls=cls)
-    
+
     @override
     async def get_prefix(self, message: discord.Message) -> list[str]:
         if guild_prefixes := self.guild_prefixes.get(message.guild.id):  # type: ignore

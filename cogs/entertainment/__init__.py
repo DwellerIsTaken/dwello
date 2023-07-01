@@ -1,14 +1,17 @@
 from __future__ import annotations
 
-from core import Dwello
+from typing import TYPE_CHECKING
 
 from .fun import Fun
+
+if TYPE_CHECKING:
+    from core import Dwello
 
 
 class Entertainment(Fun, name="Entertainment"):
     """
-    🎲 
-    Includes commands and tools for entertainment and recreation purposes, such as games, quizzes, memes, music streaming, 
+    🎲
+    Includes commands and tools for entertainment and recreation purposes, such as games, quizzes, memes, music streaming,
     and other fun features designed to engage and entertain users within the server.
     """
 

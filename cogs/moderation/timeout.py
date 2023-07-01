@@ -39,10 +39,10 @@ async def tempmute(
 
     embed: discord.Embed = discord.Embed(
         title="Timed out",
-        description= (
-        f"Guten tag! \nYou have been timed out in **{ctx.channel.guild.name}**, in case you were wondering. "
-        f"You must have said something wrong or it's just an administrator whom is playing with his toys. "
-        f"In any way, Make Yourself Great Again.\n \n Reason: **{reason}**\n\nTimed out for: `{time_delta}`"
+        description=(
+            f"Guten tag! \nYou have been timed out in **{ctx.channel.guild.name}**, in case you were wondering. "
+            f"You must have said something wrong or it's just an administrator whom is playing with his toys. "
+            f"In any way, Make Yourself Great Again.\n \n Reason: **{reason}**\n\nTimed out for: `{time_delta}`"
         ),
         color=cs.WARNING_COLOR,
         timestamp=discord.utils.utcnow(),
@@ -110,15 +110,13 @@ class Timeout(BaseCog):
         if isinstance(error, commands.MissingPermissions):
             missing_permissions_embed = discord.Embed(
                 title="Permission Denied.",
-                description= (
+                description=(
                     f"You (or the bot) don't have permission to use this command."
                     f"It should have __*{error.missing_permissions}*__ permission(s) to be able to use this command."
                 ),
                 color=cs.WARNING_COLOR,
             )
-            missing_permissions_embed.set_image(
-                url="https://cdn-images-1.medium.com/max/833/1*kmsuUjqrZUkh_WW-nDFRgQ.gif"
-            )
+            missing_permissions_embed.set_image(url="https://cdn-images-1.medium.com/max/833/1*kmsuUjqrZUkh_WW-nDFRgQ.gif")
             missing_permissions_embed.set_footer(text=cs.FOOTER)
 
             if ctx.interaction is None:

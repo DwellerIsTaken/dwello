@@ -3,24 +3,24 @@ from __future__ import annotations
 import contextlib
 import datetime
 import re
+from dataclasses import dataclass
 from typing import TYPE_CHECKING, List, Optional, Tuple, Type, TypeVar, Union  # noqa: F401
 
 import asyncpg
 import discord
 from discord import ButtonStyle, app_commands
 from discord.ext import commands
-from dataclasses import dataclass
 from typing_extensions import Self
 
 import constants as cs
 from core import BaseCog, Dwello, DwelloContext
 from utils import get_unix_timestamp, is_discord_link
 
-
 NVT = TypeVar("NVT", bound="NewsViewer")
 
 fm_ut = get_unix_timestamp
 fm_dt = discord.utils.format_dt
+
 
 @dataclass
 class Page:  # DO SMTH LIKE THIS FOR EVERY CMD IN SCRAPING YO UNPACK EASILY | MAYBE
@@ -55,7 +55,7 @@ class NewsFeed:
         self.news: List[Page] = [Page(**n) for n in news]  # type: ignore
         self.max_pages = len(news)
         self._current_page = 0
-        #self.news.reverse()
+        # self.news.reverse()
 
     def advance(self) -> None:
         """Advance to the next page."""
@@ -247,7 +247,7 @@ class NewsViewer(discord.ui.View):
         """Used to update the internal cache of the view, it will update the labels of the buttons."""
 
         previous_page_num = self.news.max_pages - self.news.news.index(self.news.previous)
-        self.previous.disabled = previous_page_num == 1
+        self.next.disabled = previous_page_num == 1
 
         self.current.label = str(self.news.current_index + 1)
 

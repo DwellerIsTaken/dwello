@@ -20,7 +20,6 @@ class GuildEcoUtils:
     async def fetch_basic_job_data_by_job_name(
         self, ctx: DwelloContext, name: str
     ) -> Optional[Tuple[Optional[int], Optional[str]]]:
-        
         async with self.bot.pool.acquire() as conn:
             conn: asyncpg.Connection
             async with conn.transaction():
@@ -35,7 +34,6 @@ class GuildEcoUtils:
     async def server_job_create(
         self, ctx: DwelloContext, name: str, salary: int, description: str
     ) -> Optional[discord.Message]:
-        
         async with self.bot.pool.acquire() as conn:
             conn: asyncpg.Connection
             async with conn.transaction():
@@ -147,7 +145,7 @@ class GuildEcoUtils:
                     ) = await self.se.fetch_basic_job_data_by_username(ctx, member)
 
                 except TypeError:
-                    return  
+                    return
                 # that means that secondary function probably already returned discord.Message, so handle it to prevent any
                 # further issues | TRY TO HANDLE THIS OTHERWISE
 
@@ -161,8 +159,8 @@ class GuildEcoUtils:
         # MAYBE CREATE SOME LOG FOR CMDS WITHIN SERVER AND STORE UNOFFICIAL MANAGEMENT THERE, SO IT WOULD BE SEEN WHO CREATED/REMOVED THE JOB(S)  # noqa: E501
         embed: discord.Embed = discord.Embed(
             description=f"{'Your job' if member == ctx.author else f'The job of {member}'} is removed.\n"
-                        f"\n**Details**\nJob name: {name}\nSalary: {salary}\n"
-                        f"Description: {f'```{description}```' if description else description}",
+            f"\n**Details**\nJob name: {name}\nSalary: {salary}\n"
+            f"Description: {f'```{description}```' if description else description}",
             color=cs.RANDOM_COLOR,
         )
         return await ctx.reply(embed=embed)
