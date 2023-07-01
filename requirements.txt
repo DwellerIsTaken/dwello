@@ -10,3 +10,4 @@ pillow
 aiospotify
 jishaku
 wikipedia-api
+pytz
