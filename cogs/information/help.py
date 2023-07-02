@@ -8,10 +8,11 @@ import itertools
 import os
 import time
 import traceback
-from typing import Any, Dict, List, Optional, Tuple, Union
+from typing import Any, Dict, List, Set, Optional, Tuple, Union
 
 import discord
 from discord import Interaction
+from discord import app_commands
 from discord.ext import commands
 from discord.ui import Select, button, select
 from typing_extensions import Self, override
@@ -121,6 +122,7 @@ class HelpView(discord.ui.View):
         self.message: discord.Message = None
         self.main_embed = self.build_main_page()
         self.embeds: List[discord.Embed] = [self.main_embed]
+        self.owner_additional_cmds: Set[commands.Command] = set()
 
     @select(placeholder="Select a category", row=0)
     async def category_select(self, interaction: Interaction, select: Select):
@@ -137,22 +139,44 @@ class HelpView(discord.ui.View):
             return await interaction.response.edit_message(embed=self.embeds[self.current_page], view=self)
         else:
             return await interaction.response.send_message("Somehow, that category was not found? 🤔", ephemeral=True)
+        
+    def count_plain_commands(self, cog: commands.Cog, comm: List[Union[commands.Command, app_commands.Command]]) -> int:
+        count: int = 0
+        for i in comm:
+            if isinstance(i, discord.app_commands.Command):
+                count += 1
+                continue
+            if i.hidden and not self.ctx.is_bot_owner:
+                continue
+            elif i.hidden and self.ctx.is_bot_owner:
+                if cog.qualified_name == "Owner":
+                    count += 1
+                continue
+            count += 1
+        if cog.qualified_name == "Owner":
+            return count + len(self.owner_additional_cmds)
+        return count
 
     def build_embeds(self, cog: commands.Cog) -> List[discord.Embed]:
         embeds = []
-        # comm = cog.get_commands()
 
         for cog_, comm in self.data.items():
             if cog_ != cog:
                 continue
             
+            if cog_.qualified_name == "Owner":
+                comm.extend(self.owner_additional_cmds)
+                print(1, self.owner_additional_cmds)
+
+            count: int = self.count_plain_commands(cog_, comm)
+
             description_clean: str = ' '.join(cog.description.splitlines()) if cog.description else "No description provided."  # noqa: E501
             embed: discord.Embed = discord.Embed(
-                title=f"{cog.qualified_name} commands [{len(comm)}]",
+                title=f"{cog.qualified_name} commands [{count}]",
                 color=cs.RANDOM_COLOR,
                 description=description_clean,
             )
-
+            # maybe another embed build for slash cause cant use that with owner cmds
             for cmd in comm:
                 if isinstance(cmd, discord.app_commands.Command):
                     if cmd.extras.get("nsfw", False):
@@ -170,9 +194,14 @@ class HelpView(discord.ui.View):
                             inline=False,
                         )
                 else:
-                    if cmd.hidden:
+                    if cmd.hidden and not self.ctx.is_bot_owner:
                         continue
-                    
+                    elif cmd.hidden and self.ctx.is_bot_owner:
+                        self.owner_additional_cmds.add(cmd)
+                        print(4, cmd, self.owner_additional_cmds)
+                        if cog_.qualified_name != "Owner":
+                            continue
+
                     if cmd.extras.get("nsfw", False):
                         embed.add_field(
                             name=f"{cmd.name}",
@@ -208,7 +237,8 @@ class HelpView(discord.ui.View):
             if not comm:
                 continue
             emoji = getattr(cog, "select_emoji", None)
-            label = f"{cog.qualified_name} ({len(comm)})"
+            count: int = self.count_plain_commands(cog, comm)
+            label = f"{cog.qualified_name} ({count})"
             brief = getattr(cog, "select_brief", None)
             self.category_select.add_option(label=label, value=cog.qualified_name, emoji=emoji, description=brief)
 
@@ -321,6 +351,8 @@ class MyHelp(commands.HelpCommand):
             "Other",
             "Jishaku",
         ]
+        if not self.context.is_bot_owner:
+            ignored_cogs.append("Owner")
 
         mapping = {}
 

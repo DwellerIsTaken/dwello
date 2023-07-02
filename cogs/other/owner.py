@@ -3,14 +3,14 @@
 
 from __future__ import annotations
 
-from typing import Literal, Optional, Union
+from typing import Set, Literal, Optional, Union
 
 import asyncpg
 import discord
 from discord.ext import commands
 
 import constants as cs
-from core import BaseCog, Dwello, DwelloContext
+from core import Dwello, DwelloContext
 
 
 async def setup(bot: Dwello):
@@ -20,11 +20,20 @@ async def setup(bot: Dwello):
 mk = discord.utils.escape_markdown
 
 
-class Owner(BaseCog):
-    # make it a separate vog that will inhirrit from other owner classes?
+class Owner(commands.Cog):
+    """
+    🌐
+    Commands only the bot's owners can use.
+    """
+    # it could also inherrit from other classes and whatnot
 
     def __init__(self, bot: Dwello) -> None:
         self.bot = bot
+
+        self.select_emoji = "🌐"
+        self.select_brief = "Owners' tools."
+
+        self.additional_cmds: Set[str] = {"news"}
 
     @commands.is_owner()
     @commands.group(name="blacklist", invoke_without_command=True, hidden=True)

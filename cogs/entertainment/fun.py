@@ -6,6 +6,7 @@ import random
 from typing import Any, Dict, Optional, Union
 
 import discord
+from discord import app_commands
 from discord.ext import commands
 
 import constants as cs
@@ -127,6 +128,8 @@ class Fun(BaseCog):
         return await ctx.reply(embed=embed)
 
     @commands.guild_only()
+    @app_commands.guild_only()
+    @app_commands.describe(member="The member of whom you want to see what they are listening too.")
     @commands.hybrid_command(
         name="spotify",
         help="Shows the song member is listening to.",
@@ -135,13 +138,17 @@ class Fun(BaseCog):
     async def spotify(self, ctx: DwelloContext, *, member: discord.Member = commands.Author) -> Optional[discord.Message]:
         if ctx.interaction:
             member: discord.Member = ctx.guild.get_member(member.id)
+            await ctx.defer()
 
         spotify: discord.Spotify = discord.utils.find(
             lambda activity: isinstance(activity, discord.Spotify),
             member.activities,
         )
         if not spotify:
-            return await ctx.reply(f"{member.display_name} isn't listening to Spotify!")
+            desc: str = f"{member.display_name} isn't listening to Spotify!"
+            if ctx.interaction:
+                return await ctx.interaction.followup.send(desc)
+            return await ctx.reply(desc)
 
         params: dict[str, Any] = {
             "title": spotify.title,
@@ -164,7 +171,8 @@ class Fun(BaseCog):
             icon_url=member.display_avatar.url,
         )
         embed.set_image(url="attachment://spotify.png")
-        # embed.set_thumbnail(url="https://logospng.org/download/spotify/logo-spotify-icon-4096.png")
-        # add some cool footer with spotify icon
+        embed.set_footer(text="Powered by Jeyy") #icon_url="https://logospng.org/download/spotify/logo-spotify-icon-4096.png"
 
+        if ctx.interaction:
+            return await ctx.interaction.followup.send(embed=embed, file=file)
         return await ctx.reply(embed=embed, file=file)

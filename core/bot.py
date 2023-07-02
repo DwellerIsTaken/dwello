@@ -5,12 +5,13 @@ import datetime
 import logging
 import os
 import sys
-from typing import TYPE_CHECKING, Any, ClassVar, Generic, List, Optional, Set, Tuple, TypeVar
+from typing import TYPE_CHECKING, Any, ClassVar, Generic, List, Optional, Set, Tuple, TypeVar  # noqa: F401
 
 import aiohttp
 import asyncpg
 import discord
 import jishaku  # noqa: F401  # pylint: disable=unused-import
+from discord import app_commands
 from discord.ext import commands
 from typing_extensions import override
 
@@ -41,16 +42,17 @@ logging.basicConfig(
 )
 
 initial_extensions: Tuple[str] = ("jishaku",)
-extensions: Set[str] = {
+extensions: List[str] = [
     "cogs.economy",
     "cogs.entertainment",
     "cogs.information",
     "cogs.moderation",
     "cogs.information.help",
     "cogs.guild",
+    "cogs.other.owner",
     "cogs.other",
     "utils.error",
-}
+]
 
 
 def col(color=None, /, *, fmt=0, bg=False):
@@ -74,6 +76,28 @@ def blacklist_check(ctx: DwelloContext) -> bool:
 # CONTEXT MENUS
 async def my_cool_context_menu(interaction: discord.Interaction, message: discord.Message):
     await interaction.response.send_message('Very cool message!', ephemeral=True)
+
+# TRANSLATOR
+class MyTranslator(app_commands.Translator):
+  
+  async def translate(self, string: app_commands.locale_str, locale: discord.Locale, context: app_commands.TranslationContext):  # noqa: E501
+    print(string, string.message, locale, context, context.location, context.data)
+    '''# check if locale is the lang we want
+    # using dutch as an example
+    if locale is not discord.Locale.nl:
+      # its not nl -> return None
+      return None
+
+    # check if the command description is being translated
+    if context.location is app_commands.TranslationContextLocation.command_description:
+      print(context.data) # will the command instance (app_commands.Command)
+      # check original description
+      if string.message == "english":
+        # return translated description
+        return "engels"
+
+    # no translation string for a command or anything? return None'''
+    return None
 
 
 class ContextManager(Generic[DBT]):
@@ -160,6 +184,7 @@ class Dwello(commands.AutoShardedBot):
                 await self.load_extension(ext, _raise=False)
 
             for ext in extensions:
+                print(ext)
                 await self.load_extension(ext, _raise=False)
         except Exception as e:
             raise e
@@ -176,16 +201,14 @@ class Dwello(commands.AutoShardedBot):
 
         self.add_check(blacklist_check)
 
-        '''self.ctx_menu = discord.app_commands.ContextMenu(
-            name='Cool Command Name',
-            callback=my_cool_context_menu,
-        )'''
         self.tree.add_command(
             discord.app_commands.ContextMenu(
                 name='Cool Command Name',
                 callback=my_cool_context_menu,
             )
         )
+
+        await self.tree.set_translator(MyTranslator())
 
         asyncio.create_task(self.web.run(port=8081))
 

@@ -369,6 +369,10 @@ class DwelloContext(commands.Context):  # [commands.Bot], Generic[T]
             pass
 
     @property
+    def is_bot_owner(self) -> bool:
+        return self.author.id in self.bot.owner_ids
+
+    @property
     def reference(self) -> Optional[discord.Message]:
         message = getattr(self.message.reference, "resolved", None)
         return isinstance(message, discord.Message) and message or None

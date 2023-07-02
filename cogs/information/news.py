@@ -247,7 +247,7 @@ class NewsViewer(discord.ui.View):
         """Used to update the internal cache of the view, it will update the labels of the buttons."""
 
         previous_page_num = self.news.max_pages - self.news.news.index(self.news.previous)
-        self.next.disabled = previous_page_num == 1
+        self.previous.disabled = previous_page_num == 1
 
         self.current.label = str(self.news.current_index + 1)
 
