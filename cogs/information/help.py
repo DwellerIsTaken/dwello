@@ -166,7 +166,6 @@ class HelpView(discord.ui.View):
             
             if cog_.qualified_name == "Owner":
                 comm.extend(self.owner_additional_cmds)
-                print(1, self.owner_additional_cmds)
 
             count: int = self.count_plain_commands(cog_, comm)
 

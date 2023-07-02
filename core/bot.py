@@ -184,7 +184,6 @@ class Dwello(commands.AutoShardedBot):
                 await self.load_extension(ext, _raise=False)
 
             for ext in extensions:
-                print(ext)
                 await self.load_extension(ext, _raise=False)
         except Exception as e:
             raise e
