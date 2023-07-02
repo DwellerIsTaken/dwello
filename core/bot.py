@@ -211,6 +211,13 @@ class Dwello(commands.AutoShardedBot):
 
         asyncio.create_task(self.web.run(port=8081))
 
+    async def is_owner(self, user: discord.User) -> bool:
+        """This makes jishaku usable by any of the developers"""
+        if user.id in (548846436570234880, 263602820496883712, 741614468546560092):
+            return True
+
+        return await super().is_owner(user)  # Fall back to the original function
+
     def safe_connection(self, *, timeout: float = 10.0) -> ContextManager:
         return ContextManager(self, timeout=timeout)
 
