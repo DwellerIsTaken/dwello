@@ -212,8 +212,13 @@ class Dwello(commands.AutoShardedBot):
         asyncio.create_task(self.web.run(port=8081))
 
     async def is_owner(self, user: discord.User) -> bool:
-        """This makes jishaku usable by any of the developers"""
-        ids = [user.id for user in self.application.team.members]
+        """This makes jishaku usable by any of the team members or the application owner if the bot isn't in a team"""
+        if team := self.application.team:
+            ids = [user.id for user in team.members]
+        
+        else:
+            ids = (self.application.owner.id,)
+
         if user.id in ids:
             return True
 
