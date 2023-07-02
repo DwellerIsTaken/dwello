@@ -213,7 +213,8 @@ class Dwello(commands.AutoShardedBot):
 
     async def is_owner(self, user: discord.User) -> bool:
         """This makes jishaku usable by any of the developers"""
-        if user.id in (548846436570234880, 263602820496883712, 741614468546560092):
+        ids = [user.id for user in self.application.team.members]
+        if user.id in ids:
             return True
 
         return await super().is_owner(user)  # Fall back to the original function
