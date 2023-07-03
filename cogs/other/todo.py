@@ -19,7 +19,7 @@ if TYPE_CHECKING:
 
 
 class EditDueDateButton(Button):
-    def __init__(self, todo: TodoItem, cog: Todo, *, label: str = "Add due date"):
+    def __init__(self, todo: TodoItem, cog: Todo, *, label: str = "Add Due Date"):
         super().__init__()
         self.todo: TodoItem = todo
         self.cog: Todo = cog
@@ -34,7 +34,7 @@ class EditDueDateButton(Button):
         await interaction.response.send_modal(modal)
 
 
-class EditDueDateModal(Modal, title="Edit due date"):
+class EditDueDateModal(Modal, title="Edit Due Date"):
     due_date: TextInput = TextInput(
         label="Due at",
         required=True,
@@ -67,7 +67,7 @@ class EditDueDateModal(Modal, title="Edit due date"):
         await interaction.response.send_message(f"Done, The new due date is {timestamp}.", ephemeral=True)
 
 
-class TodoAddModal(Modal, title="Add a todo!"):
+class TodoAddModal(Modal, title="Add A Todo!"):
     """This modal is only called when using the context manager to add a todo item."""
 
     content: TextInput = TextInput(
@@ -207,7 +207,7 @@ class Todo(BaseCog):
             title="Added todo!",
             description=content,
         )
-        embed.set_footer(text=f"ID: {todo.id} | Due")
+        embed.set_footer(text=f"ID: {todo.id}")
         view = discord.ui.View()
-        view.add_item(EditDueDateButton(todo, self, label="Edit due date"))
+        view.add_item(EditDueDateButton(todo, self, label="Edit Due Date"))
         await ctx.send(embed=embed, view=view)
