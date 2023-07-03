@@ -339,7 +339,7 @@ class HelpView(discord.ui.View):
 class MyHelp(commands.HelpCommand):
     def __init__(self, **options):
         super().__init__(**options)
-        self.context: DwelloContext = None
+        self.context: DwelloContext
 
     @override
     def get_bot_mapping(self):
@@ -395,14 +395,10 @@ class MyHelp(commands.HelpCommand):
             return f"[G] {self.context.clean_prefix}{command.qualified_name} {command.signature}"
         return f"(c) {self.context.clean_prefix}{command.qualified_name} {command.signature}"
 
-    # !help
-    @override
     async def send_bot_help(self, mapping):
         view = HelpView(self.context, data=mapping, help_command=self)
         await view.start()
 
-    # !help <command>
-    @override
     async def send_command_help(self, command: commands.Command):
         embed = discord.Embed(
             title=f"`{self.context.clean_prefix}{command}`",
@@ -477,7 +473,6 @@ class MyHelp(commands.HelpCommand):
         finally:
             await self.context.send(embed=embed)
 
-    @override
     async def send_cog_help(self, cog: commands.Cog):
         if entries := cog.get_commands():
             data = [self.get_minimal_command_signature(entry) for entry in entries]
@@ -494,7 +489,6 @@ class MyHelp(commands.HelpCommand):
         else:
             await self.context.send(f"No commands found in {cog.qualified_name}")
 
-    @override
     async def send_group_help(self, group: commands.Group):
         embed = discord.Embed(
             title=f"`{self.context.clean_prefix}{group}`",
@@ -670,7 +664,7 @@ class About(commands.Cog):
     def get_uptime(self: Self) -> Tuple[int, int, int, int]:
         """Return format: days, hours, minutes, seconds."""
 
-        uptime = datetime.datetime.utcnow() - self.bot.launch_time
+        uptime = datetime.datetime.now(datetime.timezone.utc) - self.bot.uptime
 
         hours, remainder = divmod(int(uptime.total_seconds()), 3600)
         minutes, seconds = divmod(remainder, 60)
@@ -679,7 +673,7 @@ class About(commands.Cog):
         return days, hours, minutes, seconds
 
     def get_startup_timestamp(self, style: discord.utils.TimestampStyle = None) -> str:
-        return discord.utils.format_dt(self.bot.launch_time, style=style or "F")
+        return discord.utils.format_dt(self.bot.uptime, style=style or "F")
 
     def get_average_latency(self, *latencies: float) -> Union[Any, float]:
         if not latencies:
