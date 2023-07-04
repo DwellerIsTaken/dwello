@@ -66,6 +66,17 @@ CREATE TABLE IF NOT EXISTS blacklist(
     reason TEXT
 );
 
+CREATE TABLE IF NOT EXISTS todo(
+    id SERIAL PRIMARY KEY,
+    user_id BIGINT NOT NULL,
+    channel_id BIGINT,
+    message_id BIGINT,
+    guild_id BIGINT,
+    content TEXT,
+    due_at TIMESTAMP,
+    completed_at TIMESTAMP
+);
+
 ALTER SEQUENCE jobs_id_seq START 10000000 INCREMENT BY 1;
 ALTER SEQUENCE warnings_warn_id_seq START 10000000 INCREMENT BY 1;
 
