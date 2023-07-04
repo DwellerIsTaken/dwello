@@ -10,7 +10,6 @@ from typing import TYPE_CHECKING, Any, ClassVar, Generic, List, Optional, Set, T
 import aiohttp
 import asyncpg
 import discord
-import jishaku  # noqa: F401  # pylint: disable=unused-import
 from discord import app_commands
 from discord.ext import commands
 from typing_extensions import override
