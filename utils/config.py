@@ -105,7 +105,9 @@ class Environment:
         return entity
 
     def __getitem__(self, name: str) -> ANY:
-        return self.__getattr__(name)
+        v = self.__getattr__(name)
+        print(v)
+        return v
 
 
 ENV = Environment()
