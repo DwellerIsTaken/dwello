@@ -107,7 +107,7 @@ class TodoAddModal(Modal, title="Add A Todo!"):
         )
         todo = await self.cog.add_todo(todo)
         embed, view = await self.cog.get_embed(todo)
-            
+
         await interaction.response.send_message(embed=embed, view=view)
 
 
@@ -195,7 +195,7 @@ class Todo(BaseCog):
         if todo.due_at is not None:
             embed.timestamp = todo.due_at
             embed.set_footer(text="Due")
-        
+
         view = None
         if todo.message_id is not None:
             # We expect the channel to exist
@@ -204,29 +204,26 @@ class Todo(BaseCog):
                 message: Optional[discord.Message] = await channel.fetch_message(todo.message_id)
             except discord.NotFound:
                 message = None
-            
+
             if message is not None:
                 jump_url = message.jump_url
                 embed.add_field(name="Message", value=message.content, inline=False)
                 embed.set_author(name=str(message.author), icon_url=message.author.display_avatar.url)
-            
+
             else:
                 jump_url = f"https://discord.com/channels/{todo.guild_id}/{todo.channel_id}/{todo.message_id}"
-            
+
             view = View()
             button = Button(label="Jump to Message", url=jump_url)
             view.add_item(button)
-            
+
         if todo.content and todo.message_id:
             embed.add_field(name="Content", value=todo.content, inline=False)
-        
-        elif todo.content and not todo.message_id:        
+
+        elif todo.content and not todo.message_id:
             embed.description = todo.content
-        
+
         return embed, view
-        
-                
-        
 
     async def context_menu(self, interaction: Interaction[Dwello], message: discord.Message):
         modal = TodoAddModal(self, message)
@@ -246,21 +243,17 @@ class Todo(BaseCog):
             content=content,
         )
         todo = await self.add_todo(todo)
-        embed = discord.Embed(
-            title="Added todo!",
-            description=content,
-            color=0x2B2D31
-        )
+        embed = discord.Embed(title="Added todo!", description=content, color=0x2B2D31)
         embed.set_footer(text=f"ID: {todo.id}")
         view = View()
         view.add_item(EditDueDateButton(todo, self, label="Edit Due Date"))
         await ctx.send(embed=embed, view=view)
-    
+
     @todo.command(description="Shows one of your Todos' by it's ID")
     async def show(self, ctx: DwelloContext, id: int):
         todo = await self.get_todo(id)
         if todo is None or todo.user_id != ctx.author.id:
             return await ctx.send("Couldn't find that todo...")
-        
+
         embed, view = await self.get_embed(todo)
         await ctx.send(embed=embed, view=view)
