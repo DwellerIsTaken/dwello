@@ -10,7 +10,6 @@ from typing import TYPE_CHECKING, Any, ClassVar, Generic, List, Optional, Set, T
 import aiohttp
 import asyncpg
 import discord
-import jishaku  # noqa: F401  # pylint: disable=unused-import
 from discord import app_commands
 from discord.ext import commands
 from typing_extensions import override
@@ -161,6 +160,7 @@ class Dwello(commands.AutoShardedBot):
 
         self.reply_count: int = 0
         self._was_ready = False
+        self.test_instance = False
 
         self.blacklisted_users: dict[int, str] = {}
         self.bypass_cooldown_users: list[int] = []
@@ -247,6 +247,10 @@ class Dwello(commands.AutoShardedBot):
         self.logger.info(f"{col()}Discord Version: {discord.__version__} {col()}")
         self.logger.info(f"{col(2, bg=True)}Logged in as {self.user} {col()}")
         self._was_ready = True
+
+        if self.user.id == 1125762669056630915:
+            self.DEFAULT_PREFIXES: List[str] = ["t.", "dt.", "Dt.", "beta.", "Beta."]
+            self.test_instance = True
 
         if not hasattr(self, "uptime"):
             self.uptime = datetime.datetime.now(datetime.timezone.utc)

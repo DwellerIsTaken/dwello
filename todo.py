@@ -15,4 +15,4 @@
 # contributor command which should only be used by owner that will add contibutor to contributors.txt
 # user mistake return format: either embed with color=warn_color or just a message ctx.reply(user_mistake=True)
 # maybe some kind of ephemeral mode for moderators
-# avoid discord formatting: if smth with '`' or '*' is pushed to db it might cause formatting problems withing embeds and strings
+# avoid discord formatting: if smth with '`' or '*' is pushed to db it might cause formatting problems withing embeds and str

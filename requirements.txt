@@ -7,9 +7,9 @@ aiohttp
 asyncpg
 uvloop
 pillow
-aiospotify
 jishaku
 wikipedia-api
 pytz
 typing_extensions
 dateparser
+git+https://github.com/blanketsucks/aiospotify

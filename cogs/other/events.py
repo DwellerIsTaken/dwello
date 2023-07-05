@@ -25,7 +25,13 @@ class Events(BaseCog):
         await self.bot.levelling.increase_xp(message)
 
         if message.content == f"<@{self.bot.user.id}>" and not message.author.bot:
-            content: str = f"Hello there! I'm {self.bot.user.name}. Use `dw.help` for more."
+            prefix: str = str(self.bot.DEFAULT_PREFIXES[0])
+            content: str = f"Hello there! I'm {self.bot.user.name}. Use `{prefix}help` for more."
+            if self.bot.test_instance:
+                content = (
+                    f"Hello there! I'm {self.bot.user.name}, the test instance of Dwello, "
+                    f"but you can use me regardless. Use `{prefix}help` for more."
+                )
             await message.reply(content=content)
 
         if message.author == self.bot.user:
