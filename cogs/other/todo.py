@@ -10,6 +10,7 @@ from discord import Interaction, app_commands
 from discord.ext import commands
 from discord.ui import Button, Modal, TextInput, View
 from typing_extensions import Self
+
 from core import BaseCog
 
 if TYPE_CHECKING:
