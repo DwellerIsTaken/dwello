@@ -249,6 +249,7 @@ class Todo(BaseCog):
         embed = discord.Embed(
             title="Added todo!",
             description=content,
+            color=0x2B2D31
         )
         embed.set_footer(text=f"ID: {todo.id}")
         view = View()
