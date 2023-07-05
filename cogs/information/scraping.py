@@ -93,6 +93,11 @@ class Scraping(BaseCog):
             session=self.bot.http_session,
         )
 
+        self.wiki: wikipediaapi.Wikipedia = wikipediaapi.Wikipedia(
+            language='en',
+            headers=self.wiki_headers,
+        )
+
     @property
     def tmdb_key(self: Self) -> str:
         return TMDB_KEY
@@ -107,6 +112,12 @@ class Scraping(BaseCog):
     @property
     def spotify_http_client(self: Self) -> http.HTTPClient:
         return self.spotify_client.http
+    
+    @property
+    def wiki_headers(self) -> Dict[str, str]:
+        return {
+            'User-Agent': 'CoolBot/0.0 (https://example.org/coolbot/; coolbot@example.org)'
+        }
 
     """@property
     def spotify_headers(self: Self) -> Dict[str, str]:
@@ -558,8 +569,7 @@ class Scraping(BaseCog):
         except ValueError:
             return await ctx.reply(f"Couldn't find a person by the name of {person}.", user_mistake=True)
 
-        wiki = wikipediaapi.Wikipedia("en")
-        page: wikipediaapi.WikipediaPage = wiki.page(person["name"])
+        page: wikipediaapi.WikipediaPage = self.wiki.page(person["name"])
 
         embed: discord.Embed = discord.Embed(
             title=person["original_name"],

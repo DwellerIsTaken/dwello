@@ -687,7 +687,8 @@ class About(commands.Cog):
     @commands.hybrid_command(name="hello", aliases=cs.HELLO_ALIASES, with_app_command=True)
     async def hello(self, ctx: DwelloContext) -> Optional[discord.Message]:
         # make variations for the response
-        content: str = f"Hello there! I'm {self.bot.user.name}. Use `dw.help` for more."  # {self.bot.help_command}?
+        prefix: str = str(self.bot.DEFAULT_PREFIXES[0])
+        content: str = f"Hello there! I'm {self.bot.user.name}. Use `{prefix}help` for more."  # {self.bot.help_command}?
         return await ctx.send(content=content)  # display more info about bot
 
     # uptime cmd
