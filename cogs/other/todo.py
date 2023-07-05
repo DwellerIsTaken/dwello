@@ -2,13 +2,13 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 from datetime import datetime
-from typing import TYPE_CHECKING, Optional
+from typing import TYPE_CHECKING, Optional, Tuple
 
 import dateparser
 import discord
 from discord import Interaction, app_commands
 from discord.ext import commands
-from discord.ui import Button, Modal, TextInput
+from discord.ui import Button, Modal, TextInput, View
 from typing_extensions import Self
 from core import BaseCog
 
@@ -105,8 +105,10 @@ class TodoAddModal(Modal, title="Add A Todo!"):
             content=self.content.value or None,
             due_at=date,
         )
-        await self.cog.add_todo(todo)
-        await interaction.response.send_message("Successfully added todo!", ephemeral=True)
+        todo = await self.cog.add_todo(todo)
+        embed, view = await self.cog.get_embed(todo)
+            
+        await interaction.response.send_message(embed=embed, view=view)
 
 
 @dataclass
@@ -182,19 +184,60 @@ class Todo(BaseCog):
         """
         async with self.bot.pool.acquire() as conn:
             result = await conn.fetchrow(query, id)
+            if result is None:
+                return
+
             todo = TodoItem.from_record(result)
             return todo
+
+    async def get_embed(self, todo: TodoItem) -> Tuple[discord.Embed, Optional[View]]:
+        embed = discord.Embed(title=f"Todo #{todo.id}", color=0x2B2D31)
+        if todo.due_at is not None:
+            embed.timestamp = todo.due_at
+            embed.set_footer(text="Due")
+        
+        view = None
+        if todo.message_id is not None:
+            # We expect the channel to exist
+            channel: discord.abc.MessageableChannel = self.bot.get_channel(todo.channel_id)
+            try:
+                message: Optional[discord.Message] = await channel.fetch_message(todo.message_id)
+            except discord.NotFound:
+                message = None
+            
+            if message is not None:
+                jump_url = message.jump_url
+                embed.add_field(name="Message", value=message.content, inline=False)
+                embed.set_author(name=str(message.author), icon_url=message.author.display_avatar.url)
+            
+            else:
+                jump_url = f"https://discord.com/channels/{todo.guild_id}/{todo.channel_id}/{todo.message_id}"
+            
+            view = View()
+            button = Button(label="Jump to Message", url=jump_url)
+            view.add_item(button)
+            
+        if todo.content and todo.message_id:
+            embed.add_field(name="Content", value=todo.content, inline=False)
+        
+        elif todo.content and not todo.message_id:        
+            embed.description = todo.content
+        
+        return embed, view
+        
+                
+        
 
     async def context_menu(self, interaction: Interaction[Dwello], message: discord.Message):
         modal = TodoAddModal(self, message)
         await interaction.response.send_modal(modal)
 
-    @commands.group()
+    @commands.group(description="Commands for dealing with Todos'")
     async def todo(self, ctx: DwelloContext):
         if not ctx.invoked_subcommand:
             await ctx.send_help(ctx.command)
 
-    @todo.command()
+    @todo.command(description="Adds a Todo")
     async def add(self, ctx: DwelloContext, *, content: str):
         todo = TodoItem(
             user_id=ctx.author.id,
@@ -208,6 +251,15 @@ class Todo(BaseCog):
             description=content,
         )
         embed.set_footer(text=f"ID: {todo.id}")
-        view = discord.ui.View()
+        view = View()
         view.add_item(EditDueDateButton(todo, self, label="Edit Due Date"))
+        await ctx.send(embed=embed, view=view)
+    
+    @todo.command(description="Shows one of your Todos' by it's ID")
+    async def show(self, ctx: DwelloContext, id: int):
+        todo = await self.get_todo(id)
+        if todo is None or todo.user_id != ctx.author.id:
+            return await ctx.send("Couldn't find that todo...")
+        
+        embed, view = await self.get_embed(todo)
         await ctx.send(embed=embed, view=view)
