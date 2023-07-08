@@ -3,7 +3,7 @@ from __future__ import annotations
 import contextlib
 import json
 import os
-from typing import Any
+from typing import Any, overload
 
 with contextlib.suppress(ImportError):
     from dotenv import load_dotenv
@@ -76,11 +76,23 @@ class Environment:
     def __init__(self):
         self.__dict = os.environ
 
-    def __getattr__(self, name: str) -> ANY:
+    def __getattr__(self, name: str):
         return self.parse_entity(self.__dict.get(name))
 
-    def parse_entity(self, entity: Any, *, to_raise: bool = True) -> ANY:
-        # old_entity = entity
+    @overload
+    def parse_entity(self, entity: None) -> Null:
+        ...
+    
+    @overload
+    def parse_entity(self, entity: ...) -> ...:
+        ...
+    
+    @overload
+    def parse_entity(self, entity: ..., *, to_raise: bool) -> ...:
+        ...
+
+    def parse_entity(self, entity: ANY, *, to_raise: bool = True):
+        """Parse entity to python object"""
         if entity is None:
             return Null()
 
@@ -104,7 +116,7 @@ class Environment:
 
         return entity
 
-    def __getitem__(self, name: str) -> ANY:
+    def __getitem__(self, name: str):
         return self.__getattr__(name)
 
 

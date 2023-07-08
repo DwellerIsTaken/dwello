@@ -96,6 +96,7 @@ class DwelloContext(commands.Context):  # [commands.Bot], Generic[T]
     bot: Dwello
     me: discord.Member
     guild: discord.Guild
+    author: discord.Member
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)

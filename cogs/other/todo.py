@@ -200,9 +200,9 @@ class Todo(BaseCog):
         view = None
         if todo.message_id is not None:
             # We expect the channel to exist
-            channel: discord.abc.MessageableChannel = self.bot.get_channel(todo.channel_id)
+            channel = self.bot.get_channel(todo.channel_id or 0)
             try:
-                message: Optional[discord.Message] = await channel.fetch_message(todo.message_id)
+                message: Optional[discord.Message] = await self.bot.get_or_fetch_message(channel, todo.message_id)
             except discord.NotFound:
                 message = None
 

@@ -4,8 +4,9 @@ import asyncio
 import datetime
 import logging
 import os
+import re
 import sys
-from typing import TYPE_CHECKING, Any, ClassVar, Generic, List, Optional, Set, Tuple, TypeVar  # noqa: F401
+from typing import TYPE_CHECKING, Any, ClassVar, Generic, List, Optional, Set, Tuple, TypeVar, Union, overload  # noqa: F401
 
 import aiohttp
 import asyncpg
@@ -40,6 +41,11 @@ logging.basicConfig(
     datefmt="%Y-%m-%d %H:%M:%S %Z%z",  # CET timezone format
 )
 
+LINKS_RE = re.compile(
+    r"((http|https)\:\/\/)?[a-zA-Z0-9\.\/\?\:@\-_=#]+\.([a-zA-Z]){2,6}([a-zA-Z0-9\.\&\/\?\:@\-_=#])*",
+    flags=re.IGNORECASE,
+)
+
 initial_extensions: Tuple[str] = ("jishaku",)
 extensions: List[str] = [
     "cogs.economy",
@@ -68,20 +74,24 @@ def col(color=None, /, *, fmt=0, bg=False):
             base += "3{color}m"
     return base.format(fmt=fmt, color=color)
 
+
 # GLOBAL CHECKS
 def blacklist_check(ctx: DwelloContext) -> bool:
     return not ctx.bot.is_blacklisted(ctx.author.id)
 
+
 # CONTEXT MENUS
 async def my_cool_context_menu(interaction: discord.Interaction, message: discord.Message):
-    await interaction.response.send_message('Very cool message!', ephemeral=True)
+    await interaction.response.send_message("Very cool message!", ephemeral=True)
+
 
 # TRANSLATOR
 class MyTranslator(app_commands.Translator):
-  
-  async def translate(self, string: app_commands.locale_str, locale: discord.Locale, context: app_commands.TranslationContext):  # noqa: E501
-    print(string, string.message, locale, context, context.location, context.data)
-    '''# check if locale is the lang we want
+    async def translate(
+        self, string: app_commands.locale_str, locale: discord.Locale, context: app_commands.TranslationContext
+    ):  # noqa: E501
+        print(string, string.message, locale, context, context.location, context.data)
+        """# check if locale is the lang we want
     # using dutch as an example
     if locale is not discord.Locale.nl:
       # its not nl -> return None
@@ -95,8 +105,8 @@ class MyTranslator(app_commands.Translator):
         # return translated description
         return "engels"
 
-    # no translation string for a command or anything? return None'''
-    return None
+    # no translation string for a command or anything? return None"""
+        return None
 
 
 class ContextManager(Generic[DBT]):
@@ -134,6 +144,7 @@ class ContextManager(Generic[DBT]):
 
 
 class Dwello(commands.AutoShardedBot):
+    user: discord.ClientUser
     DEFAULT_PREFIXES: ClassVar[List[str]] = ["dw.", "Dw.", "dwello.", "Dwello."]
 
     logger = logging.getLogger("logging")
@@ -164,9 +175,11 @@ class Dwello(commands.AutoShardedBot):
 
         self.blacklisted_users: dict[int, str] = {}
         self.bypass_cooldown_users: list[int] = []
-        
+
         self.cooldown: commands.CooldownMapping[discord.Message] = commands.CooldownMapping.from_cooldown(
-            1, 1.5, commands.BucketType.member,
+            1,
+            1.5,
+            commands.BucketType.member,
         )
 
         self.autocomplete = AutoComplete(self)
@@ -175,6 +188,10 @@ class Dwello(commands.AutoShardedBot):
         self.db = DataBaseOperations(self)
         self.otherutils = OtherUtils(self)
         self.web = AiohttpWeb(self)
+
+        # Caching Variables (for now)
+        # TODO: Use LRU Cache
+        self.message_cache: dict[int, discord.Message] = {}
 
     async def setup_hook(self) -> None:
         try:
@@ -200,7 +217,7 @@ class Dwello(commands.AutoShardedBot):
 
         self.tree.add_command(
             discord.app_commands.ContextMenu(
-                name='Cool Command Name',
+                name="Cool Command Name",
                 callback=my_cool_context_menu,
             )
         )
@@ -209,18 +226,19 @@ class Dwello(commands.AutoShardedBot):
 
         asyncio.create_task(self.web.run(port=8081))
 
-    async def is_owner(self, user: discord.User) -> bool:
+    async def is_owner(self, user: discord.User | discord.Member) -> bool:
         """This makes jishaku usable by any of the team members or the application owner if the bot isn't in a team"""
-        if team := self.application.team:
-            ids = [user.id for user in team.members]
-        
-        else:
-            ids = (self.application.owner.id,)
+        ids = set()
 
-        if user.id in ids:
-            return True
+        if app := self.application:
+            if app.team:
+                ids = {user.id for user in app.team.members}
+            elif app.owner:
+                ids = {
+                    app.owner.id,
+                }
 
-        return await super().is_owner(user)  # Fall back to the original function
+        return True if user.id in ids else await super().is_owner(user)
 
     def safe_connection(self, *, timeout: float = 10.0) -> ContextManager:
         return ContextManager(self, timeout=timeout)
@@ -291,6 +309,108 @@ class Dwello(commands.AutoShardedBot):
             if _raise:
                 raise e
 
+    @overload
+    async def get_or_fetch_message(
+        self,
+        channel: ...,
+        message: ...,
+    ) -> Optional[discord.Message]:
+        ...
+
+    @overload
+    async def get_or_fetch_message(
+        self,
+        channel: ...,
+        message: ...,
+        *,
+        partial: bool = ...,
+        force_fetch: bool = ...,
+        dm_allowed: bool = ...,
+    ) -> Optional[Union[discord.Message, discord.PartialMessage]]:
+        ...
+
+    @overload
+    async def get_or_fetch_message(
+        self,
+        channel: Union[str, int],
+    ) -> Optional[discord.Message]:
+        ...
+
+    async def get_or_fetch_message(
+        self,
+        channel: Union[str, int, discord.PartialMessageable],
+        message: Optional[Union[int, str]] = None,
+        *,
+        partial: bool = False,
+        force_fetch: bool = False,
+        dm_allowed: bool = False,
+    ) -> Optional[Union[discord.Message, discord.PartialMessage]]:
+        if message is None:
+            dummy_message = str(channel)
+            if link := LINKS_RE.match(dummy_message):
+                dummy_message_id = int(link.string.split("/")[-1])
+                if dummy_message_id in self.message_cache:
+                    return self.message_cache[dummy_message_id]
+
+                dummy_channel_id = int(link.string.split("/")[-2])
+                dummy_channel = await self.getch(self.get_channel, self.fetch_channel, dummy_channel_id)
+                if dummy_channel is not None and force_fetch:
+                    msg = await dummy_channel.fetch_message(dummy_message_id)
+                    if msg:
+                        self.message_cache[msg.id] = msg
+                    return msg
+
+            try:
+                return self.message_cache[int(dummy_message)]
+            except (ValueError, KeyError):
+                return None
+
+        message = int(message)
+
+        channel_id = int(channel) if isinstance(channel, (int, str)) else channel.id
+        if force_fetch:
+            channel = await self.getch(self.get_channel, self.fetch_channel, channel_id, force_fetch=True)
+        else:
+            channel = self.get_channel(channel)  # type: ignore
+
+        if channel is None:
+            return None
+
+        if isinstance(channel, discord.DMChannel) and not dm_allowed:
+            raise ValueError("DMChannel is not allowed")
+
+        if force_fetch:
+            msg = await channel.fetch_message(message)  # type: ignore
+            self.message_cache[message] = msg
+            return msg
+
+        if msg := self._connection._get_message(message):
+            self.message_cache[message] = msg
+            return msg
+
+        if partial:
+            return channel.get_partial_message(message)  # type: ignore
+
+        try:
+            msg = self.message_cache[message]
+            return msg
+        except KeyError:
+            async for msg in channel.history(  # type: ignore
+                limit=1,
+                before=discord.Object(message + 1),
+                after=discord.Object(message - 1),
+            ):
+                self.message_cache[message] = msg
+                return msg
+
+        return None
+
+    async def getch(self, get_function, fetch_function, *args, **kwargs) -> Any:
+        if args[0] <= 0:
+            return None
+
+        return get_function(*args) or await fetch_function(**kwargs)
+
 
 async def runner():
     credentials = {
@@ -302,7 +422,7 @@ async def runner():
     }
 
     async with asyncpg.create_pool(**credentials) as pool, aiohttp.ClientSession() as session, Dwello(pool, session) as bot:
-        await bot.start(ENV["token"])  # type: ignore
+        await bot.start(ENV["token"])
 
 
 def run():
