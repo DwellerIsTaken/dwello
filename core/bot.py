@@ -368,10 +368,7 @@ class Dwello(commands.AutoShardedBot):
         message = int(message)
 
         channel_id = int(channel) if isinstance(channel, (int, str)) else channel.id
-        if force_fetch:
-            channel = await self.getch(self.get_channel, self.fetch_channel, channel_id, force_fetch=True)
-        else:
-            channel = self.get_channel(channel)  # type: ignore
+        channel = await self.getch(self.get_channel, self.fetch_channel, channel_id)
 
         if channel is None:
             return None
