@@ -8,11 +8,11 @@ import itertools
 import os
 import time
 import traceback
-from typing import Any, Dict, List, Set, Optional, Tuple, Union
+from typing import Any, Dict, List, Set, Optional, Tuple, Union  # noqa: F401
 
 import discord
 from discord import Interaction
-from discord import app_commands
+from discord import app_commands # noqa: F401
 from discord.ext import commands
 from discord.ui import Select, button, select
 from typing_extensions import Self, override
@@ -122,7 +122,7 @@ class HelpView(discord.ui.View):
         self.message: discord.Message = None
         self.main_embed = self.build_main_page()
         self.embeds: List[discord.Embed] = [self.main_embed]
-        self.owner_additional_cmds: Set[commands.Command] = set()
+        self.owner_cmds: List[commands.Command] = self.construct_owner_commands()
 
     @select(placeholder="Select a category", row=0)
     async def category_select(self, interaction: Interaction, select: Select):
@@ -139,22 +139,35 @@ class HelpView(discord.ui.View):
             return await interaction.response.edit_message(embed=self.embeds[self.current_page], view=self)
         else:
             return await interaction.response.send_message("Somehow, that category was not found? 🤔", ephemeral=True)
+    
+    def construct_owner_commands(self) -> List[commands.Command]:
+        owner_cmds: List[commands.Command] = []
+        hidden_cmds: List[commands.Command] = []
+
+        for cog, comm in self.data.items():
+            for cmd in comm:
+                if cog.qualified_name == "Owner":
+                    owner_cmds.append(cmd)
+                else:
+                    if isinstance(cmd, app_commands.Command):
+                        continue
+                    if cmd.hidden:
+                        hidden_cmds.append(cmd)
+
+        return owner_cmds + hidden_cmds
+    
+    def clean_command_count(self, cog: commands.Cog, commands: List[commands.Command, app_commands.Command]) -> int:
+        if cog.qualified_name == "Owner":
+            return len(self.owner_cmds)
         
-    def count_plain_commands(self, cog: commands.Cog, comm: List[Union[commands.Command, app_commands.Command]]) -> int:
-        count: int = 0
-        for i in comm:
-            if isinstance(i, discord.app_commands.Command):
+        count = 0
+        for command in commands:
+            if isinstance(command, app_commands.Command):
                 count += 1
                 continue
-            if i.hidden and not self.ctx.is_bot_owner:
-                continue
-            elif i.hidden and self.ctx.is_bot_owner:
-                if cog.qualified_name == "Owner":
-                    count += 1
-                continue
-            count += 1
-        if cog.qualified_name == "Owner":
-            return count + len(self.owner_additional_cmds)
+            if not command.hidden:
+                count += 1
+
         return count
 
     def build_embeds(self, cog: commands.Cog) -> List[discord.Embed]:
@@ -164,64 +177,43 @@ class HelpView(discord.ui.View):
             if cog_ != cog:
                 continue
             
+            owner = False
             if cog_.qualified_name == "Owner":
-                comm.extend(self.owner_additional_cmds)
-
-            count: int = self.count_plain_commands(cog_, comm)
+                comm = self.owner_cmds
+                owner = True
 
             description_clean: str = ' '.join(cog.description.splitlines()) if cog.description else "No description provided."  # noqa: E501
             embed: discord.Embed = discord.Embed(
-                title=f"{cog.qualified_name} commands [{count}]",
+                title=f"{cog.qualified_name} commands [{self.clean_command_count(cog_, comm)}]",
                 color=cs.RANDOM_COLOR,
                 description=description_clean,
             )
+            embed.set_footer(text='For more info on a command run "help [command]"')
             # maybe another embed build for slash cause cant use that with owner cmds
             for cmd in comm:
-                if isinstance(cmd, discord.app_commands.Command):
-                    if cmd.extras.get("nsfw", False):
-                        embed.add_field(
-                            name=f"{cmd.name}",
-                            value="See help for this command in an NSFW channel.",
-                            inline=False,
-                        )
-                    else:
-                        # somehow get signature with cmd.parameters
-                        embed.add_field(
-                            name=f"`{cmd.name}`",
-                            value=("> " + (cmd.description or "No help given..."))
-                            + (f"\n> Parent: `{cmd.parent}`" if cmd.parent else "")[:1024],
-                            inline=False,
-                        )
+                name = f"`{cmd.name}`"
+                value = "See help for this command in an NSFW channel." if cmd.extras.get("nsfw", False) else None
+                if isinstance(cmd, app_commands.Command):
+                    if not value:
+                        desc = cmd.description or "No help given..."
                 else:
-                    if cmd.hidden and not self.ctx.is_bot_owner:
+                    if cmd.hidden and not owner:
                         continue
-                    elif cmd.hidden and self.ctx.is_bot_owner:
-                        self.owner_additional_cmds.add(cmd)
-                        print(4, cmd, self.owner_additional_cmds)
-                        if cog_.qualified_name != "Owner":
-                            continue
+                    if not value:
+                        name = f"`{cmd.name}{f' {cmd.signature}`' if cmd.signature else '`'}"
+                        desc = cmd.brief or cmd.help or "No help given..."
+                if not value:
+                    parent = f"\n> Parent: `{cmd.parent}`" if cmd.parent else ""
+                    value = (f"> {desc} {parent}")[:1024]
 
-                    if cmd.extras.get("nsfw", False):
-                        embed.add_field(
-                            name=f"{cmd.name}",
-                            value="See help for this command in an NSFW channel.",
-                            inline=False,
-                        )
-                    else:
-                        embed.add_field(
-                            name=f"`{cmd.name}{f' {cmd.signature}`' if cmd.signature else '`'}",
-                            value=("> " + (cmd.brief or cmd.help or "No help given..."))
-                            + (f"\n> Parent: `{cmd.parent}`" if cmd.parent else "")[:1024],
-                            inline=False,
-                        )
-                embed.set_footer(text='For more info on a command run "help [command]"')
+                embed.add_field(name=name, value=value, inline=False)
 
                 if len(embed.fields) == 5:
                     embeds.append(embed)
                     embed = discord.Embed(
                         title=f"{cog.qualified_name} commands [{len(comm)}]",
                         color=cs.RANDOM_COLOR,
-                        description=(cog.description or "No description provided"),
+                        description=description_clean,
                     )
 
             if len(embed.fields) > 0:
@@ -233,11 +225,12 @@ class HelpView(discord.ui.View):
         self.category_select.options = []
         self.category_select.add_option(label="Main Page", value="index", emoji="🏠")
         for cog, comm in self.data.items():
+            if cog.qualified_name == "Owner":
+                comm = self.owner_cmds
             if not comm:
                 continue
             emoji = getattr(cog, "select_emoji", None)
-            count: int = self.count_plain_commands(cog, comm)
-            label = f"{cog.qualified_name} ({count})"
+            label = f"{cog.qualified_name} ({self.clean_command_count(cog, comm)})"
             brief = getattr(cog, "select_brief", None)
             self.category_select.add_option(label=label, value=cog.qualified_name, emoji=emoji, description=brief)
 
@@ -799,7 +792,7 @@ class About(commands.Cog):
 
         embed.add_field(name="Guilds", value=len(self.bot.guilds), inline=False)
         embed.add_field(
-            name="Messages",
+            name="Responses",
             value=self.bot.reply_count or 1,
             inline=False,
         )
@@ -812,14 +805,17 @@ class About(commands.Cog):
         embed.add_field(
             name="Websocket Latency",
             value=f"**`{round(latency_ms, 3)}ms{' ' * (9 - len(str(round(latency_ms, 3))))}`**",
+            inline=False,
         )
         embed.add_field(
             name="Typing Latency",
             value=f"**`{round(typing_ms, 3)}ms{' ' * (9 - len(str(round(typing_ms, 3))))}`**",
+            inline=False,
         )
         embed.add_field(
             name="Database Latency",
             value=f"**`{round(postgres_ms, 3)}ms{' ' * (9 - len(str(round(postgres_ms, 3))))}`**",
+            inline=False,
         )
 
         return await ctx.reply(embed=embed)
