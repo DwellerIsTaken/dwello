@@ -222,8 +222,8 @@ class NewsViewer(discord.ui.View):
         message: discord.Message | None = page.cached_message
 
         if not message:
-            channel: discord.TextChannel = await self.bot.fetch_channel(page.channel_id)
-            message: discord.Message = await channel.fetch_message(page.message_id)
+            channel: discord.TextChannel = await self.bot.getch(self.bot.get_channel, self.bot.fetch_channel, page.channel_id)
+            message: discord.Message | None = await self.bot.get_or_fetch_message(channel, page.message_id)
             page.cached_message = message
 
         time: datetime.datetime = message.created_at
@@ -344,13 +344,15 @@ class News(BaseCog):
             return await ctx.reply("Invalid link provided.", user_mistake=True)
 
         success = False
+        channel_id: int = 0  # possibly get unbound
+        message_id: int = 0  # possibly get unbound
         if match := re.search(r"https://discord\.com/channels/(\d+)/(\d+)/(\d+)", link):
             channel_id: int = int(match[2])
             message_id: int = int(match[3])
 
         try:  # prbly remove entire check or redo
-            channel: discord.TextChannel = await self.bot.fetch_channel(channel_id)
-            await channel.fetch_message(message_id)
+            channel: discord.TextChannel = await self.bot.getch(self.bot.get_channel, self.bot.fetch_channel, channel_id)
+            await self.bot.get_or_fetch_message(channel, message_id, force_fetch=True)
 
         except discord.NotFound:
             t = "Couldn't find the message."
