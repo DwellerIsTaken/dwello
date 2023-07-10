@@ -156,7 +156,6 @@ class Fun(BaseCog):
             "duration_seconds": spotify.duration.seconds,
             "start_timestamp": spotify.start.timestamp(),
             "artists": spotify.artists,
-
         }
         async with self.bot.http_session.get("https://api.jeyy.xyz/discord/spotify", params=params) as response:
             bytes = io.BytesIO(await response.read())
@@ -171,7 +170,9 @@ class Fun(BaseCog):
             icon_url=member.display_avatar.url,
         )
         embed.set_image(url="attachment://spotify.png")
-        embed.set_footer(text="Powered by Jeyy") #icon_url="https://logospng.org/download/spotify/logo-spotify-icon-4096.png"
+        embed.set_footer(
+            text="Powered by Jeyy"
+        )  # icon_url="https://logospng.org/download/spotify/logo-spotify-icon-4096.png"
 
         if ctx.interaction:
             return await ctx.interaction.followup.send(embed=embed, file=file)

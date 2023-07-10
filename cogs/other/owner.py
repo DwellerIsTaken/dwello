@@ -25,6 +25,7 @@ class Owner(commands.Cog):
     🌐
     Commands only the bot's owners can use.
     """
+
     # it could also inherrit from other classes and whatnot
 
     def __init__(self, bot: Dwello) -> None:

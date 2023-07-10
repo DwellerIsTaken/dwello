@@ -94,7 +94,7 @@ class Scraping(BaseCog):
         )
 
         self.wiki: wikipediaapi.Wikipedia = wikipediaapi.Wikipedia(
-            language='en',
+            language="en",
             headers=self.wiki_headers,
         )
 
@@ -112,12 +112,10 @@ class Scraping(BaseCog):
     @property
     def spotify_http_client(self: Self) -> http.HTTPClient:
         return self.spotify_client.http
-    
+
     @property
     def wiki_headers(self) -> Dict[str, str]:
-        return {
-            'User-Agent': 'CoolBot/0.0 (https://example.org/coolbot/; coolbot@example.org)'
-        }
+        return {"User-Agent": "CoolBot/0.0 (https://example.org/coolbot/; coolbot@example.org)"}
 
     """@property
     def spotify_headers(self: Self) -> Dict[str, str]:
@@ -663,7 +661,9 @@ class Scraping(BaseCog):
             movie = max(data["results"], key=lambda _movie: _movie["vote_count"])
 
         except ValueError:
-            return await interaction.response.send_message(f"Couldn't find a movie by the name of {movie}.", ephemeral=True)  # noqa: E501
+            return await interaction.response.send_message(
+                f"Couldn't find a movie by the name of {movie}.", ephemeral=True
+            )  # noqa: E501
 
         embed: discord.Embed = discord.Embed(
             title=movie["title"],
