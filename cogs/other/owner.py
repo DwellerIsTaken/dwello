@@ -3,7 +3,7 @@
 
 from __future__ import annotations
 
-from typing import Set, Literal, Optional, Union
+from typing import Literal, Optional, Set, Union
 
 import asyncpg
 import discord

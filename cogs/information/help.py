@@ -8,11 +8,11 @@ import itertools
 import os
 import time
 import traceback
-from typing import Any, Dict, List, Set, Optional, Tuple, Union  # noqa: F401
+from typing import Any, Dict, List, Optional, Set, Tuple, Union  # noqa: F401
 
 import discord
+from discord import app_commands  # noqa: F401
 from discord import Interaction
-from discord import app_commands # noqa: F401
 from discord.ext import commands
 from discord.ui import Select, button, select
 from typing_extensions import Self, override
