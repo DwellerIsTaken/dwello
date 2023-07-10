@@ -476,7 +476,7 @@ class MyHelp(commands.HelpCommand):
             )
             embed.description = (
                 f"{embed.description}\n\n**Commands:**\n```css\n{newline.join(data)}\n```\n"
-                f"`[G]` means group, these have sub-commands.\n`(C)` means command, these do not have sub-commands."
+                f"`[G] - Group` These have sub-commands.\n`(C) - Command` These do not have sub-commands."
             )
             await self.context.send(embed=embed)
         else:
