@@ -19,7 +19,7 @@ if os.name == "nt":
     asyncio.set_event_loop_policy(asyncio.WindowsSelectorEventLoopPolicy())
 else:
     try:
-        import uvloop
+        import uvloop # type: ignore
     except ImportError:
         pass
     else:
@@ -27,6 +27,7 @@ else:
 
 from ._utils import ENV, AiohttpWeb, AutoComplete, DataBaseOperations, LevellingUtils, ListenersFunctions, OtherUtils, Twitch
 from .context import DwelloContext
+import constants as cs
 
 if TYPE_CHECKING:
     from asyncpg import Connection, Pool
@@ -82,10 +83,7 @@ def countlines(directory: str, /, lines=0, ext=".py", skip_blank=False):
                 continue
             file = os.path.join(root, filename)
             with open(file, "r", encoding="utf-8") as f:
-                if skip_blank:
-                    new_lines = len([i for i in f.readlines() if i.strip()])
-                else:
-                    new_lines = len(f.readlines())
+                new_lines = len([i for i in f.readlines() if i.strip()]) if skip_blank else len(f.readlines())
                 lines = lines + new_lines
     return lines
 
@@ -184,11 +182,13 @@ class Dwello(commands.AutoShardedBot):
         self.pool = pool
         self.http_session = session
 
+        self.repo = cs.GITHUB
+
         self.reply_count: int = 0
         self._was_ready = False
         self.test_instance = False
         self.main_prefix: str = self.DEFAULT_PREFIXES[0]
-        self.total_lines: int = countlines('G:\My Drive\discordbot', skip_blank=True)
+        self.total_lines: int = countlines('G:\My Drive\discordbot', skip_blank=True)  # noqa: W605
         # wont work on host, somehow automatically determine the directory
 
         self.blacklisted_users: dict[int, str] = {}

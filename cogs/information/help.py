@@ -10,7 +10,7 @@ import psutil
 import pygit2
 import time
 import traceback
-from typing import Any, Dict, List, Optional, Set, Tuple, Union  # noqa: F401
+from typing import Any, Dict, List, Optional, Set, Tuple, TypeVar, Union  # noqa: F401
 
 import discord
 from discord import app_commands  # noqa: F401
@@ -641,7 +641,6 @@ class MyHelp(commands.HelpCommand):
                 )
             )
 
-
 class About(commands.Cog):
     """
     😮
@@ -663,6 +662,7 @@ class About(commands.Cog):
         self.select_brief = "Bot Information commands."
 
         self.process = psutil.Process()
+        self.repo = pygit2.Repository('.git')
 
     def get_uptime(self: Self, /, complete=False) -> Union[Tuple[int, int, int, int], str]:
         """Return format: days, hours, minutes, seconds or full str."""
@@ -676,7 +676,7 @@ class About(commands.Cog):
         if complete:
             return f"{days}d, {hours}h, {minutes}m, {seconds}s"
         return days, hours, minutes, seconds
-    
+
     '''def get_bot_uptime(self, *, brief: bool = False) -> str: Use Danny's code instead?
         return time.human_timedelta(self.bot.uptime, accuracy=None, brief=brief, suffix=False)'''
 
@@ -690,7 +690,7 @@ class About(commands.Cog):
         pings = list(latencies)
         number = sum(pings)
         return number / len(pings)
-    
+
     def format_commit(self, commit: pygit2.Commit) -> str:
         short, _, _ = commit.message.partition('\n')
         short_sha2 = commit.hex[0:6]
@@ -705,8 +705,7 @@ class About(commands.Cog):
         )
 
     def get_last_commits(self, count=3):
-        repo = pygit2.Repository('.git')
-        commits = list(itertools.islice(repo.walk(repo.head.target, pygit2.GIT_SORT_TOPOLOGICAL), count))
+        commits = list(itertools.islice(self.repo.walk(self.repo.head.target, pygit2.GIT_SORT_TOPOLOGICAL), count))
         return '\n'.join(self.format_commit(c) for c in commits)
 
     # make uptime: add here -> trigger on mention in on_message
@@ -717,32 +716,65 @@ class About(commands.Cog):
         content: str = f"Hello there! I'm {self.bot.user.name}. Use `{prefix}help` for more."  # {self.bot.help_command}?
         return await ctx.send(content=content)  # display more info about bot
 
-    # uptime cmd
-    # add some latency too or smth
-    # get available bot info i guess
     @commands.hybrid_command(name="about", aliases=["botinfo", "info", "bi"], with_app_command=True)
     async def about(self, ctx: DwelloContext) -> Optional[discord.Message]:
-        information: discord.AppInfo = await self.bot.application_info()
-        print(information)
+
+        #information: discord.AppInfo = await self.bot.application_info()
+        author: discord.User = self.bot.get_user(548846436570234880)
+
+        main_desc: str = (
+            f"Hello there. My name is {self.bot.user.name} and I was created by **{author.name}** "
+            f"at {discord.utils.format_dt(self.bot.user.created_at, style='D')}.\n\n"
+            "I posses a big variety of prefix/slash commands for people's entertainment. "
+            "My purpose is to be fun to interact with and be helpful at times.\n\n"
+            "I always wanted this to be a *community* bot, so you're free to join our contributor team anytime. "
+            "Just go to source below and fork our repo using GitHub! We would greatly appreciate it.\n\n"
+        )
+
+        links: str = (
+            f"> {cs.GITHUB_EMOJI} [Source]({self.bot.repo})\n"
+            f"> {cs.EARLY_DEV_EMOJI} [Website]({cs.WEBSITE})\n"
+            "\n"
+        )
+
+        commit_counts: Dict[str, int] = {}
+        commit_signatures: Dict[str, pygit2.Signature] = {}
+        for commit in self.repo.walk(self.repo.head.target):
+            signature = commit.author
+            author_ = signature.name
+            if author_ not in commit_counts:
+                commit_counts[author_] = 0
+            commit_signatures[author_] = signature
+            commit_counts[author_] += 1
 
         embed: discord.Embed = discord.Embed(
-            description=f"{cs.GITHUB_EMOJI} [Source]({cs.GITHUB})",
+            title="About Me",
+            description=main_desc+links,
+            url=cs.WEBSITE, # link to about page ?
             color=cs.RANDOM_COLOR,
         )
         embed.set_thumbnail(url=self.bot.user.display_avatar.url)
+        #embed.set_footer(text=f"ID: {self.bot.user.id}")
         embed.set_author(
-            name=f"Stolen by {information.owner}",
-            icon_url=information.owner.display_avatar.url,
+            name=author.name,
+            icon_url=author.display_avatar.url,
         )
-        # description=f"{constants.GITHUB} [source]({self.bot.repo}) | "
+
+        og_commiters = sorted(commit_signatures.values(), key=lambda x: x.time)[:3]
+        embed.add_field(
+            name='First Contributors',
+            value='\n'.join(f'• [{author.name}](https://github.com/{author.name}): <t:{int(author.time)}:D>' for author in og_commiters),  # noqa: E501
+        )
+
+        top_commiters = sorted(commit_counts.items(), key=lambda x: x[1], reverse=True)[:3]  # noqa: E501
+        embed.add_field(
+            name='Top Contributors',
+            value='\n'.join(f'• [{author}](https://github.com/{author}): {count}' for author, count in top_commiters),  # noqa: E501
+        )
+        embed.timestamp = discord.utils.utcnow()
         # f"{constants.INVITE} [invite me]({self.bot.invite_url}) | "
         # f"{constants.TOP_GG} [top.gg]({self.bot.vote_top_gg}) | "
         # f"{constants.BOTS_GG} [bots.gg]({self.bot.vote_bots_gg})"
-        # f"\n_ _╰ Try also `{ctx.prefix}source [command]`"
-
-        # embed.add_field(name="Latest updates:", value=get_latest_commits(limit=5), inline=False) maybe later
-
-        # discord.ui.Button(label="Source", url="")
 
         return await ctx.send(embed=embed)
 
@@ -835,7 +867,7 @@ class About(commands.Cog):
             total_members += guild.member_count or 0
 
         links = (
-            f"-> {cs.GITHUB_EMOJI} [Source]({cs.GITHUB})\n"
+            f"-> {cs.GITHUB_EMOJI} [Source]({self.bot.repo})\n"
             f"-> {cs.EARLY_DEV_EMOJI} [Website]({cs.WEBSITE})\n"
             "\n"
         )
@@ -848,7 +880,7 @@ class About(commands.Cog):
         )
         embed.set_thumbnail(url=self.bot.user.display_avatar.url)
         embed.set_author(name=author.name, icon_url=author.display_avatar.url)
-        embed.set_footer(text=f"{self.bot.main_prefix}about for more")
+        embed.set_footer(text=f'{self.bot.main_prefix}about for more')
 
         embed.add_field(name='Members', value=f'{total_members} total\n{total_unique} unique')
         embed.add_field(name='Guilds', value=len(self.bot.guilds)) # len(self.bot.guilds)
