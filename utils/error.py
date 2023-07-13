@@ -3,6 +3,7 @@ from __future__ import annotations
 import sys
 import traceback
 from typing import TYPE_CHECKING, Optional
+from contextlib import suppress
 
 import discord
 from discord.ext import commands
@@ -39,9 +40,8 @@ class CommandErrorHandler(commands.Cog):
         if hasattr(ctx.command, "on_error"):
             return
 
-        if cog := ctx.cog:
-            if cog._get_overridden_method(cog.cog_command_error) is not None:
-                return
+        if (cog := ctx.cog) and cog._get_overridden_method(cog.cog_command_error) is not None:
+            return
 
         ignored = (commands.CommandNotFound,)  # make that a check or no ?
 
@@ -61,10 +61,8 @@ class CommandErrorHandler(commands.Cog):
             await ctx.send(f"{ctx.command} has been disabled.")
 
         elif isinstance(error, commands.NoPrivateMessage):
-            try:
+            with suppress(discord.HTTPException):
                 await ctx.author.send(f"{ctx.command} can not be used in Private Messages.")
-            except discord.HTTPException:  # handle exception http
-                pass
 
         elif isinstance(error, commands.errors.MemberNotFound):
             return await ctx.reply(error, user_mistake=True)
