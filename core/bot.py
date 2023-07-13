@@ -75,6 +75,21 @@ def col(color=None, /, *, fmt=0, bg=False):
     return base.format(fmt=fmt, color=color)
 
 
+def countlines(directory: str, /, lines=0, ext=".py", skip_blank=False):
+    for root, dirs, files in os.walk(directory):
+        for filename in files:
+            if not filename.endswith(ext):
+                continue
+            file = os.path.join(root, filename)
+            with open(file, "r", encoding="utf-8") as f:
+                if skip_blank:
+                    new_lines = len([i for i in f.readlines() if i.strip()])
+                else:
+                    new_lines = len(f.readlines())
+                lines = lines + new_lines
+    return lines
+
+
 # GLOBAL CHECKS
 def blacklist_check(ctx: DwelloContext) -> bool:
     return not ctx.bot.is_blacklisted(ctx.author.id)
@@ -172,6 +187,9 @@ class Dwello(commands.AutoShardedBot):
         self.reply_count: int = 0
         self._was_ready = False
         self.test_instance = False
+        self.main_prefix: str = self.DEFAULT_PREFIXES[0]
+        self.total_lines: int = countlines('G:\My Drive\discordbot', skip_blank=True)
+        # wont work on host, somehow automatically determine the directory
 
         self.blacklisted_users: dict[int, str] = {}
         self.bypass_cooldown_users: list[int] = []

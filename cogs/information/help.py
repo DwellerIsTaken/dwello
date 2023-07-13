@@ -6,6 +6,8 @@ import difflib
 import inspect
 import itertools
 import os
+import psutil
+import pygit2
 import time
 import traceback
 from typing import Any, Dict, List, Set, Optional, Tuple, Union  # noqa: F401
@@ -188,7 +190,7 @@ class HelpView(discord.ui.View):
                 color=cs.RANDOM_COLOR,
                 description=description_clean,
             )
-            embed.set_footer(text='For more info on a command run "help [command]"')
+            embed.set_footer(text='For more info on a command run `dw.help [command]`')
             # maybe another embed build for slash cause cant use that with owner cmds
             for cmd in comm:
                 name = f"`{cmd.name}`"
@@ -237,15 +239,18 @@ class HelpView(discord.ui.View):
     def build_main_page(self: Self) -> discord.Embed:
         embed: discord.Embed = discord.Embed(
             color=cs.RANDOM_COLOR,
-            title="Bot Help Menu",
-            description="Hello, I'm Bot! I'm still in development, but you can use me.",
-        )
+            title="Dwello Help Menu",
+            description=(
+                "Hello, I'm Dwello! I'm still in development, but you can use me.\n"
+                "My prefixes are: `dw.`, `dwello.`."
+                ),
+            )
         embed.add_field(
             name="Getting Help",
             inline=False,
-            value="Use `$help <command>` for more info on a command."
-            "\nThere is also `$help <command> [subcommand]`."
-            "\nUse `$help <category>` for more info on a category."
+            value="Use `dw.help <command>` for more info on a command."
+            "\nThere is also `dw.help <command> [subcommand]`."
+            "\nUse `dw.help <category>` for more info on a category."
             "\nYou can also use the menu below to view a category.",
         )
         embed.add_field(
@@ -259,12 +264,12 @@ class HelpView(discord.ui.View):
         embed.add_field(
             name="Who Am I?",
             inline=False,
-            value="I'm Bot, a multipurpose discordbot. You can use me to play games, moderate "
-            "\nyour server, mess with some images and more! Check out "
-            "\nall my features using the dropdown below.",
+            value="I'm Dwello, a multipurpose discordbot. You can use me to play games, moderate "
+            "\nyour server, mess with some images and more!"
+            "\nCheck out all my features using the dropdown below.",
         )
         embed.add_field(
-            name="Support DuckBot",
+            name="Support Dwello",
             value="Add patreon later.",
             inline=False,
         )
@@ -654,8 +659,10 @@ class About(commands.Cog):
         self.select_emoji = "<:info:895407958035431434>"
         self.select_brief = "Bot Information commands."
 
-    def get_uptime(self: Self) -> Tuple[int, int, int, int]:
-        """Return format: days, hours, minutes, seconds."""
+        self.process = psutil.Process()
+
+    def get_uptime(self: Self, /, complete=False) -> Union[Tuple[int, int, int, int], str]:
+        """Return format: days, hours, minutes, seconds or full str."""
 
         uptime = datetime.datetime.now(datetime.timezone.utc) - self.bot.uptime
 
@@ -663,7 +670,12 @@ class About(commands.Cog):
         minutes, seconds = divmod(remainder, 60)
         days, hours = divmod(hours, 24)
 
+        if complete:
+            return f"{days}d, {hours}h, {minutes}m, {seconds}s"
         return days, hours, minutes, seconds
+    
+    '''def get_bot_uptime(self, *, brief: bool = False) -> str: Use Danny's code instead?
+        return time.human_timedelta(self.bot.uptime, accuracy=None, brief=brief, suffix=False)'''
 
     def get_startup_timestamp(self, style: discord.utils.TimestampStyle = None) -> str:
         return discord.utils.format_dt(self.bot.uptime, style=style or "F")
@@ -675,6 +687,24 @@ class About(commands.Cog):
         pings = list(latencies)
         number = sum(pings)
         return number / len(pings)
+    
+    def format_commit(self, commit: pygit2.Commit) -> str:
+        short, _, _ = commit.message.partition('\n')
+        short_sha2 = commit.hex[0:6]
+        commit_tz = datetime.timezone(datetime.timedelta(minutes=commit.commit_time_offset))
+        commit_time = datetime.datetime.fromtimestamp(commit.commit_time).astimezone(commit_tz)
+
+        # [`hash`](url) message (offset)
+        #offset = time.format_relative(commit_time.astimezone(datetime.timezone.utc))
+        return (
+            f"[`{short_sha2}`]({cs.GITHUB}commit/{commit.hex}) {short} "
+            f"({discord.utils.format_dt(commit_time, 'R')})"
+        )
+
+    def get_last_commits(self, count=3):
+        repo = pygit2.Repository('.git')
+        commits = list(itertools.islice(repo.walk(repo.head.target, pygit2.GIT_SORT_TOPOLOGICAL), count))
+        return '\n'.join(self.format_commit(c) for c in commits)
 
     # make uptime: add here -> trigger on mention in on_message
     @commands.hybrid_command(name="hello", aliases=cs.HELLO_ALIASES, with_app_command=True)
@@ -770,6 +800,7 @@ class About(commands.Cog):
 
     @commands.hybrid_command(name="stats", help="Returns some of the bot's stats", with_app_command=True)
     async def stats(self, ctx: DwelloContext) -> Optional[discord.Message]:
+
         typing_start = time.monotonic()
         await ctx.typing()
         typing_end = time.monotonic()
@@ -784,40 +815,48 @@ class About(commands.Cog):
 
         average = self.get_average_latency(typing_ms, latency_ms, postgres_ms)
 
+        total_members = 0
+        total_unique = len(self.bot.users)
+
+        memory_usage = self.process.memory_full_info().uss / 1024**2
+        cpu_usage = self.process.cpu_percent() / psutil.cpu_count()
+
+        author: discord.User = self.bot.get_user(548846436570234880)
+
+        guilds = 0
+        for guild in self.bot.guilds:
+            guilds += 1
+            if guild.unavailable:
+                continue
+
+            total_members += guild.member_count or 0
+
+        links = (
+            f"-> {cs.GITHUB_EMOJI} [Source]({cs.GITHUB})\n"
+            f"-> {cs.EARLY_DEV_EMOJI} [Website]({cs.WEBSITE})\n"
+            "\n"
+        )
+        revision = self.get_last_commits()
         embed: discord.Embed = discord.Embed(
-            title="Bot Statistics since launch",
+            title=f'{self.bot.user.name} Statistics',
+            description=links + '**Latest Changes:**\n' + revision,
+            url=cs.INVITE_LINK,
             color=cs.RANDOM_COLOR,
         )
         embed.set_thumbnail(url=self.bot.user.display_avatar.url)
+        embed.set_author(name=author.name, icon_url=author.display_avatar.url)
+        embed.set_footer(text=f"{self.bot.main_prefix}about for more")
 
-        embed.add_field(name="Guilds", value=len(self.bot.guilds), inline=False)
-        embed.add_field(
-            name="Responses",
-            value=self.bot.reply_count or 1,
-            inline=False,
-        )
-        embed.add_field(name="Total Commands", value=len(self.bot.commands), inline=False)
-        embed.add_field(
-            name="Average Latency",
-            value=f"**`{round(average, 3)}ms{' ' * (9 - len(str(round(average, 3))))}`**",
-            inline=False,
-        )
-        embed.add_field(
-            name="Websocket Latency",
-            value=f"**`{round(latency_ms, 3)}ms{' ' * (9 - len(str(round(latency_ms, 3))))}`**",
-            inline=False,
-        )
-        embed.add_field(
-            name="Typing Latency",
-            value=f"**`{round(typing_ms, 3)}ms{' ' * (9 - len(str(round(typing_ms, 3))))}`**",
-            inline=False,
-        )
-        embed.add_field(
-            name="Database Latency",
-            value=f"**`{round(postgres_ms, 3)}ms{' ' * (9 - len(str(round(postgres_ms, 3))))}`**",
-            inline=False,
-        )
+        embed.add_field(name='Members', value=f'{total_members} total\n{total_unique} unique')
+        embed.add_field(name='Guilds', value=len(self.bot.guilds)) # len(self.bot.guilds)
+        embed.add_field(name='Process', value=f'{memory_usage:.2f} MiB\n{cpu_usage:.2f}% CPU')
+        embed.add_field(name='Responses', value=self.bot.reply_count or 1)
+        embed.add_field(name='Lines', value=self.bot.total_lines)
+        embed.add_field(name='Latency', value=f"{round(average, 3)}ms")
+        embed.add_field(name='Uptime', value=self.get_uptime(complete=True))
 
+        embed.timestamp = discord.utils.utcnow()
+        #embed.add_field(name='Total Commands', value=len(self.bot.commands)) ?
         return await ctx.reply(embed=embed)
 
     @commands.hybrid_command(name="source", help="Returns command's source.", with_app_command=True)

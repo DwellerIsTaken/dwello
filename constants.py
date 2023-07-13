@@ -11,11 +11,14 @@ TWITCH_COLOR = discord.Colour.random()  # get color of streamer later & add cust
 FOOTER = "https://hitoshi.org"
 
 # __SOCIAL MEDIA__
+WEBSITE = "https://hitoshi.org"
 GITHUB = "https://github.com/DwellerIsTaken/discordbot/"
 DISCORD = "https://discord.gg/8FKNF8pC9u"
+INVITE_LINK = "https://discord.com/api/oauth2/authorize?client_id=798268589906853908&permissions=50564649975543&scope=bot" # TEMPORARY  # noqa: E501
 
 # __EMOJIS__
 GITHUB_EMOJI = "<:github:1100906448030011503>"
+EARLY_DEV_EMOJI = "<:blurpleverifiedbotdeveloper:1080912412569505812>"
 
 HELLO_ALIASES = [
     "salutations",
