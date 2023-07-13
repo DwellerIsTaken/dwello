@@ -105,7 +105,7 @@ class StandardModeration(BaseCog):
         choices = []
 
         async for entry in interaction.guild.bans(limit=None):
-            if current.startswith(str(entry.user.name).lower()[:item]):
+            if current.startswith(str(entry.user.name).lower()[:item]):  # noqa: SIM114
                 choices.append(Choice(name=str(entry.user.name), value=str(entry.user.id)))
             elif current.startswith(str(entry.user.id)[:item]):
                 choices.append(Choice(name=str(entry.user.name), value=str(entry.user.id)))
