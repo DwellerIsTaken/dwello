@@ -367,7 +367,6 @@ class DwelloContext(commands.Context):  # [commands.Bot], Generic[T]
         with suppress(discord.Forbidden, discord.HTTPException):
             await super().typing()
 
-
     @property
     def is_bot_owner(self) -> bool:
         return self.author.id in self.bot.owner_ids
