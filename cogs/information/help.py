@@ -375,9 +375,8 @@ class MyHelp(commands.HelpCommand):
             for app_command in cog.walk_app_commands():
                 allowed = 1
                 for i in commands_list:
-                    if app_command.name == i.name:
-                        if not isinstance(i, commands.Group):
-                            allowed = 0
+                    if app_command.name == i.name and not isinstance(i, commands.Group):
+                        allowed = 0
                 if allowed:
                     commands_list.append(app_command)
 

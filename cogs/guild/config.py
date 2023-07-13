@@ -134,7 +134,7 @@ class ChannelConfig:
                 )
 
                 query: str = """
-                    UPDATE server_data SET message_text = $1, event_type = COALESCE(event_type, $2) 
+                    UPDATE server_data SET message_text = $1, event_type = COALESCE(event_type, $2)
                     WHERE guild_id = $3 AND COALESCE(event_type, $2) = $2
                     """
                 await conn.execute(

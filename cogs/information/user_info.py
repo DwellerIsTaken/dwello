@@ -19,13 +19,13 @@ class UserInfo(BaseCog):
         # self.levelling = LevellingUtils(bot)
         # self.eco = GuildEcoUtils(bot)
 
-    """@commands.hybrid_command(name = 'stats', description="Shows personal information and rank statistics",with_app_command=True) 
+    """@commands.hybrid_command(name = 'stats', description="Shows personal information and rank statistics",with_app_command=True)
     async def stats(self, ctx: DwelloContext, member: Optional[Union[discord.Member, discord.User]] = commands.Author) -> Optional[discord.Message]:
         async with ctx.typing(ephemeral=True):
             async with self.bot.pool.acquire() as conn:
                 conn: asyncpg.Connection
                 async with conn.transaction():
-                    
+
                     if ctx.guild:
                         query = "SELECT xp, messages, level, money, total_xp FROM users WHERE user_id = $1 AND guild_id = $2 AND event_type = $3"
                         warn_query = "SELECT warn_text FROM warnings WHERE user_id = $1 AND guild_id = $2"
@@ -56,7 +56,7 @@ class UserInfo(BaseCog):
                     most_used_color = await get_avatar_dominant_color(member)
 
                     #embed_hex_code = hex_code.replace('#', '0x')
-                    
+
                     embed = discord.Embed(title="Statistics", color= most_used_color) #discord.Colour.to_rgb(most_used_color)
 
                     if member == ctx.author:
@@ -94,7 +94,7 @@ class UserInfo(BaseCog):
             return await ctx.reply(embed=embed, mention_author = False)"""  # noqa: E501
 
     # OPTIMIZE | TO PIL
-    """@commands.hybrid_command(name = 'rank', description="Shows your rank or another member's rank.",with_app_command=True) 
+    """@commands.hybrid_command(name = 'rank', description="Shows your rank or another member's rank.",with_app_command=True)
     async def rank(self, ctx: commands.Context, member: Optional[Union[discord.Member, discord.User]] = commands.Author):
         async with ctx.typing():
             async with self.pool.acquire() as conn:
@@ -170,12 +170,12 @@ class UserInfo(BaseCog):
                             bnner = Editor(bnner).resize((length,width)) #1000, 100
 
                             background.paste(bnner.image, (0,0))
-                        
+
                         else:
 
                             #if default == 1:
                             #background.paste(bnner.image, (0,0))
-                            
+
                             #else:
                             background.rectangle((0,0), width=length, height=100, fill=hex_code)
 
@@ -229,7 +229,7 @@ class UserInfo(BaseCog):
 
                         if len(s) == 0:
                             font_size = font_size
-                        
+
                         else:
                             mult = ((250 - 10 - dis_width) / len(s)) / 100
                             font_size = font_size / (2 - mult)
@@ -272,14 +272,14 @@ class UserInfo(BaseCog):
                             fill="#e6e6b7",
                             radius=20,
                             )
-                        
+
                         file1 = discord.File(fp=background.image_bytes, filename="avatar.png")
                         image.save("avatar.png")
 
             await ctx.reply(file=file1,mention_author=False)
         return os.remove("avatar.png")"""  # noqa: E501
 
-    """@commands.hybrid_command(name = 'leaderboard', description="Shows the level leaderboard.",with_app_command=True) 
+    """@commands.hybrid_command(name = 'leaderboard', description="Shows the level leaderboard.",with_app_command=True)
     async def leaderboard(self, ctx: commands.Context):
       async with ctx.typing():
         async with asyncpg.create_pool(database=tv.db_name, user=tv.db_username, password=os.getenv('pg_password')) as pool:
@@ -319,7 +319,7 @@ class UserInfo(BaseCog):
                     #title = "**Level leaderboard**".upper()
                     title = "Level leaderboard".upper()
                     #title = "Level leaderboard 📈"
-                    #title = "Level leaderboard"             
+                    #title = "Level leaderboard"
                     #title = "Level leaderboard 📖".upper()
 
                     rank = 0
@@ -476,7 +476,7 @@ class UserInfo(BaseCog):
                         except:
                         start_width += 100
                         break
-                
+
                         start_width += 150
                         item_num += 1
 
@@ -490,7 +490,7 @@ class UserInfo(BaseCog):
                         background.text((148.5, start_width - ranking_height), text = ranking[5], font = poppins_big, color = "#babcbc")
 
                         nickname_len = len(name_list[5])
-                        
+
                         if nickname_len > 15:
                             a = 0
                             b = 0

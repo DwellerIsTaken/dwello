@@ -9,11 +9,11 @@ from typing import Optional, Union, Literal, Tuple, TYPE_CHECKING
 
 from utils.context import DwelloContext
 
-# TRANSFER ONTO ECONOMY FOLDER  
+# TRANSFER ONTO ECONOMY FOLDER
 
 if TYPE_CHECKING:
-    from core import Bot 
-    
+    from core import Bot
+
 else:
     from discord.ext.commands import Bot as Dwello"""
 
@@ -76,8 +76,8 @@ else:
 
             if not data:
                 print(data)
-                return 
-            
+                return
+
             name, salary, description = str(data[0]), int(data[1]), str(data[2]) if data[2] else None
 
     return name, salary, description"""
