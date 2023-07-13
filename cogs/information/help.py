@@ -10,11 +10,11 @@ import psutil
 import pygit2
 import time
 import traceback
-from typing import Any, Dict, List, Set, Optional, Tuple, Union  # noqa: F401
+from typing import Any, Dict, List, Optional, Set, Tuple, Union  # noqa: F401
 
 import discord
+from discord import app_commands  # noqa: F401
 from discord import Interaction
-from discord import app_commands # noqa: F401
 from discord.ext import commands
 from discord.ui import Select, button, select
 from typing_extensions import Self, override
@@ -141,7 +141,7 @@ class HelpView(discord.ui.View):
             return await interaction.response.edit_message(embed=self.embeds[self.current_page], view=self)
         else:
             return await interaction.response.send_message("Somehow, that category was not found? 🤔", ephemeral=True)
-    
+
     def construct_owner_commands(self) -> List[commands.Command]:
         owner_cmds: List[commands.Command] = []
         hidden_cmds: List[commands.Command] = []
@@ -157,11 +157,11 @@ class HelpView(discord.ui.View):
                         hidden_cmds.append(cmd)
 
         return owner_cmds + hidden_cmds
-    
+
     def clean_command_count(self, cog: commands.Cog, commands: List[commands.Command, app_commands.Command]) -> int:
         if cog.qualified_name == "Owner":
             return len(self.owner_cmds)
-        
+
         count = 0
         for command in commands:
             if isinstance(command, app_commands.Command):
@@ -178,13 +178,15 @@ class HelpView(discord.ui.View):
         for cog_, comm in self.data.items():
             if cog_ != cog:
                 continue
-            
+
             owner = False
             if cog_.qualified_name == "Owner":
                 comm = self.owner_cmds
                 owner = True
 
-            description_clean: str = ' '.join(cog.description.splitlines()) if cog.description else "No description provided."  # noqa: E501
+            description_clean: str = (
+                " ".join(cog.description.splitlines()) if cog.description else "No description provided."
+            )  # noqa: E501
             embed: discord.Embed = discord.Embed(
                 title=f"{cog.qualified_name} commands [{self.clean_command_count(cog_, comm)}]",
                 color=cs.RANDOM_COLOR,
@@ -378,12 +380,11 @@ class MyHelp(commands.HelpCommand):
             for app_command in cog.walk_app_commands():
                 allowed = 1
                 for i in commands_list:
-                    if app_command.name == i.name:
-                        if not isinstance(i, commands.Group):
-                            allowed = 0
+                    if app_command.name == i.name and not isinstance(i, commands.Group):
+                        allowed = 0
                 if allowed:
                     commands_list.append(app_command)
-                
+
             mapping[cog] = commands_list
 
         return mapping
@@ -400,8 +401,8 @@ class MyHelp(commands.HelpCommand):
     async def send_command_help(self, command: commands.Command):
         embed = discord.Embed(
             title=f"`{self.context.clean_prefix}{command}`",
-            description="**Description:**\n" + 
-            (command.help or command.description or "No help given...").replace("%PRE%", self.context.clean_prefix),
+            description="**Description:**\n"
+            + (command.help or command.description or "No help given...").replace("%PRE%", self.context.clean_prefix),
         )
         embed.add_field(
             name="Command usage:",
@@ -409,7 +410,7 @@ class MyHelp(commands.HelpCommand):
         )
         try:
             preview = command.__original_kwargs__["preview"]
-            embed.set_image(url=preview) # 
+            embed.set_image(url=preview)  #
         except KeyError:
             pass
         if command.aliases:
@@ -474,14 +475,16 @@ class MyHelp(commands.HelpCommand):
     async def send_cog_help(self, cog: commands.Cog):
         if entries := cog.get_commands():
             data = [self.get_minimal_command_signature(entry) for entry in entries]
-            description_clean: str = ' '.join(cog.description.splitlines()) if cog.description else "No description provided."   # noqa: E501
+            description_clean: str = (
+                " ".join(cog.description.splitlines()) if cog.description else "No description provided."
+            )  # noqa: E501
             embed = discord.Embed(
                 title=f"`{cog.qualified_name}` category commands",
                 description="**Description:**\n" + description_clean.replace("%PRE%", self.context.clean_prefix),
             )
             embed.description = (
                 f"{embed.description}\n\n**Commands:**\n```css\n{newline.join(data)}\n```\n"
-                f"`[G]` means group, these have sub-commands.\n`(C)` means command, these do not have sub-commands."
+                f"`[G] - Group` These have sub-commands.\n`(C) - Command` These do not have sub-commands."
             )
             await self.context.send(embed=embed)
         else:
@@ -507,7 +510,7 @@ class MyHelp(commands.HelpCommand):
                     subgroups.append(c)
                 else:
                     subcommands.append(c)
-            
+
             if subcommands:
                 c_formatted = "\n".join([self.get_minimal_command_signature(command) for command in subcommands])
                 embed.add_field(
@@ -749,7 +752,7 @@ class About(commands.Cog):
         timestamp = self.get_startup_timestamp()
 
         embed: discord.Embed = discord.Embed(
-            title="Current Uptime", 
+            title="Current Uptime",
             description=f"**{days} days, {hours} hours, {minutes} minutes, {seconds} seconds**",
             color=cs.RANDOM_COLOR,
         )

@@ -3,7 +3,7 @@
 
 from __future__ import annotations
 
-from typing import Set, Literal, Optional, Union
+from typing import Literal, Optional, Set, Union
 
 import asyncpg
 import discord
@@ -25,6 +25,7 @@ class Owner(commands.Cog):
     🌐
     Commands only the bot's owners can use.
     """
+
     # it could also inherrit from other classes and whatnot
 
     def __init__(self, bot: Dwello) -> None:

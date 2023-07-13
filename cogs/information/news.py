@@ -222,7 +222,9 @@ class NewsViewer(discord.ui.View):
         message: discord.Message | None = page.cached_message
 
         if not message:
-            channel: discord.TextChannel = await self.bot.getch(self.bot.get_channel, self.bot.fetch_channel, page.channel_id)  # noqa: E501
+            channel: discord.TextChannel = await self.bot.getch(
+                self.bot.get_channel, self.bot.fetch_channel, page.channel_id
+            )
             message: discord.Message | None = await self.bot.get_or_fetch_message(channel, page.message_id)
             page.cached_message = message
 

@@ -134,7 +134,7 @@ class ChannelConfig:
                 )
 
                 query: str = """
-                    UPDATE server_data SET message_text = $1, event_type = COALESCE(event_type, $2) 
+                    UPDATE server_data SET message_text = $1, event_type = COALESCE(event_type, $2)
                     WHERE guild_id = $3 AND COALESCE(event_type, $2) = $2
                     """
                 await conn.execute(
@@ -283,7 +283,7 @@ class Config(BaseCog):
         self._channel: ChannelConfig = ChannelConfig(self.bot)
         self._prefix: PrefixConfig = PrefixConfig(self.bot)
 
-        self.extra_help: Dict[str, str] = {} # add later for each group
+        self.extra_help: Dict[str, str] = {}  # add later for each group
 
     # set perms per command instead
     @commands.hybrid_group(aliases=["prefixes"], invoke_without_command=True, with_app_command=False)
@@ -385,7 +385,7 @@ class Config(BaseCog):
             )
             help_welcome_help_embed.set_footer(text=cs.FOOTER)
 
-            return await ctx.reply(embed=help_welcome_help_embed)  # add to help cmd instead"""# noqa: E501
+            return await ctx.reply(embed=help_welcome_help_embed)  # add to help cmd instead"""  # noqa: E501
 
     @commands.hybrid_group(invoke_without_command=True, with_app_command=True)
     @commands.bot_has_permissions(manage_channels=True, manage_messages=True)
@@ -393,7 +393,7 @@ class Config(BaseCog):
     @commands.guild_only()
     async def leave(self, ctx: DwelloContext):
         async with ctx.typing(ephemeral=True):
-           return ctx.send_help(ctx.command)
+            return ctx.send_help(ctx.command)
 
     @leave.group(invoke_without_command=True, with_app_command=True, name="message")
     async def l_message(self, ctx: DwelloContext):

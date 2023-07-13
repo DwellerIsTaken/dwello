@@ -94,7 +94,7 @@ class Scraping(BaseCog):
         )
 
         self.wiki: wikipediaapi.Wikipedia = wikipediaapi.Wikipedia(
-            language='en',
+            language="en",
             headers=self.wiki_headers,
         )
 
@@ -112,36 +112,34 @@ class Scraping(BaseCog):
     @property
     def spotify_http_client(self: Self) -> http.HTTPClient:
         return self.spotify_client.http
-    
+
     @property
     def wiki_headers(self) -> Dict[str, str]:
-        return {
-            'User-Agent': 'CoolBot/0.0 (https://example.org/coolbot/; coolbot@example.org)'
-        }
+        return {"User-Agent": "CoolBot/0.0 (https://example.org/coolbot/; coolbot@example.org)"}
 
     """@property
     def spotify_headers(self: Self) -> Dict[str, str]:
         return {"Authorization": f"Bearer {self.spotify_token}"}"""
 
     """async def get_spotify_access_token(self: Self) -> Tuple[str, int]:
-        
+
         client_id: str = get_or_fail('SPOTIFY_CLIENT_ID')
         client_secret: str = get_or_fail('SPOTIFY_CLIENT_SECRET')
-        
+
         #client: aiospotify.SpotifyClient = aiospotify.SpotifyClient(client_id, client_secret)
 
         auth_bytes: bytes = f"{client_id}:{client_secret}".encode("utf-8")
         auth_base = str(base64.b64encode(auth_bytes), "utf-8")
-        
+
         auth_url: URL = "https://accounts.spotify.com/api/token"
         auth_headers: Dict[str, str] = {
             "Authorization": "Basic " + auth_base,
             "Content-Type": "application/x-www-form-urlencoded"
         }
         auth_data: Dict[str, str] = {"grant_type": "client_credentials"}
-        async with self.bot.http_session.post(url=auth_url, headers=auth_headers, data=auth_data) as response:  
+        async with self.bot.http_session.post(url=auth_url, headers=auth_headers, data=auth_data) as response:
             data: Any = await response.json()
-            
+
         match response.status:
             case 200:
                 _token = data['access_token']
@@ -152,7 +150,7 @@ class Scraping(BaseCog):
                 return "The request lacks valid authentication credentials." # temp
             case 403:
                 return "The server understood the request, but you are not allowed to access the requested resource."
-        
+
         self.spotify_token = _token
         return _token, _expires"""
 
@@ -265,31 +263,31 @@ class Scraping(BaseCog):
         return await ctx.reply(embed=embeds[0][1])
 
     """not_found = f"Can't find any albums by the name of *{discord.utils.escape_markdown(album, as_needed=False)}*"
-        
+
         try:
             data: SearchResult = await self.spotify_client.search(query=album, types=[ObjectType.Album], limit=5)
-        
+
         except NotFound:
             return await ctx.reply(not_found, user_mistake=True)
-            
+
         albums: List[Dict[str, Any]] = data._data['albums']['items']
         if not albums:
             return await ctx.reply(not_found, user_mistake=True)
-        
+
         embeds: List[Tuple[str, discord.Embed]] = []
-        
+
         for album in albums:
 
             album: Dict[str, Any]
-            
+
             _id = album['id']
             name = album['name']
             release_date = album['release_date']
             link = album['external_urls']['spotify']
             image_url = album['images'][1]['url'] if album['images'] else None
-            
+
             artists = [(artist['name'], artist['external_urls']['spotify']) for artist in album['artists']][:2]
-        
+
             embed: discord.Embed = discord.Embed(
                 title=name,
                 url=link,
@@ -303,20 +301,20 @@ class Scraping(BaseCog):
                 timestamp = release_date
 
             embed.add_field(name="Release Date", value=timestamp, inline=False)
-            
+
             tracks_data: Dict[str, Any] = await self.spotify_http_client.get_album_tracks(id=_id, market="US", limit=5)
-            
+
             tracks: List[Dict[str, Any]] = tracks_data['items']
             if tracks:
                 embed.add_field(name="Tracks", value="\n".join([f"> [{track['name']}]({track['external_urls']['spotify']})" for track in tracks]))
-                
+
             embed.add_field(
                 name="Artist" if len(artists) == 1 else "Artists",
                 value="\n".join([f"> [{i[0].title()}]({i[1]})" for i in artists]),
             )
 
             embeds.append((name, embed))
-    
+
         view = OptionSelectView(ctx, embeds)
         return await view.start()"""  # noqa: E501
 
@@ -663,7 +661,9 @@ class Scraping(BaseCog):
             movie = max(data["results"], key=lambda _movie: _movie["vote_count"])
 
         except ValueError:
-            return await interaction.response.send_message(f"Couldn't find a movie by the name of {movie}.", ephemeral=True)  # noqa: E501
+            return await interaction.response.send_message(
+                f"Couldn't find a movie by the name of {movie}.", ephemeral=True
+            )  # noqa: E501
 
         embed: discord.Embed = discord.Embed(
             title=movie["title"],

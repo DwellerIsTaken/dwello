@@ -53,7 +53,7 @@ class LevellingUtils:
             conn: asyncpg.Connection
             async with conn.transaction():
                 query: str = """
-                    INSERT INTO users(user_id, guild_id, event_type) VALUES($1, $2, 'server'), ($1, $2, 'bot') 
+                    INSERT INTO users(user_id, guild_id, event_type) VALUES($1, $2, 'server'), ($1, $2, 'bot')
                     ON CONFLICT (user_id, guild_id, event_type) DO NOTHING
                     """
                 await conn.execute(
@@ -222,7 +222,7 @@ class AutoComplete:
             if value_ is None and name_ is None:
                 continue
 
-            if current.startswith(str(name_).lower()[:item]):
+            if current.startswith(str(name_).lower()[:item]):  # noqa: SIM114
                 choices.append(Choice(name=str(name_), value=str(value_)))
             elif current.startswith(str(value_)[:item]):
                 choices.append(Choice(name=str(name_), value=str(value_)))
@@ -345,7 +345,7 @@ class OtherUtils:
             conn: asyncpg.Connection
             async with conn.transaction():
                 query: str = """
-                    SELECT channel_id, counter_name FROM server_data WHERE guild_id = $1 AND channel_id IS NOT NULL 
+                    SELECT channel_id, counter_name FROM server_data WHERE guild_id = $1 AND channel_id IS NOT NULL
                     AND event_type = 'counter' AND counter_name != 'category'
                     """
                 channels = await conn.fetch(

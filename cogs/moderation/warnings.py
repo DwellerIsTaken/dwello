@@ -310,7 +310,7 @@ class Warnings(BaseCog):
 
                     name = str(text)  # {str(date)[:10]}
 
-                    if current.startswith(str(text).lower()[:item]):
+                    if current.startswith(str(text).lower()[:item]):  # noqa: SIM114
                         choices.append(Choice(name=name, value=name))
                     elif current.startswith(str(date)[:item]):
                         choices.append(Choice(name=name, value=name))

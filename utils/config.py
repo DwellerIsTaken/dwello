@@ -82,11 +82,11 @@ class Environment:
     @overload
     def parse_entity(self, entity: None) -> Null:
         ...
-    
+
     @overload
     def parse_entity(self, entity: ...) -> ...:
         ...
-    
+
     @overload
     def parse_entity(self, entity: ..., *, to_raise: bool) -> ...:
         ...

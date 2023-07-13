@@ -364,10 +364,8 @@ class DwelloContext(commands.Context):  # [commands.Bot], Generic[T]
             return (False, message) if delete_after_cancel is False and return_message else False
 
     async def trigger_typing(self) -> None:
-        try:
+        with suppress(discord.Forbidden, discord.HTTPException):
             await super().typing()
-        except (discord.Forbidden, discord.HTTPException):
-            pass
 
     @property
     def is_bot_owner(self) -> bool:
