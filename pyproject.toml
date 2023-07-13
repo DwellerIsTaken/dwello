@@ -3,7 +3,8 @@ line-length = 125
 
 [tool.ruff]
 line-length = 125
-select = ["E", "F", "W"]
+select = ["E", "F", "W", "SIM"]
+exclude = ["structure.py", "todo.py", "constants.py", "archive"]
 
 [tool.isort]
 profile = "black"
