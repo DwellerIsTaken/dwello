@@ -3,6 +3,7 @@ line-length = 125
 
 [tool.ruff]
 line-length = 125
+select = ["E", "F", "W"]
 
 [tool.isort]
 profile = "black"
