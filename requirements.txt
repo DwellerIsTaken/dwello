@@ -12,4 +12,5 @@ wikipedia-api
 pytz
 typing_extensions
 dateparser
+lru-dict
 git+https://github.com/blanketsucks/aiospotify
