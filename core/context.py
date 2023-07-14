@@ -160,6 +160,10 @@ class DwelloContext(commands.Context):  # [commands.Bot], Generic[T]
 
         embeds = [embed] if embed else (embeds or [])
 
+        for embed_ in embeds:
+            # guild custom embed color check
+            embed_.color = self.bot.color
+
         if bold:
             content = f"**{content}**"
         if italic:
