@@ -53,7 +53,6 @@ class HelpCentre(discord.ui.View):
             title="Here is a guide on how to understand this help command",
             description="\n__**Do not not include these brackets when running a command!**__"
             "\n__**They are only there to indicate the argument type**__",
-            color=cs.RANDOM_COLOR,
         )
         embed.add_field(
             name="`<argument>`",
@@ -189,7 +188,6 @@ class HelpView(discord.ui.View):
             )  # noqa: E501
             embed: discord.Embed = discord.Embed(
                 title=f"{cog.qualified_name} commands [{self.clean_command_count(cog_, comm)}]",
-                color=cs.RANDOM_COLOR,
                 description=description_clean,
             )
             embed.set_footer(text='For more info on a command run `dw.help [command]`')
@@ -216,7 +214,6 @@ class HelpView(discord.ui.View):
                     embeds.append(embed)
                     embed = discord.Embed(
                         title=f"{cog.qualified_name} commands [{len(comm)}]",
-                        color=cs.RANDOM_COLOR,
                         description=description_clean,
                     )
 
@@ -240,7 +237,6 @@ class HelpView(discord.ui.View):
 
     def build_main_page(self: Self) -> discord.Embed:
         embed: discord.Embed = discord.Embed(
-            color=cs.RANDOM_COLOR,
             title="Dwello Help Menu",
             description=(
                 "Hello, I'm Dwello! I'm still in development, but you can use me.\n"
@@ -781,13 +777,11 @@ class About(commands.Cog):
 
     @commands.hybrid_command(name="uptime", help="Returns bot's uptime.", with_app_command=True)
     async def uptime(self, ctx: DwelloContext) -> Optional[discord.Message]:
-        days, hours, minutes, seconds = self.get_uptime()
         timestamp = self.get_startup_timestamp()
 
         embed: discord.Embed = discord.Embed(
             title="Current Uptime",
-            description=f"**{days} days, {hours} hours, {minutes} minutes, {seconds} seconds**",
-            color=cs.RANDOM_COLOR,
+            description=f"**{self.get_uptime(complete=True)}**",
         )
         embed.add_field(name="Startup Time", value=timestamp, inline=False)
         return await ctx.reply(embed=embed)
@@ -823,7 +817,6 @@ class About(commands.Cog):
         return await message.edit(
             content=None,
             embed=discord.Embed(
-                color=cs.RANDOM_COLOR,
                 description=(
                     f"**`Websocket -> {round(latency_ms, 3)}ms{' ' * (9 - len(str(round(latency_ms, 3))))}`**\n"
                     f"**`Typing    -> {round(typing_ms, 3)}ms{' ' * (9 - len(str(round(typing_ms, 3))))}`**\n"
@@ -877,7 +870,6 @@ class About(commands.Cog):
             title=f'{self.bot.user.name} Statistics',
             description=links + '**Latest Changes:**\n' + revision,
             url=cs.INVITE_LINK,
-            color=cs.RANDOM_COLOR,
         )
         embed.set_thumbnail(url=self.bot.user.display_avatar.url)
         embed.set_footer(text=f'{self.bot.main_prefix}about for more')

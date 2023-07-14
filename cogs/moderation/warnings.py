@@ -175,7 +175,6 @@ class Warnings(BaseCog):
                         return await ctx.reply(
                             embed=discord.Embed(
                                 description=f"{string} no warnings yet.",
-                                color=cs.RANDOM_COLOR,
                             ),
                             user_mistake=True,
                         )  # kind of success, so embed can be used
@@ -276,7 +275,6 @@ class Warnings(BaseCog):
                 description=(
                     f"*Removed by:* {ctx.author.mention} \n \nSuccessfully removed *{warnings}* warning(s) from {member}."
                 ),
-                color=cs.RANDOM_COLOR,
                 timestamp=discord.utils.utcnow(),
             )
             return await ctx.reply(embed=embed, permission_cmd=True)

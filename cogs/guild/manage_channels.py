@@ -90,7 +90,6 @@ class ChannelsFunctions:
                 if not deny_result and not counter_category_id:
                     embed: discord.Embed = discord.Embed(
                         description="**Do you want to create a category for your counters?**",
-                        color=cs.RANDOM_COLOR,
                     ).set_footer(text=cs.FOOTER)
                     return await ctx.reply(
                         embed=embed,
@@ -118,7 +117,6 @@ class ChannelsFunctions:
         await ctx.reply(
             embed=discord.Embed(
                 description=f"**{counter_channel.name}** is successfully created!",
-                color=cs.RANDOM_COLOR,
             ),
             permission_cmd=True,
         )  # DISPLAEYD IN DISCORD LOGS
@@ -157,7 +155,6 @@ class Stats_View(View):
         missing_permissions_embed = discord.Embed(
             title="Permission Denied.",
             description="You can't interact with someone else's buttons.",
-            color=cs.RANDOM_COLOR,
         )
         missing_permissions_embed.set_footer(text=cs.FOOTER)
         return await interaction.response.send_message(embed=missing_permissions_embed, ephemeral=True)

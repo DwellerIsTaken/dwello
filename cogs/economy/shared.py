@@ -7,7 +7,7 @@ from typing import Optional, Tuple, Union
 import asyncpg
 import discord
 
-import constants as cs
+import constants as cs  # noqa: F401
 from core import Dwello, DwelloContext
 
 
@@ -32,7 +32,7 @@ class SharedEcoUtils:
 
                 if not (record[0] if record else None):
                     return await ctx.reply(
-                        embed=discord.Embed(description="The job isn't yet set.", color=cs.RANDOM_COLOR),
+                        embed=discord.Embed(description="The job isn't yet set."),
                         ephemeral=True,
                     )
 
@@ -105,7 +105,6 @@ class SharedEcoUtils:
                         title="→ \U0001d5e6\U0001d5fc\U0001d5ff\U0001d5ff\U0001d606 ←",
                         description=f"Your have already worked{' *on this server* ' if name == 'server' else ' '}today!\n"
                         f"Your next workday begins {discord.utils.format_dt(my_datetime, style='R')}",
-                        color=cs.RANDOM_COLOR,
                     )
                     return await ctx.reply(embed=embed)
 
@@ -129,7 +128,6 @@ class SharedEcoUtils:
                 embed: discord.Embed = discord.Embed(
                     title="→ \U0001d5e6\U0001d5ee\U0001d5f9\U0001d5ee\U0001d5ff\U0001d606 ←",  # 𝗦𝗮𝗹𝗮𝗿𝘆
                     description=f"Your day was very successful. Your salary for today is *{amount}*.",
-                    color=cs.RANDOM_COLOR,
                 )
                 embed.timestamp = discord.utils.utcnow()
                 embed.set_footer(

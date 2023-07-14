@@ -6,7 +6,7 @@ import asyncpg
 import discord
 from discord.ext import commands
 
-import constants as cs
+import constants as cs  # noqa: F401
 from core import BaseCog, Dwello, DwelloContext
 
 from .shared import SharedEcoUtils
@@ -34,7 +34,6 @@ class BotEcoUtils:
                         embed=discord.Embed(
                             title="Permission denied",
                             description="You don't have enough currency to execute this action!",
-                            color=cs.RANDOM_COLOR,
                         )
                     )
 

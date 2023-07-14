@@ -19,7 +19,6 @@ async def member_check(ctx: commands.Context, member: discord.Member, bot: comma
             title="Permission Denied.",
             description=f"Hi **{ctx.author.name}**! The member you are trying to {string} is **YOU**! "
             f"So don't be stupid and don't {string} yourself. Call an admin and he will {string} you immidiately.",
-            color=cs.RANDOM_COLOR,
         )
         return await ctx.reply(embed=embed, ephemeral=True)
 
@@ -28,7 +27,6 @@ async def member_check(ctx: commands.Context, member: discord.Member, bot: comma
             embed=discord.Embed(
                 title="Permission Denied.",
                 description=str(monologue),
-                color=cs.RANDOM_COLOR,
             ),
             ephemeral=True,
         )

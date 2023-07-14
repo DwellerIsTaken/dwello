@@ -102,7 +102,6 @@ class LevellingUtils:
                     level_embed = discord.Embed(
                         title="Congratulations with your new level!",
                         description=string.Template(level_embed_dis).safe_substitute(member=message.author.name),
-                        color=cs.RANDOM_COLOR,
                     )
 
                     level_embed.set_thumbnail(url=f"{message.author.display_avatar}")

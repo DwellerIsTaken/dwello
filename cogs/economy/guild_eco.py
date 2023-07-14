@@ -67,7 +67,6 @@ class GuildEcoUtils:
             title="Job added",
             description=f"You have successfully created a job on your server.\n"
             f"\n*Job name:* {name}\n*Job salary:* {salary}\n*Job description:* ```{description}```",
-            color=cs.RANDOM_COLOR,
         )
 
         await self.bot.db.fetch_table_data("jobs")
@@ -98,7 +97,6 @@ class GuildEcoUtils:
                 job_embed: discord.Embed = discord.Embed(
                     title="Joblist",
                     description="Jobs currently available on this server",
-                    color=cs.RANDOM_COLOR,
                 )
                 failure_embed: discord.Embed = discord.Embed(
                     description="No jobs currently available on this server",
@@ -161,7 +159,6 @@ class GuildEcoUtils:
             description=f"{'Your job' if member == ctx.author else f'The job of {member}'} is removed.\n"
             f"\n**Details**\nJob name: {name}\nSalary: {salary}\n"
             f"Description: {f'```{description}```' if description else description}",
-            color=cs.RANDOM_COLOR,
         )
         return await ctx.reply(embed=embed)
 
@@ -226,7 +223,6 @@ class GuildEcoUtils:
                 public_embed: discord.Embed = discord.Embed(
                     title="Removed!",
                     description=f"*Removed by:* {ctx.author.mention} \n{embed_string}",
-                    color=cs.RANDOM_COLOR,
                 )
                 public_embed.timestamp = discord.utils.utcnow()
 
@@ -236,7 +232,7 @@ class GuildEcoUtils:
         )  # KEEP IT PUBLIC? ADMIN COULD REMOVE IT AND NO ONE WILL KNOW WHO DID IT. MAYBE MAKE BOT/JOB LOGS TO ADD SIMILAIR ACTIONS TO THEM  # noqa: E501
 
 
-class Guild_Economy(BaseCog):
+class Guild_Economy(BaseCog): # REDO
     def __init__(self, bot: Dwello) -> None:
         self.bot: Dwello = bot
         self.ge: GuildEcoUtils = GuildEcoUtils(self.bot)
@@ -250,13 +246,12 @@ class Guild_Economy(BaseCog):
         embed = discord.Embed(
             title="Denied",
             description="```$server [subgroup name]```",
-            color=cs.RANDOM_COLOR,
         )  # TURN THESE DESCRIPTIONS INTO POINTERS TO HELP COMMAND
         return await ctx.reply(embed=embed)
 
     @server.group(name="job", invoke_without_command=True, with_app_command=True)
     async def jobs(self, ctx: DwelloContext) -> Optional[discord.Message]:
-        embed = discord.Embed(title="Denied", description="```$job list```", color=cs.RANDOM_COLOR)
+        embed = discord.Embed(title="Denied", description="```$job list```")
         return await ctx.reply(embed=embed)
 
     @jobs.command(
@@ -322,7 +317,7 @@ class Guild_Economy(BaseCog):
 
         await self.bot.db.fetch_table_data("jobs")
         return await ctx.reply(
-            embed=discord.Embed(description=f"The job is set to: **{name}**", color=cs.RANDOM_COLOR),
+            embed=discord.Embed(description=f"The job is set to: **{name}**"),
             mention_author=False,
         )
 

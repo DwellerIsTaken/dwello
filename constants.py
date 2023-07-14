@@ -3,7 +3,6 @@ import discord
 # __EMBED_ATTRIBUTES__
 # __COLORS__:
 
-RANDOM_COLOR = discord.Colour.random()  # -> MOST USED
 WARNING_COLOR = 0xFF0000  # -> COLOR FOR WARNINGS
 TWITCH_COLOR = discord.Colour.random()  # get color of streamer later & add customize option
 

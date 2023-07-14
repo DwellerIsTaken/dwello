@@ -196,7 +196,6 @@ class Scraping(BaseCog):
             title=data["alt_description"].capitalize(),
             url=data["links"]["download"],
             description=description,
-            color=cs.RANDOM_COLOR,
         )
         embed.set_image(url=data["urls"]["regular"])
 
@@ -232,7 +231,6 @@ class Scraping(BaseCog):
             embed: discord.Embed = discord.Embed(
                 title=name,
                 url=link,
-                color=cs.RANDOM_COLOR,
             )
             embed.set_thumbnail(url=image_url)
 
@@ -371,7 +369,6 @@ class Scraping(BaseCog):
             title=artist.name,
             url=artist.external_urls.spotify,
             description=_description,
-            color=cs.RANDOM_COLOR,
         )
         image: Image = artist.images[1] if artist.images else None
         if image:
@@ -417,7 +414,6 @@ class Scraping(BaseCog):
             title=name,
             url=url,
             description=description,
-            color=cs.RANDOM_COLOR,
         )
         if image_url:
             embed.set_thumbnail(url=image_url)
@@ -459,7 +455,6 @@ class Scraping(BaseCog):
             title=_track.name,
             url=f"https://open.spotify.com/track/{_track.id}",
             description=duration_str + release_str,
-            color=cs.RANDOM_COLOR,
         )
         image: Image = _album.images[1] if _album.images else None
         if image:
@@ -531,7 +526,6 @@ class Scraping(BaseCog):
             title=name,
             url=website,
             description=short_description,
-            color=cs.RANDOM_COLOR,
         )
         embed.set_thumbnail(url=thumbnail)
 
@@ -573,7 +567,6 @@ class Scraping(BaseCog):
             title=person["original_name"],
             description=page.summary[:500] + "..." if len(page.summary) > 500 else "",
             url=f"https://www.themoviedb.org/person/{person['id']}",
-            color=cs.RANDOM_COLOR,
         )
         # rd: List[str] = movie['release_date'].split('-')
         # year, month, day = int(rd[0]), int(rd[1]), int(rd[2])
@@ -626,7 +619,6 @@ class Scraping(BaseCog):
             title=movie["title"],
             description=movie["overview"],
             url=f"https://www.themoviedb.org/movie/{movie['id']}",
-            color=cs.RANDOM_COLOR,
         )
         embed.add_field(
             name="Release Date",
@@ -669,7 +661,6 @@ class Scraping(BaseCog):
             title=movie["title"],
             description=movie["overview"],
             url=f"https://www.themoviedb.org/movie/{movie['id']}",
-            color=cs.RANDOM_COLOR,
         )
         embed.add_field(
             name="Release Date",
@@ -705,7 +696,6 @@ class Scraping(BaseCog):
             title=show["original_name"],
             description=show["overview"],
             url=f"https://www.themoviedb.org/tv/{show['id']}",
-            color=cs.RANDOM_COLOR,
         )
         embed.add_field(
             name="Release Date",
@@ -746,7 +736,6 @@ class Scraping(BaseCog):
             title=show["original_name"],
             description=show["overview"],
             url=f"https://www.themoviedb.org/tv/{show['id']}",
-            color=cs.RANDOM_COLOR,
         )
         embed.add_field(
             name="Release Date",

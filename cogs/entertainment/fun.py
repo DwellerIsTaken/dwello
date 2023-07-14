@@ -9,7 +9,7 @@ import discord
 from discord import app_commands
 from discord.ext import commands
 
-import constants as cs
+import constants as cs  # noqa: F401
 from core import BaseCog, Dwello, DwelloContext
 from utils import ENV
 
@@ -76,7 +76,6 @@ class Fun(BaseCog):
             title=title,
             type="gifv",
             url=item_url,
-            color=cs.RANDOM_COLOR,
         )
         embed.set_image(url=gif_url)
         embed.set_footer(text=f"Powered by Tenor | Tags: {', '.join(result['tags'][:2])}")
@@ -93,7 +92,6 @@ class Fun(BaseCog):
         embed: discord.Embed = discord.Embed(
             title=data["title"],
             url=data["url"],
-            color=cs.RANDOM_COLOR,
         )
         embed.add_field(name="Created at", value=discord.utils.format_dt(dt, style="D"))
         embed.add_field(name="Subscribers", value=data["subreddit_subscribers"])
@@ -118,7 +116,6 @@ class Fun(BaseCog):
         embed: discord.Embed = discord.Embed(
             title=data["title"],
             url=data["url"],
-            color=cs.RANDOM_COLOR,
         )
         embed.add_field(name="Created at", value=discord.utils.format_dt(dt, style="D"))
         embed.add_field(name="Subscribers", value=data["subreddit_subscribers"])

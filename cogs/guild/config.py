@@ -34,7 +34,7 @@ class PrefixConfig:
         # await self.bot.db.fetch_table_data("prefixes")
         self.bot.guild_prefixes[ctx.guild.id].append(prefix)
         return await ctx.reply(
-            embed=discord.Embed(description=f"The prefix is set to `{prefix}`", color=cs.RANDOM_COLOR),
+            embed=discord.Embed(description=f"The prefix is set to `{prefix}`"),
             permission_cmd=True,
         )
 
@@ -45,7 +45,7 @@ class PrefixConfig:
                 prefixes = await conn.fetch("SELECT prefix FROM prefixes WHERE guild_id = $1", ctx.guild.id)
                 default_prefixes: List[str] = self.bot.DEFAULT_PREFIXES + [f"<@!{self.bot.user.id}>"]
 
-                embed: discord.Embed = discord.Embed(title="Prefixes", color=cs.RANDOM_COLOR)
+                embed: discord.Embed = discord.Embed(title="Prefixes")
 
                 if ctx.guild:
                     embed.add_field(
@@ -93,7 +93,6 @@ class PrefixConfig:
         return await ctx.reply(
             embed=discord.Embed(
                 description=f"{'Prefix has' if count == 1 else f'{count} prefixes have'} been removed.",
-                color=cs.RANDOM_COLOR,
             ),
             permission_cmd=True,
         )
@@ -146,7 +145,7 @@ class ChannelConfig:
                 string = f"{name.capitalize()} message has been {'updated' if result[0] else 'set'} to: ```{text}```"
 
         return await ctx.reply(
-            embed=discord.Embed(description=string, color=cs.RANDOM_COLOR),
+            embed=discord.Embed(description=string),
             permission_cmd=True,
         )
 
@@ -187,11 +186,10 @@ class ChannelConfig:
         await channel.send(
             embed=discord.Embed(
                 description=f"This channel has been set as a *{name}* channel.",
-                color=cs.RANDOM_COLOR,
             )
         )
         return await ctx.reply(
-            embed=discord.Embed(description=string, color=cs.RANDOM_COLOR),
+            embed=discord.Embed(description=string),
             permission_cmd=True,
         )
 
@@ -215,7 +213,6 @@ class ChannelConfig:
             embed=discord.Embed(
                 title=f"{name.capitalize()} channel message",
                 description=f"```{result[0]}```",
-                color=cs.RANDOM_COLOR,
             ),
             permission_cmd=True,
         )
@@ -242,7 +239,6 @@ class ChannelConfig:
         return await ctx.reply(
             embed=discord.Embed(
                 description=f"{name.capitalize()} channel is currently set to {channel.mention}",
-                color=cs.RANDOM_COLOR,
             ),
             permission_cmd=True,
         )
@@ -271,7 +267,6 @@ class ChannelConfig:
         return await ctx.reply(
             embed=discord.Embed(
                 description=f"{name.capitalize()} channel has been removed.",
-                color=cs.RANDOM_COLOR,
             ),
             permission_cmd=True,
         )

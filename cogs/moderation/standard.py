@@ -38,7 +38,6 @@ class StandardModeration(BaseCog):
                 description=f"Greetings! \nYou have been banned from **{ctx.channel.guild.name}**. "
                 "You must have done something wrong or it's just an administrator whom is playing with his toys. "
                 f"In any way, it's an embezzlement kerfuffle out here.\n \n Reason: **{reason}**",
-                color=cs.RANDOM_COLOR,
             )
 
             embed.set_image(url="https://media1.tenor.com/images/05186cf068c1d8e4b6e6d81025602215/tenor.gif?itemid=14108167")
@@ -88,7 +87,6 @@ class StandardModeration(BaseCog):
                 return await ctx.reply(
                     embed=discord.Embed(
                         description="The provided member is un-banned.",
-                        color=cs.RANDOM_COLOR,
                     ),
                     permission_cmd=True,
                 )

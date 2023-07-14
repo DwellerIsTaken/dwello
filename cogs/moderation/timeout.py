@@ -182,7 +182,6 @@ class Timeout(BaseCog):
                 embed=discord.Embed(
                     title="Unmuted",
                     description=f"{member} is unmuted.",
-                    color=cs.RANDOM_COLOR,
                 ),
                 permission_cmd=True,
             )
@@ -212,7 +211,7 @@ class Timeout(BaseCog):
                         reason_list.append(str(reason))
                     timed_out_list.append(member)
 
-            embed: discord.Embed = discord.Embed(title="Timed out list", color=cs.RANDOM_COLOR)
+            embed: discord.Embed = discord.Embed(title="Timed out list")
 
             if not timed_out_list:
                 embed.add_field(name="\u2800", value="`Nobody is timed out.`")

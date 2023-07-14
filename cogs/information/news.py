@@ -12,7 +12,7 @@ from discord import ButtonStyle, app_commands
 from discord.ext import commands
 from typing_extensions import Self
 
-import constants as cs
+import constants as cs  # noqa: F401
 from core import BaseCog, Dwello, DwelloContext
 from utils import get_unix_timestamp, is_discord_link
 
@@ -232,7 +232,6 @@ class NewsViewer(discord.ui.View):
 
         embed = discord.Embed(
             title=f"\N{NEWSPAPER} {fm_dt(time)} ({fm_dt(time, 'R')})",
-            colour=cs.RANDOM_COLOR,
         )
         embed.add_field(name=page.title, value=message.content)
 
@@ -270,7 +269,6 @@ class NewsViewer(discord.ui.View):
             _embed: discord.Embed = discord.Embed(
                 title="News",
                 description="Sorry, there are no news yet.",
-                color=cs.RANDOM_COLOR,
             )
         else:
             new.update_labels()
@@ -295,7 +293,6 @@ class NewsViewer(discord.ui.View):
             _embed: discord.Embed = discord.Embed(
                 title="News",
                 description="Sorry, there are no news yet.",
-                color=cs.RANDOM_COLOR,
             )
         else:
             new.update_labels()
@@ -398,7 +395,6 @@ class News(BaseCog):
         return await ctx.reply(
             embed=discord.Embed(
                 description=f"Successfully removed a newspost with ID: {news_id}.",
-                color=cs.RANDOM_COLOR,
             )
         )
 

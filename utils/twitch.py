@@ -96,7 +96,6 @@ class Twitch:
                     return await ctx.reply(
                         embed=discord.Embed(
                             description=f"Could not find user **{username}**.",
-                            color=cs.RANDOM_COLOR,
                         ),
                         ephemeral=True,
                     )
@@ -182,7 +181,7 @@ class Twitch:
                     "SELECT username, user_id FROM twitch_users WHERE guild_id = $1",
                     ctx.guild.id,
                 )
-                twitch_embed = discord.Embed(title="Twitch subscriptions", color=cs.RANDOM_COLOR)
+                twitch_embed = discord.Embed(title="Twitch subscriptions")
                 twitch_embed.set_thumbnail(
                     url="https://mlpnk72yciwc.i.optimole.com/cqhiHA-5_fN-hee/w:350/h:350/q:90/rt:fill/g:ce/https://bleedingcool.com/wp-content/uploads/2019/09/twitch-logo-icon-2019.jpg"
                 )
@@ -198,7 +197,6 @@ class Twitch:
                     return await ctx.reply(
                         embed=discord.Embed(
                             description="The guild isn't subscribed to any twitch streamers.",
-                            color=cs.RANDOM_COLOR,
                         )
                     )
 
@@ -220,7 +218,6 @@ class Twitch:
                     return await ctx.reply(
                         embed=discord.Embed(
                             description="No events to unsubscribe from.",
-                            color=cs.RANDOM_COLOR,
                         ),
                         ephemeral=True,
                     )
