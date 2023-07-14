@@ -696,7 +696,7 @@ class About(commands.Cog):
         # [`hash`](url) message (offset)
         #offset = time.format_relative(commit_time.astimezone(datetime.timezone.utc))
         return (
-            f"[`{short_sha2}`]({cs.GITHUB}commit/{commit.hex}) {short} "
+            f"[`{short_sha2}`]({cs.GITHUB}commit/{commit.hex}) {short[:40]}{'...' if len(short) > 40 else ''} "
             f"({discord.utils.format_dt(commit_time, 'R')})"
         )
 
