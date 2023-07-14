@@ -32,15 +32,6 @@ UNSPLASH_DEMO_ACCESS_KEY = ENV["UNSPLASH_DEMO_ACCESS_KEY"]
 # create simple response handler class
 
 
-class GameNotFound(Exception):  # <- look into it
-    def __init__(self, game_id: Union[int, str] = None):
-        self.game_id = game_id
-        error_message = "Game not found"
-        if game_id is not None:
-            error_message += f" with ID: {game_id}"
-        super().__init__(error_message)
-
-
 class OptionSelectView(discord.ui.View):
     def __init__(
         self,
@@ -53,8 +44,6 @@ class OptionSelectView(discord.ui.View):
         self.embeds: List[discord.Embed] = [embed[1] for embed in options]
 
         self.main_embed = self.embeds[0]
-        print(self.embeds)
-        print("\n\n", self.main_embed)
 
     @discord.ui.select(placeholder="Select a category", row=0)
     async def category_select(self, interaction: discord.Interaction, select: discord.ui.Select):
@@ -117,48 +106,6 @@ class Scraping(BaseCog):
     def wiki_headers(self) -> Dict[str, str]:
         return {"User-Agent": "CoolBot/0.0 (https://example.org/coolbot/; coolbot@example.org)"}
 
-    """@property
-    def spotify_headers(self: Self) -> Dict[str, str]:
-        return {"Authorization": f"Bearer {self.spotify_token}"}"""
-
-    """async def get_spotify_access_token(self: Self) -> Tuple[str, int]:
-
-        client_id: str = get_or_fail('SPOTIFY_CLIENT_ID')
-        client_secret: str = get_or_fail('SPOTIFY_CLIENT_SECRET')
-
-        #client: aiospotify.SpotifyClient = aiospotify.SpotifyClient(client_id, client_secret)
-
-        auth_bytes: bytes = f"{client_id}:{client_secret}".encode("utf-8")
-        auth_base = str(base64.b64encode(auth_bytes), "utf-8")
-
-        auth_url: URL = "https://accounts.spotify.com/api/token"
-        auth_headers: Dict[str, str] = {
-            "Authorization": "Basic " + auth_base,
-            "Content-Type": "application/x-www-form-urlencoded"
-        }
-        auth_data: Dict[str, str] = {"grant_type": "client_credentials"}
-        async with self.bot.http_session.post(url=auth_url, headers=auth_headers, data=auth_data) as response:
-            data: Any = await response.json()
-
-        match response.status:
-            case 200:
-                _token = data['access_token']
-                _expires = data['expires_in']
-            case 400:
-                return "The request was invalid or malformed. This could be due to missing or incorrect parameters."
-            case 401:
-                return "The request lacks valid authentication credentials." # temp
-            case 403:
-                return "The server understood the request, but you are not allowed to access the requested resource."
-
-        self.spotify_token = _token
-        return _token, _expires"""
-
-    """@commands.command()
-    async def test(self, ctx: DwelloContext):
-        message = await ctx.author.fetch_message(1119035015842504744)
-        return await ctx.reply(message.content)"""
-
     @commands.hybrid_command(
         name="image",
         help="Returns an image.",
@@ -180,24 +127,17 @@ class Scraping(BaseCog):
             if response.status == 200:
                 data = await response.json()
 
-            elif response.status == 401:
-                print("Unauthorized: Please check your Unsplash access key.")
+            elif response.status >= 400:
+                return await ctx.reply(
+                    f"Something went wrong while trying to get an image for {mk(image)}",
+                )
 
-            elif response.status == 403:
-                print("Rate limited: Please try again later.")
-
-            else:
-                print("Bad request: Unable to retrieve image.")
-
-        description = (
-            f"Photo by [{data['user']['name']}]({data['user']['links']['html']}) on [Unsplash](https://unsplash.com)"
-        )
-        embed: discord.Embed = discord.Embed(
+        embed = discord.Embed(
             title=data["alt_description"].capitalize(),
             url=data["links"]["download"],
-            description=description,
-        )
-        embed.set_image(url=data["urls"]["regular"])
+            description=f"Photo by [{data['user']['name']}]({data['user']['links']['html']}) on [Unsplash](https://unsplash.com)",
+            color=cs.RANDOM_COLOR,
+        ).set_image(url=data["urls"]["regular"])
 
         return await ctx.reply(embed=embed)
 
@@ -228,19 +168,23 @@ class Scraping(BaseCog):
 
             artists = [(artist["name"], artist["external_urls"]["spotify"]) for artist in album["artists"]][:2]
 
-            embed: discord.Embed = discord.Embed(
-                title=name,
-                url=link,
-            )
-            embed.set_thumbnail(url=image_url)
-
             try:
                 timestamp = get_unix_timestamp(release_date, "%Y-%m-%d", style="d")
             except ValueError:
                 timestamp = release_date
-
-            embed.add_field(name="Release Date", value=timestamp, inline=False)
-
+            embed = (
+                discord.Embed(
+                    title=name,
+                    url=link,
+                    color=cs.RANDOM_COLOR,
+                )
+                .set_thumbnail(url=image_url)
+                .add_field(name="Release Date", value=timestamp, inline=False)
+                .add_field(
+                    name="Artist" if len(artists) == 1 else "Artists",
+                    value="\n".join([f"> [{i[0].title()}]({i[1]})" for i in artists]),
+                )
+            )
             tracks_data: Dict[str, Any] = await self.spotify_http_client.get_album_tracks(id=_id, market="US", limit=5)
 
             if tracks := tracks_data["items"]:
@@ -249,72 +193,8 @@ class Scraping(BaseCog):
                     value="\n".join([f"> [{track['name']}]({track['external_urls']['spotify']})" for track in tracks]),
                 )
 
-            embed.add_field(
-                name="Artist" if len(artists) == 1 else "Artists",
-                value="\n".join([f"> [{i[0].title()}]({i[1]})" for i in artists]),
-            )
-
         embeds = [(name, embed)]
-        # await ctx.send(embeds)
-        # view = OptionSelectView(ctx, embeds)
-        # await view.start()
         return await ctx.reply(embed=embeds[0][1])
-
-    """not_found = f"Can't find any albums by the name of *{discord.utils.escape_markdown(album, as_needed=False)}*"
-
-        try:
-            data: SearchResult = await self.spotify_client.search(query=album, types=[ObjectType.Album], limit=5)
-
-        except NotFound:
-            return await ctx.reply(not_found, user_mistake=True)
-
-        albums: List[Dict[str, Any]] = data._data['albums']['items']
-        if not albums:
-            return await ctx.reply(not_found, user_mistake=True)
-
-        embeds: List[Tuple[str, discord.Embed]] = []
-
-        for album in albums:
-
-            album: Dict[str, Any]
-
-            _id = album['id']
-            name = album['name']
-            release_date = album['release_date']
-            link = album['external_urls']['spotify']
-            image_url = album['images'][1]['url'] if album['images'] else None
-
-            artists = [(artist['name'], artist['external_urls']['spotify']) for artist in album['artists']][:2]
-
-            embed: discord.Embed = discord.Embed(
-                title=name,
-                url=link,
-                color=cs.RANDOM_COLOR,
-            )
-            embed.set_thumbnail(url=image_url)
-
-            try:
-                timestamp = self.get_unix_timestamp(release_date, "%Y-%m-%d", style="d")
-            except ValueError:
-                timestamp = release_date
-
-            embed.add_field(name="Release Date", value=timestamp, inline=False)
-
-            tracks_data: Dict[str, Any] = await self.spotify_http_client.get_album_tracks(id=_id, market="US", limit=5)
-
-            tracks: List[Dict[str, Any]] = tracks_data['items']
-            if tracks:
-                embed.add_field(name="Tracks", value="\n".join([f"> [{track['name']}]({track['external_urls']['spotify']})" for track in tracks]))
-
-            embed.add_field(
-                name="Artist" if len(artists) == 1 else "Artists",
-                value="\n".join([f"> [{i[0].title()}]({i[1]})" for i in artists]),
-            )
-
-            embeds.append((name, embed))
-
-        view = OptionSelectView(ctx, embeds)
-        return await view.start()"""  # noqa: E501
 
     @commands.hybrid_command(
         name="artist",
@@ -365,22 +245,25 @@ class Scraping(BaseCog):
         top_tracks = sorted(tracks, key=lambda x: x["popularity"], reverse=True)
 
         _description = f"**Followers**: {artist.followers.total:,}\n**Genres**: " + ", ".join(list(artist.genres[:2]))
-        embed: discord.Embed = discord.Embed(
-            title=artist.name,
-            url=artist.external_urls.spotify,
-            description=_description,
+        embed = (
+            discord.Embed(
+                title=artist.name,
+                url=artist.external_urls.spotify,
+                description=_description,
+                color=cs.RANDOM_COLOR,
+            )
+            .add_field(
+                name="Top Albums",
+                value="\n".join(f"> [{name}]({url})" for name, url in album_tuples),
+            )
+            .add_field(
+                name="Top Tracks",
+                value="\n".join(f"> [{track['name']}]({track['external_urls']['spotify']})" for track in top_tracks[:3]),
+            )
         )
         image: Image = artist.images[1] if artist.images else None
         if image:
             embed.set_thumbnail(url=image.url)
-        embed.add_field(
-            name="Top Albums",
-            value="\n".join(f"> [{name}]({url})" for name, url in album_tuples),
-        )  # •
-        embed.add_field(
-            name="Top Tracks",
-            value="\n".join(f"> [{track['name']}]({track['external_urls']['spotify']})" for track in top_tracks[:3]),
-        )
 
         return await ctx.reply(embed=embed)
 
@@ -410,15 +293,18 @@ class Scraping(BaseCog):
         image_url = playlist["images"][0]["url"] if playlist["images"] else None
         description = playlist["description"] or None
 
-        embed: discord.Embed = discord.Embed(
-            title=name,
-            url=url,
-            description=description,
+        embed = (
+            discord.Embed(
+                title=name,
+                url=url,
+                description=description,
+                color=cs.RANDOM_COLOR,
+            )
+            .add_field(name="Owner", value=f"[{owner_name}]({owner_url})")
+            .add_field(name="Total Tracks", value=total_tracks)
         )
         if image_url:
             embed.set_thumbnail(url=image_url)
-        embed.add_field(name="Owner", value=f"[{owner_name}]({owner_url})")
-        embed.add_field(name="Total Tracks", value=total_tracks)
 
         return await ctx.reply(embed=embed)
 
@@ -451,19 +337,22 @@ class Scraping(BaseCog):
         except ValueError:
             release_str += _album.release_date.date
 
-        embed: discord.Embed = discord.Embed(
-            title=_track.name,
-            url=f"https://open.spotify.com/track/{_track.id}",
-            description=duration_str + release_str,
+        embed = (
+            discord.Embed(
+                title=_track.name,
+                url=f"https://open.spotify.com/track/{_track.id}",
+                description=duration_str + release_str,
+                color=cs.RANDOM_COLOR,
+            )
+            .add_field(
+                name="Artist" if len(_artists) == 1 else "Artists",
+                value="\n".join([f"> [{i[0].title()}]({i[1]})" for i in _artists]),
+            )
+            .add_field(name="Album", value=f"[{_album.name}]({_album.external_urls.spotify})")
         )
         image: Image = _album.images[1] if _album.images else None
         if image:
             embed.set_thumbnail(url=image.url)
-        embed.add_field(
-            name="Artist" if len(_artists) == 1 else "Artists",
-            value="\n".join([f"> [{i[0].title()}]({i[1]})" for i in _artists]),
-        )
-        embed.add_field(name="Album", value=f"[{_album.name}]({_album.external_urls.spotify})")
 
         return await ctx.reply(embed=embed)
 
@@ -483,20 +372,11 @@ class Scraping(BaseCog):
             if game["name"].lower() == name.lower():
                 return game["appid"]
 
-        raise GameNotFound(name)
+        raise commands.BadArgument(f"Couldn't find a game by the name *{mk(name)}*")
 
     @commands.hybrid_command(name="game", help="Returns a game.", aliases=["games"], with_app_command=True)
     async def game(self, ctx: DwelloContext, *, game: str) -> Optional[discord.Message]:
-        # start = time.time()
-        # end = time.time()
-        # await ctx.send(f"Executed in: {end-start}") # Idea for a time per func to calculate overall latency/response time?
-        # use different api
-        # not enough data ^ and cant search for similair results
-
-        try:
-            game_id = await self.get_game_by_name(game)
-        except GameNotFound:
-            return await ctx.reply(f"Couldn't find a game by the name *{mk(game)}*", user_mistake=True)
+        game_id = await self.get_game_by_name(game)
 
         url: URL = f"https://store.steampowered.com/api/appdetails?appids={game_id}&l=en"
         async with self.bot.http_session.get(url=url) as response:
@@ -516,25 +396,21 @@ class Scraping(BaseCog):
         short_description = data["short_description"]
         price = data["price_overview"]["final_formatted"]
 
-        # minimum_pc_requirements = data['pc_requirements']['minimum']
-        # recommended_pc_requirements = data['pc_requirements']['recommended']
-        # publishers = data['publishers']
-        # price_overview = data['price_overview']
-        # genres = [genre['description'] for genre in data['genres']]
-
-        embed: discord.Embed = discord.Embed(
-            title=name,
-            url=website,
-            description=short_description,
+        embed = (
+            discord.Embed(
+                title=name,
+                url=website,
+                description=short_description,
+                color=cs.RANDOM_COLOR,
+            )
+            .set_thumbnail(url=thumbnail)
+            .add_field(name="Metascore", value=f"[{metascore}]({metaurl})")
+            .add_field(
+                name="Price",
+                value=f"[{price}](https://store.steampowered.com/app/{game_id})",
+            )
+            .add_field(name="Developed by", value=", ".join(devs[:3]), inline=False)
         )
-        embed.set_thumbnail(url=thumbnail)
-
-        embed.add_field(name="Metascore", value=f"[{metascore}]({metaurl})")
-        embed.add_field(
-            name="Price",
-            value=f"[{price}](https://store.steampowered.com/app/{game_id})",
-        )
-        embed.add_field(name="Developed by", value=", ".join(devs[:3]), inline=False)
 
         return await ctx.reply(embed=embed)
 
@@ -562,24 +438,19 @@ class Scraping(BaseCog):
             return await ctx.reply(f"Couldn't find a person by the name of {person}.", user_mistake=True)
 
         page: wikipediaapi.WikipediaPage = self.wiki.page(person["name"])
-
-        embed: discord.Embed = discord.Embed(
-            title=person["original_name"],
-            description=page.summary[:500] + "..." if len(page.summary) > 500 else "",
-            url=f"https://www.themoviedb.org/person/{person['id']}",
-        )
-        # rd: List[str] = movie['release_date'].split('-')
-        # year, month, day = int(rd[0]), int(rd[1]), int(rd[2])
-        # release_date: datetime.datetime = datetime.datetime(year, month, day, tzinfo=None)
-
-        # embed.add_field(name='Release Date', value=discord.utils.format_dt(release_date, style='d'))
-
         gender = "Male" if person["gender"] == 2 else "Female"
         top_movies = list(person["known_for"])
 
-        embed.add_field(name="Gender", value=gender)
-        # embed.add_field(name='Age', value=None)
-        embed.add_field(name="Department", value=person["known_for_department"])
+        embed = (
+            discord.Embed(
+                title=person["original_name"],
+                description=f"{page.summary[:500]}..." if len(page.summary) > 500 else "",
+                url=f"https://www.themoviedb.org/person/{person['id']}",
+                color=cs.RANDOM_COLOR,
+            )
+            .add_field(name="Gender", value=gender)
+            .add_field(name="Department", value=person["known_for_department"])
+        )
 
         if top_movies_desc := "".join(
             f"\n• [{movie['title']}](https://www.themoviedb.org/movie/{movie['id']})" for movie in top_movies
@@ -615,17 +486,20 @@ class Scraping(BaseCog):
         except ValueError:
             return await ctx.reply(f"Couldn't find a movie by the name of {movie}.", user_mistake=True)
 
-        embed: discord.Embed = discord.Embed(
-            title=movie["title"],
-            description=movie["overview"],
-            url=f"https://www.themoviedb.org/movie/{movie['id']}",
+        embed = (
+            discord.Embed(
+                title=movie["title"],
+                description=movie["overview"],
+                url=f"https://www.themoviedb.org/movie/{movie['id']}",
+                color=cs.RANDOM_COLOR,
+            )
+            .add_field(
+                name="Release Date",
+                value=get_unix_timestamp(movie["release_date"], "%Y-%m-%d", style="d"),
+            )
+            .add_field(name="Vote Average", value=f"{str(movie['vote_average'])[:3]} / 10")
+            .add_field(name="Vote Count", value=movie["vote_count"])
         )
-        embed.add_field(
-            name="Release Date",
-            value=get_unix_timestamp(movie["release_date"], "%Y-%m-%d", style="d"),
-        )
-        embed.add_field(name="Vote Average", value=f"{str(movie['vote_average'])[:3]} / 10")
-        embed.add_field(name="Vote Count", value=movie["vote_count"])
 
         if movie["poster_path"]:
             embed.set_thumbnail(url=f"https://image.tmdb.org/t/p/w500{movie['poster_path']}")
@@ -657,17 +531,18 @@ class Scraping(BaseCog):
                 f"Couldn't find a movie by the name of {movie}.", ephemeral=True
             )  # noqa: E501
 
-        embed: discord.Embed = discord.Embed(
+        embed = discord.Embed(
             title=movie["title"],
             description=movie["overview"],
             url=f"https://www.themoviedb.org/movie/{movie['id']}",
+            color=cs.RANDOM_COLOR,
         )
         embed.add_field(
             name="Release Date",
             value=get_unix_timestamp(movie["release_date"], "%Y-%m-%d", style="d"),
+        ).add_field(name="Vote Average", value=f"{str(movie['vote_average'])[:3]} / 10").add_field(
+            name="Vote Count", value=movie["vote_count"]
         )
-        embed.add_field(name="Vote Average", value=f"{str(movie['vote_average'])[:3]} / 10")
-        embed.add_field(name="Vote Count", value=movie["vote_count"])
 
         if movie["poster_path"]:
             embed.set_thumbnail(url=f"https://image.tmdb.org/t/p/w500{movie['poster_path']}")
@@ -692,17 +567,20 @@ class Scraping(BaseCog):
         except ValueError:
             return await ctx.reply(f"Couldn't find a show by the name of {show}.", user_mistake=True)
 
-        embed: discord.Embed = discord.Embed(
-            title=show["original_name"],
-            description=show["overview"],
-            url=f"https://www.themoviedb.org/tv/{show['id']}",
+        embed = (
+            discord.Embed(
+                title=show["original_name"],
+                description=show["overview"],
+                url=f"https://www.themoviedb.org/tv/{show['id']}",
+                color=cs.RANDOM_COLOR,
+            )
+            .add_field(
+                name="Release Date",
+                value=get_unix_timestamp(show["first_air_date"], "%Y-%m-%d", style="d"),
+            )
+            .add_field(name="Vote Average", value=f"{str(show['vote_average'])[:3]} / 10")
+            .add_field(name="Vote Count", value=show["vote_count"])
         )
-        embed.add_field(
-            name="Release Date",
-            value=get_unix_timestamp(show["first_air_date"], "%Y-%m-%d", style="d"),
-        )
-        embed.add_field(name="Vote Average", value=f"{str(show['vote_average'])[:3]} / 10")
-        embed.add_field(name="Vote Count", value=show["vote_count"])
 
         if show["poster_path"]:
             embed.set_thumbnail(url=f"https://image.tmdb.org/t/p/w500{show['poster_path']}")
@@ -732,17 +610,20 @@ class Scraping(BaseCog):
         except ValueError:
             return await interaction.response.send_message(f"Couldn't find a show by the name of {show}.", ephemeral=True)
 
-        embed: discord.Embed = discord.Embed(
-            title=show["original_name"],
-            description=show["overview"],
-            url=f"https://www.themoviedb.org/tv/{show['id']}",
+        embed = (
+            discord.Embed(
+                title=show["original_name"],
+                description=show["overview"],
+                url=f"https://www.themoviedb.org/tv/{show['id']}",
+                color=cs.RANDOM_COLOR,
+            )
+            .add_field(
+                name="Release Date",
+                value=get_unix_timestamp(show["first_air_date"], "%Y-%m-%d", style="d"),
+            )
+            .add_field(name="Vote Average", value=f"{str(show['vote_average'])[:3]} / 10")
+            .add_field(name="Vote Count", value=show["vote_count"])
         )
-        embed.add_field(
-            name="Release Date",
-            value=get_unix_timestamp(show["first_air_date"], "%Y-%m-%d", style="d"),
-        )
-        embed.add_field(name="Vote Average", value=f"{str(show['vote_average'])[:3]} / 10")
-        embed.add_field(name="Vote Count", value=show["vote_count"])
 
         if show["poster_path"]:
             embed.set_thumbnail(url=f"https://image.tmdb.org/t/p/w500{show['poster_path']}")
@@ -786,7 +667,7 @@ class Scraping(BaseCog):
                 for match in clean_matches:
                     description += f"\n{match}"
 
-            matches_embed: discord.Embed = discord.Embed(
+            matches_embed = discord.Embed(
                 description=f"Sorry, but I couldn't recognise the city **{args.title()}**." f"\n{description}",
                 color=cs.WARNING_COLOR,
             )
@@ -801,30 +682,29 @@ class Scraping(BaseCog):
         payload = (
             f"Right now it is **{curr_temp_celsius} °C** / **{curr_temp_fahrenheit:.2f} °F**.\n"
             f"But it feels like **{curr_feels_like_celsius} °C** / **{curr_feels_like_fahrenheit:.2f} °F**.\n"
-            # f"I recommend wearing {dress_code} clothes outside."
         )
 
-        weather_embed = discord.Embed(
-            title=f"Current weather in {data['name']}",
-            description=payload,
-            color=discord.Colour.blurple(),
+        weather_embed = (
+            discord.Embed(
+                title=f"Current weather in {data['name']}",
+                description=payload,
+                color=discord.Colour.blurple(),
+            )
+            .set_footer(text="Powered by OpenWeatherMap")
+            .set_thumbnail(url=f"http://openweathermap.org/img/w/{data['weather'][0]['icon']}.png")
+            .add_field(
+                name="Location",
+                value=f"{data['name']}, {data['sys']['country']}",
+                inline=False,
+            )
+            .add_field(
+                name="Weather",
+                value=data["weather"][0]["description"].title(),
+                inline=False,
+            )
+            .add_field(name="Humidity", value=f"{data['main']['humidity']}%", inline=True)
+            .add_field(name="Wind", value=f"{data['wind']['speed']} m/s", inline=True)
+            .add_field(name="Pressure", value=f"{data['main']['pressure']} hPa", inline=True)
         )
-
-        weather_embed.set_footer(text="Powered by OpenWeatherMap")
-        weather_embed.set_thumbnail(url=f"http://openweathermap.org/img/w/{data['weather'][0]['icon']}.png")
-
-        weather_embed.add_field(
-            name="Location",
-            value=f"{data['name']}, {data['sys']['country']}",
-            inline=False,
-        )
-        weather_embed.add_field(
-            name="Weather",
-            value=data["weather"][0]["description"].title(),
-            inline=False,
-        )
-        weather_embed.add_field(name="Humidity", value=f"{data['main']['humidity']}%", inline=True)
-        weather_embed.add_field(name="Wind", value=f"{data['wind']['speed']} m/s", inline=True)
-        weather_embed.add_field(name="Pressure", value=f"{data['main']['pressure']} hPa", inline=True)
 
         return await ctx.reply(embed=weather_embed, ephemeral=False)
