@@ -758,6 +758,7 @@ class About(commands.Cog):
         embed.set_author(
             name=author.name,
             icon_url=author.display_avatar.url,
+            url="https://github.com/DwellerIsTaken/",
         )
 
         og_commiters = sorted(commit_signatures.values(), key=lambda x: x.time)[:3]
@@ -879,8 +880,12 @@ class About(commands.Cog):
             color=cs.RANDOM_COLOR,
         )
         embed.set_thumbnail(url=self.bot.user.display_avatar.url)
-        embed.set_author(name=author.name, icon_url=author.display_avatar.url)
         embed.set_footer(text=f'{self.bot.main_prefix}about for more')
+        embed.set_author(
+            name=author.name,
+            icon_url=author.display_avatar.url,
+            url="https://github.com/DwellerIsTaken/",
+        )
 
         embed.add_field(name='Members', value=f'{total_members} total\n{total_unique} unique')
         embed.add_field(name='Guilds', value=len(self.bot.guilds)) # len(self.bot.guilds)
