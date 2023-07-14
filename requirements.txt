@@ -12,4 +12,6 @@ wikipedia-api
 pytz
 typing_extensions
 dateparser
+pygit2
+psutil
 git+https://github.com/blanketsucks/aiospotify
