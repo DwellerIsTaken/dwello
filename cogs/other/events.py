@@ -2,15 +2,19 @@ from __future__ import annotations
 
 import asyncpg
 import discord
+import contextlib
+
 from discord.ext import commands
 from typing_extensions import Self
 
+from cogs.moderation.automod import AutoMod
 from core import BaseCog, Dwello, DwelloContext
 
 
 class Events(BaseCog):
     def __init__(self, bot: Dwello):
         self.bot = bot
+        self.am: AutoMod = AutoMod(self.bot)
 
     @commands.hybrid_command(name="table", with_app_command=False)
     async def test(self, ctx: DwelloContext):
@@ -23,6 +27,9 @@ class Events(BaseCog):
     @commands.Cog.listener()
     async def on_message(self, message: discord.Message) -> None:
         await self.bot.levelling.increase_xp(message)
+
+        with contextlib.suppress(AttributeError):
+            await self.am.check_raid(message.guild.id, message.author, message)
 
         if message.content == f"<@{self.bot.user.id}>" and not message.author.bot:
             prefix: str = str(self.bot.DEFAULT_PREFIXES[0])

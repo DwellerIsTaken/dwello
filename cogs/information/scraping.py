@@ -3,7 +3,7 @@ from __future__ import annotations
 import difflib
 import json
 import re
-from typing import TYPE_CHECKING, Any, Dict, List, Optional, Tuple, Union
+from typing import TYPE_CHECKING, Any, Dict, List, Optional, Tuple
 
 import discord
 import wikipediaapi
@@ -136,7 +136,6 @@ class Scraping(BaseCog):
             title=data["alt_description"].capitalize(),
             url=data["links"]["download"],
             description=f"Photo by [{data['user']['name']}]({data['user']['links']['html']}) on [Unsplash](https://unsplash.com)",
-            color=cs.RANDOM_COLOR,
         ).set_image(url=data["urls"]["regular"])
 
         return await ctx.reply(embed=embed)
@@ -176,7 +175,6 @@ class Scraping(BaseCog):
                 discord.Embed(
                     title=name,
                     url=link,
-                    color=cs.RANDOM_COLOR,
                 )
                 .set_thumbnail(url=image_url)
                 .add_field(name="Release Date", value=timestamp, inline=False)
@@ -250,7 +248,6 @@ class Scraping(BaseCog):
                 title=artist.name,
                 url=artist.external_urls.spotify,
                 description=_description,
-                color=cs.RANDOM_COLOR,
             )
             .add_field(
                 name="Top Albums",
@@ -298,7 +295,6 @@ class Scraping(BaseCog):
                 title=name,
                 url=url,
                 description=description,
-                color=cs.RANDOM_COLOR,
             )
             .add_field(name="Owner", value=f"[{owner_name}]({owner_url})")
             .add_field(name="Total Tracks", value=total_tracks)
@@ -342,7 +338,6 @@ class Scraping(BaseCog):
                 title=_track.name,
                 url=f"https://open.spotify.com/track/{_track.id}",
                 description=duration_str + release_str,
-                color=cs.RANDOM_COLOR,
             )
             .add_field(
                 name="Artist" if len(_artists) == 1 else "Artists",
@@ -401,7 +396,6 @@ class Scraping(BaseCog):
                 title=name,
                 url=website,
                 description=short_description,
-                color=cs.RANDOM_COLOR,
             )
             .set_thumbnail(url=thumbnail)
             .add_field(name="Metascore", value=f"[{metascore}]({metaurl})")
@@ -446,7 +440,6 @@ class Scraping(BaseCog):
                 title=person["original_name"],
                 description=f"{page.summary[:500]}..." if len(page.summary) > 500 else "",
                 url=f"https://www.themoviedb.org/person/{person['id']}",
-                color=cs.RANDOM_COLOR,
             )
             .add_field(name="Gender", value=gender)
             .add_field(name="Department", value=person["known_for_department"])
@@ -491,7 +484,6 @@ class Scraping(BaseCog):
                 title=movie["title"],
                 description=movie["overview"],
                 url=f"https://www.themoviedb.org/movie/{movie['id']}",
-                color=cs.RANDOM_COLOR,
             )
             .add_field(
                 name="Release Date",
@@ -535,7 +527,6 @@ class Scraping(BaseCog):
             title=movie["title"],
             description=movie["overview"],
             url=f"https://www.themoviedb.org/movie/{movie['id']}",
-            color=cs.RANDOM_COLOR,
         )
         embed.add_field(
             name="Release Date",
@@ -572,7 +563,6 @@ class Scraping(BaseCog):
                 title=show["original_name"],
                 description=show["overview"],
                 url=f"https://www.themoviedb.org/tv/{show['id']}",
-                color=cs.RANDOM_COLOR,
             )
             .add_field(
                 name="Release Date",
@@ -615,7 +605,6 @@ class Scraping(BaseCog):
                 title=show["original_name"],
                 description=show["overview"],
                 url=f"https://www.themoviedb.org/tv/{show['id']}",
-                color=cs.RANDOM_COLOR,
             )
             .add_field(
                 name="Release Date",

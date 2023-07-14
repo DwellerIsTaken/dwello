@@ -95,8 +95,9 @@ def blacklist_check(ctx: DwelloContext) -> bool:
 
 
 # CONTEXT MENUS
-async def my_cool_context_menu(interaction: discord.Interaction, message: discord.Message):
-    await interaction.response.send_message("Very cool message!", ephemeral=True)
+# Example
+'''async def my_cool_context_menu(interaction: discord.Interaction, message: discord.Message):
+    await interaction.response.send_message("Very cool message!", ephemeral=True)'''
 
 
 # TRANSLATOR
@@ -242,12 +243,13 @@ class Dwello(commands.AutoShardedBot):
 
         self.add_check(blacklist_check)
 
-        self.tree.add_command(
+        # Example Context Menu:
+        '''self.tree.add_command(
             discord.app_commands.ContextMenu(
                 name="Cool Command Name",
                 callback=my_cool_context_menu,
             )
-        )
+        )'''
 
         await self.tree.set_translator(MyTranslator())
 
