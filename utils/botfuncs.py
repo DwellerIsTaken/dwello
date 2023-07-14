@@ -3,10 +3,10 @@ from __future__ import annotations
 import datetime
 import re
 from io import BytesIO
-from typing import Optional
+from typing import Optional, Union
 
 import discord
-import PIL
+from PIL import Image
 
 # MODIFY | FIX
 # DO WE NEED THIS?
@@ -41,8 +41,8 @@ def get_unix_timestamp(_date_string: str, _format: str, /, style: discord.utils.
     return f"<t:{int(_seconds)}:{style}>"
 
 
-async def get_avatar_dominant_color(member: discord.Member) -> Optional[discord.Colour]:
-    image = PIL.Image.open(BytesIO(await member.display_avatar.read()))
+async def get_avatar_dominant_color(member: Union[discord.Member, discord.User]) -> Optional[discord.Colour]:
+    image = Image.open(BytesIO(await member.display_avatar.read()))
     colours = [
         colour
         for colour in sorted(

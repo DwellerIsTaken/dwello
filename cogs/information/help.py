@@ -751,7 +751,7 @@ class About(commands.Cog):
             title="About Me",
             description=main_desc+links,
             url=cs.WEBSITE, # link to about page ?
-            color=cs.RANDOM_COLOR,
+            color=self.bot.color,
         )
         embed.set_thumbnail(url=self.bot.user.display_avatar.url)
         #embed.set_footer(text=f"ID: {self.bot.user.id}")

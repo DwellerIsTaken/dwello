@@ -26,6 +26,7 @@ else:
         asyncio.set_event_loop_policy(uvloop.EventLoopPolicy())
 
 from ._utils import ENV, AiohttpWeb, AutoComplete, DataBaseOperations, LevellingUtils, ListenersFunctions, OtherUtils, Twitch
+from utils import get_avatar_dominant_color
 from .context import DwelloContext
 import constants as cs
 
@@ -211,6 +212,14 @@ class Dwello(commands.AutoShardedBot):
         # TODO: Use LRU Cache
         self.message_cache: dict[int, discord.Message] = {}
 
+    @property
+    def color(self) -> Optional[discord.Color]:
+        return self.default_color
+    
+    @property
+    def colour(self) -> Optional[discord.Colour]:
+        return self.default_color
+
     async def setup_hook(self) -> None:
         try:
             for ext in initial_extensions:
@@ -290,6 +299,9 @@ class Dwello(commands.AutoShardedBot):
 
         if not hasattr(self, "uptime"):
             self.uptime = datetime.datetime.now(datetime.timezone.utc)
+
+        if not hasattr(self, "default_color"):
+            self.default_color = await get_avatar_dominant_color(self.user)
 
     @override
     async def load_extension(self, name: str, *, package: Optional[str] = None, _raise: bool = True) -> None:
