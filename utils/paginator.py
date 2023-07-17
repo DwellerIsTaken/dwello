@@ -52,7 +52,7 @@ class StopViewButton(Button[DPT]):
         assert self.view is not None
         return await self._end(interaction)
 
-    async def _end(self, interaction: Interaction, _):
+    async def _end(self, interaction: Interaction):
         return await interaction.message.delete(delay=0)
     
 
