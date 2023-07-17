@@ -3,7 +3,7 @@
 
 from __future__ import annotations
 
-from typing import Literal, Optional, Set, Union
+from typing import Any, Set, List, Literal, Optional, Union
 
 import asyncpg
 import discord
@@ -117,8 +117,14 @@ class Owner(commands.Cog):
 
     @commands.command()
     @commands.is_owner()
+    async def sync(self, ctx: DwelloContext) -> Optional[discord.Message]:
+        commands: List[Any] = await self.bot.tree.sync()
+        return await ctx.send(f"Synced {len(commands)} global commands")
+
+    @commands.command()
+    @commands.is_owner()
     @commands.guild_only()
-    async def sync(
+    async def umbra_sync(
         self,
         ctx: DwelloContext,
         guilds: commands.Greedy[discord.Object],
@@ -153,7 +159,8 @@ class Owner(commands.Cog):
 
         await ctx.send(f"Synced the tree to {ret}/{len(guilds)}.")
 
-    @commands.command()
+    # REDO
+    """@commands.command()
     @commands.is_owner()
     @commands.guild_only()
     async def list_eventsubs(self, ctx: DwelloContext):
@@ -163,4 +170,4 @@ class Owner(commands.Cog):
     @commands.is_owner()
     @commands.guild_only()
     async def wipe_all_eventsubs(self, ctx: DwelloContext):
-        return self.bot.twitch.unsubscribe_from_all_eventsubs()
+        return self.bot.twitch.unsubscribe_from_all_eventsubs()"""

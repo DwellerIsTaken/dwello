@@ -21,7 +21,7 @@ class AutoModFlags(BaseFlags):
         return 2
 
 
-'''class AutoModConfig:
+'''class ModConfig:
     __slots__ = (
         'automod_flags',
         'id',
@@ -120,15 +120,17 @@ class SpamChecker:
         self.fast_joiners: MutableMapping[int, bool] = ExpiringCache(seconds=1800.0)
         self.hit_and_run = commands.CooldownMapping.from_cooldown(10, 12, commands.BucketType.channel)
 
-    '''def by_mentions(self, config: ModConfig) -> Optional[commands.CooldownMapping]:
-        if not config.mention_count:
+        self.mention_count = 5 # add to guild config table instead
+
+    def by_mentions(self) -> Optional[commands.CooldownMapping]:
+        if not self.mention_count:
             return None
 
-        mention_threshold = config.mention_count * 2
+        mention_threshold = self.mention_count * 2
         if self._by_mentions_rate != mention_threshold:
             self._by_mentions = commands.CooldownMapping.from_cooldown(mention_threshold, 12, commands.BucketType.member)
             self._by_mentions_rate = mention_threshold
-        return self._by_mentions'''
+        return self._by_mentions
 
     def is_new(self, member: discord.Member) -> bool:
         now = discord.utils.utcnow()
@@ -173,12 +175,12 @@ class SpamChecker:
             self.fast_joiners[member.id] = True
         return is_fast
 
-    '''def is_mention_spam(self, message: discord.Message, config: ModConfig) -> bool:
-        mapping = self.by_mentions(config)
+    def is_mention_spam(self, message: discord.Message) -> bool: # config:
+        mapping = self.by_mentions()
         if mapping is None:
             return False
 
         current = message.created_at.timestamp()
         mention_bucket = mapping.get_bucket(message, current)
         mention_count = sum(not m.bot and m.id != message.author.id for m in message.mentions)
-        return mention_bucket is not None and mention_bucket.update_rate_limit(current, tokens=mention_count) is not None'''
+        return mention_bucket is not None and mention_bucket.update_rate_limit(current, tokens=mention_count) is not None

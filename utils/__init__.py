@@ -8,4 +8,6 @@ from .config import *  # noqa: F401, F403  # pylint: disable=unused-wildcard-imp
 from .db_operations import *  # noqa: F401, F403  # pylint: disable=unused-wildcard-import
 from .errorhandlers import *  # noqa: F401, F403  # pylint: disable=unused-wildcard-import
 from .flags import * # noqa: F401, F403  # pylint: disable=unused-wildcard-import
+from .paginator import * # noqa: F401, F403  # pylint: disable=unused-wildcard-import
+from .translator import * # noqa: F401, F403  # pylint: disable=unused-wildcard-import
 from .twitch import *  # noqa: F401, F403  # pylint: disable=unused-wildcard-import

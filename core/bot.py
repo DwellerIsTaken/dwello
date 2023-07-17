@@ -11,7 +11,6 @@ from typing import TYPE_CHECKING, Any, ClassVar, Generic, List, Optional, Set, T
 import aiohttp
 import asyncpg
 import discord
-from discord import app_commands
 from discord.ext import commands
 from typing_extensions import override
 
@@ -26,7 +25,7 @@ else:
         asyncio.set_event_loop_policy(uvloop.EventLoopPolicy())
 
 from ._utils import ENV, AiohttpWeb, AutoComplete, DataBaseOperations, LevellingUtils, ListenersFunctions, OtherUtils, Twitch
-from utils import get_avatar_dominant_color
+from utils import get_avatar_dominant_color, DwelloTranslator
 from .context import DwelloContext
 import constants as cs
 
@@ -98,30 +97,6 @@ def blacklist_check(ctx: DwelloContext) -> bool:
 # Example
 '''async def my_cool_context_menu(interaction: discord.Interaction, message: discord.Message):
     await interaction.response.send_message("Very cool message!", ephemeral=True)'''
-
-
-# TRANSLATOR
-class MyTranslator(app_commands.Translator):
-    async def translate(
-        self, string: app_commands.locale_str, locale: discord.Locale, context: app_commands.TranslationContext
-    ):  # noqa: E501
-        print(string, string.message, locale, context, context.location, context.data)
-        """# check if locale is the lang we want
-    # using dutch as an example
-    if locale is not discord.Locale.nl:
-      # its not nl -> return None
-      return None
-
-    # check if the command description is being translated
-    if context.location is app_commands.TranslationContextLocation.command_description:
-      print(context.data) # will the command instance (app_commands.Command)
-      # check original description
-      if string.message == "english":
-        # return translated description
-        return "engels"
-
-    # no translation string for a command or anything? return None"""
-        return None
 
 
 class ContextManager(Generic[DBT]):
@@ -251,7 +226,7 @@ class Dwello(commands.AutoShardedBot):
             )
         )'''
 
-        await self.tree.set_translator(MyTranslator())
+        await self.tree.set_translator(DwelloTranslator())
 
         asyncio.create_task(self.web.run(port=8081))
 

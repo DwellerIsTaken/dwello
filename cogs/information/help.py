@@ -17,7 +17,7 @@ from discord import app_commands  # noqa: F401
 from discord import Interaction
 from discord.ext import commands
 from discord.ui import Select, button, select
-from typing_extensions import Self, override
+from typing_extensions import override
 
 import constants as cs
 from core import Dwello, DwelloContext
@@ -222,7 +222,7 @@ class HelpView(discord.ui.View):
 
             return embeds
 
-    def build_select(self: Self) -> None:
+    def build_select(self) -> None:
         self.category_select.options = []
         self.category_select.add_option(label="Main Page", value="index", emoji="🏠")
         for cog, comm in self.data.items():
@@ -235,7 +235,7 @@ class HelpView(discord.ui.View):
             brief = getattr(cog, "select_brief", None)
             self.category_select.add_option(label=label, value=cog.qualified_name, emoji=emoji, description=brief)
 
-    def build_main_page(self: Self) -> discord.Embed:
+    def build_main_page(self) -> discord.Embed:
         embed: discord.Embed = discord.Embed(
             title="Dwello Help Menu",
             description=(
@@ -307,7 +307,7 @@ class HelpView(discord.ui.View):
         news = await self.bot.pool.fetch("SELECT * FROM news ORDER BY news_id DESC")
         await NewsViewer.from_interaction(interaction, news, embed=self.embeds[self.current_page], old_view=self)
 
-    def _update_buttons(self: Self) -> None:
+    def _update_buttons(self) -> None:
         styles = {True: discord.ButtonStyle.gray, False: discord.ButtonStyle.blurple}
         page = self.current_page
         total = len(self.embeds) - 1
@@ -322,11 +322,11 @@ class HelpView(discord.ui.View):
         await interaction.response.defer()
         return False
 
-    async def on_timeout(self: Self) -> None:
+    async def on_timeout(self) -> None:
         self.clear_items()
         await self.message.edit(view=self)
 
-    async def start(self: Self) -> Optional[discord.Message]:
+    async def start(self) -> Optional[discord.Message]:
         self.build_select()
         self._update_buttons()
         self.message = await self.ctx.send(embed=self.main_embed, view=self)
@@ -660,7 +660,7 @@ class About(commands.Cog):
         self.process = psutil.Process()
         self.repo = pygit2.Repository('.git')
 
-    def get_uptime(self: Self, /, complete=False) -> Union[Tuple[int, int, int, int], str]:
+    def get_uptime(self, /, complete=False) -> Union[Tuple[int, int, int, int], str]:
         """Return format: days, hours, minutes, seconds or full str."""
 
         uptime = datetime.datetime.now(datetime.timezone.utc) - self.bot.uptime

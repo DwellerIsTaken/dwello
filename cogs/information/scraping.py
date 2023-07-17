@@ -15,7 +15,7 @@ from yarl import URL
 
 import constants as cs
 from core import BaseCog, Dwello, DwelloContext
-from utils import ENV, capitalize_greek_numbers, get_unix_timestamp
+from utils import ENV, capitalize_greek_numbers, get_unix_timestamp, DefaultPaginator
 
 if TYPE_CHECKING:
     from discord import Interaction
@@ -155,9 +155,12 @@ class Scraping(BaseCog):
                 f"Can't find any albums by the name of *{mk(album, as_needed=False)}*",
                 user_mistake=True,
             )
+        
+        # loop if you want to make a paginator or dropdown
 
+        embeds: List[discord.Embed] = [] # type
         for album in albums:
-            album: Dict[str, Any]  # = albums[0]
+            album: Dict[str, Any] # = albums[0]
 
             _id = album["id"]
             name = album["name"]
@@ -190,9 +193,9 @@ class Scraping(BaseCog):
                     name="Tracks",
                     value="\n".join([f"> [{track['name']}]({track['external_urls']['spotify']})" for track in tracks]),
                 )
+            embeds.append(embed)
 
-        embeds = [(name, embed)]
-        return await ctx.reply(embed=embeds[0][1])
+        return await DefaultPaginator.start(ctx, embeds, delete_button=True)
 
     @commands.hybrid_command(
         name="artist",

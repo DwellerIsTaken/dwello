@@ -92,7 +92,7 @@ class NewsFeed:
         return self._current_page
 
 
-class NewsPreviousButton(discord.ui.Button["NewsViewer"]):
+class NewsPreviousButton(discord.ui.Button[NVT]):
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
 
@@ -109,7 +109,7 @@ class NewsPreviousButton(discord.ui.Button["NewsViewer"]):
         await interaction.response.edit_message(embed=embed, view=view)
 
 
-class NewsCurrentButton(discord.ui.Button["NewsViewer"]):
+class NewsCurrentButton(discord.ui.Button[NVT]):
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
 
@@ -125,7 +125,7 @@ class NewsCurrentButton(discord.ui.Button["NewsViewer"]):
                 await view.ctx.message.add_reaction(":white_check_mark:")
 
 
-class NewsNextButton(discord.ui.Button["NewsViewer"]):
+class NewsNextButton(discord.ui.Button[NVT]):
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
 
@@ -142,7 +142,7 @@ class NewsNextButton(discord.ui.Button["NewsViewer"]):
         await interaction.response.edit_message(embed=embed, view=view)
 
 
-class NewsGoBackButton(discord.ui.Button["NewsViewer"]):
+class NewsGoBackButton(discord.ui.Button[NVT]):
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
 
