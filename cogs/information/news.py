@@ -12,8 +12,8 @@ from discord import ButtonStyle, app_commands
 from discord.ext import commands
 
 import constants as cs  # noqa: F401
-from core import BaseCog, Dwello, DwelloContext
 from utils import get_unix_timestamp, is_discord_link
+from core import BaseCog, Dwello, DwelloContext, DwelloEmbed
 
 NVT = TypeVar("NVT", bound="NewsViewer")
 
@@ -103,7 +103,7 @@ class NewsPreviousButton(discord.ui.Button[NVT]):
         page = view.news.current
         view.update_labels()
 
-        embed: discord.Embed = await view.get_embed(page)
+        embed: DwelloEmbed = await view.get_embed(page)
 
         await interaction.response.edit_message(embed=embed, view=view)
 
@@ -136,7 +136,7 @@ class NewsNextButton(discord.ui.Button[NVT]):
         page = view.news.current
         view.update_labels()
 
-        embed: discord.Embed = await view.get_embed(page)
+        embed: DwelloEmbed = await view.get_embed(page)
 
         await interaction.response.edit_message(embed=embed, view=view)
 
@@ -174,7 +174,7 @@ class NewsViewer(discord.ui.View):
         obj: Union[DwelloContext, discord.Interaction[Dwello]],
         news: List[asyncpg.Record] = None,
         /,
-        embed: discord.Embed = None,
+        embed: DwelloEmbed = None,
         old_view: discord.ui.View = None,
     ):
         super().__init__()
@@ -209,8 +209,8 @@ class NewsViewer(discord.ui.View):
 
             self.add_item(self.go_back)
 
-    async def get_embed(self, page: Page) -> discord.Embed:
-        """:class:`discord.Embed`: Used to get the embed for the current page."""
+    async def get_embed(self, page: Page) -> DwelloEmbed:
+        """:class:`DwelloEmbed`: Used to get the embed for the current page."""
 
         message: discord.Message | None = page.cached_message
 
@@ -223,7 +223,7 @@ class NewsViewer(discord.ui.View):
 
         time: datetime.datetime = message.created_at
 
-        embed = discord.Embed(
+        embed = DwelloEmbed(
             title=f"\N{NEWSPAPER} {fm_dt(time)} ({fm_dt(time, 'R')})",
         )
         embed.add_field(name=page.title, value=message.content)
@@ -265,18 +265,18 @@ class NewsViewer(discord.ui.View):
         ctx: DwelloContext,
         news: List[asyncpg.Record] = None,
         /,
-        embed: discord.Embed = None,
+        embed: DwelloEmbed = None,
         old_view: discord.ui.View = None,
     ) -> NVT:
         new = cls(ctx, news, embed, old_view)
         if not new.news:
-            _embed: discord.Embed = discord.Embed(
+            _embed: DwelloEmbed = DwelloEmbed(
                 title="News",
                 description="Sorry, there are no news yet.",
             )
         else:
             new.update_labels()
-            _embed: discord.Embed = await new.get_embed(new.news.news[new.news.current_index])
+            _embed: DwelloEmbed = await new.get_embed(new.news.news[new.news.current_index])
 
         new.message = await ctx.send(embed=_embed, view=new)
         # new.bot.views.add(new)
@@ -289,18 +289,18 @@ class NewsViewer(discord.ui.View):
         interaction: discord.Interaction[Dwello],
         news: List[asyncpg.Record] = None,
         /,
-        embed: discord.Embed = None,
+        embed: DwelloEmbed = None,
         old_view: discord.ui.View = None,
     ) -> NVT:
         new = cls(interaction, news, embed, old_view)
         if not new.news:
-            _embed: discord.Embed = discord.Embed(
+            _embed: DwelloEmbed = DwelloEmbed(
                 title="News",
                 description="Sorry, there are no news yet.",
             )
         else:
             new.update_labels()
-            _embed: discord.Embed = await new.get_embed(new.news.current)
+            _embed: DwelloEmbed = await new.get_embed(new.news.current)
 
         if new.old_view and new.embed:
             await interaction.response.edit_message(embed=_embed, view=new)
@@ -388,7 +388,7 @@ class News(BaseCog):
             await conn.execute(query, news_id)
 
         return await ctx.reply(
-            embed=discord.Embed(
+            embed=DwelloEmbed(
                 description=f"Successfully removed a newspost with ID: {news_id}.",
             )
         )

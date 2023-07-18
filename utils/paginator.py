@@ -159,7 +159,7 @@ class DefaultPaginator(View):
         else:
             return await interaction.response.send_message(
                 embed=(
-                    Embed(
+                    DwelloEmbed(
                         title="Failed to interact with the view",
                         description="Hey there! Sorry, but you can't interact with someone else's view.\n",
                         timestamp=discord.utils.utcnow(),
@@ -178,7 +178,7 @@ class DefaultPaginator(View):
     async def start(
         cls: Type[DPT],
         obj: Union[DwelloContext, Interaction[Dwello]],
-        embeds: List[Embed],
+        embeds: List[DwelloEmbed],
         /,
         delete_button: Optional[bool] = False,
         **kwargs,

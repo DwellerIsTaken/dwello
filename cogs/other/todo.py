@@ -11,7 +11,7 @@ from discord.ext import commands
 from discord.ui import Button, Modal, TextInput, View
 from typing_extensions import Self
 
-from core import BaseCog
+from core import BaseCog, DwelloEmbed
 
 if TYPE_CHECKING:
     from asyncpg import Record
@@ -191,8 +191,8 @@ class Todo(BaseCog):
             todo = TodoItem.from_record(result)
             return todo
 
-    async def get_embed(self, todo: TodoItem) -> Tuple[discord.Embed, Optional[View]]:
-        embed = discord.Embed(title=f"Todo #{todo.id}", color=0x2B2D31)
+    async def get_embed(self, todo: TodoItem) -> Tuple[DwelloEmbed, Optional[View]]:
+        embed = DwelloEmbed(title=f"Todo #{todo.id}", color=0x2B2D31)
         if todo.due_at is not None:
             embed.timestamp = todo.due_at
             embed.set_footer(text="Due")
@@ -244,7 +244,7 @@ class Todo(BaseCog):
             content=content,
         )
         todo = await self.add_todo(todo)
-        embed = discord.Embed(title="Added todo!", description=content, color=0x2B2D31)
+        embed = DwelloEmbed(title="Added todo!", description=content, color=0x2B2D31)
         embed.set_footer(text=f"ID: {todo.id}")
         view = View()
         view.add_item(EditDueDateButton(todo, self, label="Edit Due Date"))

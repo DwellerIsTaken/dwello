@@ -7,8 +7,8 @@ from discord.app_commands import Choice
 from discord.ext import commands
 
 import constants as cs
-from core import BaseCog, Dwello, DwelloContext
 from utils import HandleHTTPException, member_check
+from core import BaseCog, Dwello, DwelloContext, DwelloEmbed
 
 
 class StandardModeration(BaseCog):
@@ -33,7 +33,7 @@ class StandardModeration(BaseCog):
             if not reason:
                 reason = "Not specified"
 
-            embed: discord.Embed = discord.Embed(
+            embed: DwelloEmbed = DwelloEmbed(
                 title="Permanently banned",
                 description=f"Greetings! \nYou have been banned from **{ctx.channel.guild.name}**. "
                 "You must have done something wrong or it's just an administrator whom is playing with his toys. "
@@ -53,7 +53,7 @@ class StandardModeration(BaseCog):
             except discord.HTTPException as e:
                 print(e)
 
-            embed: discord.Embed = discord.Embed(
+            embed: DwelloEmbed = DwelloEmbed(
                 title="User banned!",
                 description=f"*Banned by:* {ctx.author.mention}\n"
                 f"\n**{member}** has been succesfully banned from this server! \nReason: `{reason}`",
@@ -85,7 +85,7 @@ class StandardModeration(BaseCog):
                     await ctx.guild.unban(member)
 
                 return await ctx.reply(
-                    embed=discord.Embed(
+                    embed=DwelloEmbed(
                         description="The provided member is un-banned.",
                     ),
                     permission_cmd=True,
@@ -132,7 +132,7 @@ class StandardModeration(BaseCog):
             if not reason:
                 reason = "Not specified"
 
-            embed: discord.Embed = discord.Embed(
+            embed: DwelloEmbed = DwelloEmbed(
                 title="User kicked!",
                 description=f"*Kicked by:* {ctx.author.mention}\n"
                 f"\n**{member}** has been succesfully kicked from this server! \nReason: `{reason}`",
@@ -167,7 +167,7 @@ class StandardModeration(BaseCog):
                 return await ctx.reply(f"Nickname is too long! ({len(nickname)}/32)", user_mistake=True)
 
             message = "Changed nickname of **{user}** to **{nick}**.' if nickname else 'Removed nickname of **{user}**."
-            embed: discord.Embed = discord.Embed(
+            embed: DwelloEmbed = DwelloEmbed(
                 title="Member renamed",
                 description=message.format(user=member, nick=nickname),
                 color=cs.WARNING_COLOR,

@@ -3,11 +3,11 @@ from __future__ import annotations
 from typing import Optional
 
 import asyncpg
-import discord
+import discord  # noqa: F401
 from discord.ext import commands
 
 import constants as cs  # noqa: F401
-from core import BaseCog, Dwello, DwelloContext
+from core import BaseCog, Dwello, DwelloContext, DwelloEmbed
 
 from .shared import SharedEcoUtils
 
@@ -31,7 +31,7 @@ class BotEcoUtils:
 
                 if money < amount:
                     return await ctx.reply(
-                        embed=discord.Embed(
+                        embed=DwelloEmbed(
                             title="Permission denied",
                             description="You don't have enough currency to execute this action!",
                         )

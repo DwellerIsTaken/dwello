@@ -8,7 +8,7 @@ import asyncpg
 import discord
 
 import constants as cs  # noqa: F401
-from core import Dwello, DwelloContext
+from core import Dwello, DwelloContext, DwelloEmbed
 
 
 class SharedEcoUtils:
@@ -32,7 +32,7 @@ class SharedEcoUtils:
 
                 if not (record[0] if record else None):
                     return await ctx.reply(
-                        embed=discord.Embed(description="The job isn't yet set."),
+                        embed=DwelloEmbed(description="The job isn't yet set."),
                         ephemeral=True,
                     )
 
@@ -101,7 +101,7 @@ class SharedEcoUtils:
                 # limit_embed.timestamp = discord.utils.format_dt(my_datetime) # loop.EcoLoop.my_datetime1
 
                 if worked:
-                    embed: discord.Embed = discord.Embed(
+                    embed: DwelloEmbed = DwelloEmbed(
                         title="→ \U0001d5e6\U0001d5fc\U0001d5ff\U0001d5ff\U0001d606 ←",
                         description=f"Your have already worked{' *on this server* ' if name == 'server' else ' '}today!\n"
                         f"Your next workday begins {discord.utils.format_dt(my_datetime, style='R')}",
@@ -125,7 +125,7 @@ class SharedEcoUtils:
 
                 balance = await self.add_currency(ctx.author, amount, name)
 
-                embed: discord.Embed = discord.Embed(
+                embed: DwelloEmbed = DwelloEmbed(
                     title="→ \U0001d5e6\U0001d5ee\U0001d5f9\U0001d5ee\U0001d5ff\U0001d606 ←",  # 𝗦𝗮𝗹𝗮𝗿𝘆
                     description=f"Your day was very successful. Your salary for today is *{amount}*.",
                 )

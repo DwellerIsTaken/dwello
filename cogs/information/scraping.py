@@ -36,12 +36,12 @@ class OptionSelectView(discord.ui.View):
     def __init__(
         self,
         ctx: DwelloContext,
-        options: List[Tuple[str, discord.Embed]],
+        options: List[Tuple[str, DwelloEmbed]],
     ):
         super().__init__()
         self.ctx = ctx
         self.options = options
-        self.embeds: List[discord.Embed] = [embed[1] for embed in options]
+        self.embeds: List[DwelloEmbed] = [embed[1] for embed in options]
 
         self.main_embed = self.embeds[0]
 
@@ -132,7 +132,7 @@ class Scraping(BaseCog):
                     f"Something went wrong while trying to get an image for {mk(image)}",
                 )
 
-        embed = discord.Embed(
+        embed = DwelloEmbed(
             title=data["alt_description"].capitalize(),
             url=data["links"]["download"],
             description=f"Photo by [{data['user']['name']}]({data['user']['links']['html']}) on [Unsplash](https://unsplash.com)",
@@ -247,7 +247,7 @@ class Scraping(BaseCog):
 
         _description = f"**Followers**: {artist.followers.total:,}\n**Genres**: " + ", ".join(list(artist.genres[:2]))
         embed = (
-            discord.Embed(
+            DwelloEmbed(
                 title=artist.name,
                 url=artist.external_urls.spotify,
                 description=_description,
@@ -294,7 +294,7 @@ class Scraping(BaseCog):
         description = playlist["description"] or None
 
         embed = (
-            discord.Embed(
+            DwelloEmbed(
                 title=name,
                 url=url,
                 description=description,
@@ -397,7 +397,7 @@ class Scraping(BaseCog):
         price = data["price_overview"]["final_formatted"]
 
         embed = (
-            discord.Embed(
+            DwelloEmbed(
                 title=name,
                 url=website,
                 description=short_description,
@@ -441,7 +441,7 @@ class Scraping(BaseCog):
         top_movies = list(person["known_for"])
 
         embed = (
-            discord.Embed(
+            DwelloEmbed(
                 title=person["original_name"],
                 description=f"{page.summary[:500]}..." if len(page.summary) > 500 else "",
                 url=f"https://www.themoviedb.org/person/{person['id']}",
@@ -485,7 +485,7 @@ class Scraping(BaseCog):
             return await ctx.reply(f"Couldn't find a movie by the name of {movie}.", user_mistake=True)
 
         embed = (
-            discord.Embed(
+            DwelloEmbed(
                 title=movie["title"],
                 description=movie["overview"],
                 url=f"https://www.themoviedb.org/movie/{movie['id']}",
@@ -528,7 +528,7 @@ class Scraping(BaseCog):
                 f"Couldn't find a movie by the name of {movie}.", ephemeral=True
             )  # noqa: E501
 
-        embed = discord.Embed(
+        embed = DwelloEmbed(
             title=movie["title"],
             description=movie["overview"],
             url=f"https://www.themoviedb.org/movie/{movie['id']}",
@@ -564,7 +564,7 @@ class Scraping(BaseCog):
             return await ctx.reply(f"Couldn't find a show by the name of {show}.", user_mistake=True)
 
         embed = (
-            discord.Embed(
+            DwelloEmbed(
                 title=show["original_name"],
                 description=show["overview"],
                 url=f"https://www.themoviedb.org/tv/{show['id']}",
@@ -606,7 +606,7 @@ class Scraping(BaseCog):
             return await interaction.response.send_message(f"Couldn't find a show by the name of {show}.", ephemeral=True)
 
         embed = (
-            discord.Embed(
+            DwelloEmbed(
                 title=show["original_name"],
                 description=show["overview"],
                 url=f"https://www.themoviedb.org/tv/{show['id']}",
@@ -661,7 +661,7 @@ class Scraping(BaseCog):
                 for match in clean_matches:
                     description += f"\n{match}"
 
-            matches_embed = discord.Embed(
+            matches_embed = DwelloEmbed(
                 description=f"Sorry, but I couldn't recognise the city **{args.title()}**." f"\n{description}",
                 color=cs.WARNING_COLOR,
             )
@@ -679,7 +679,7 @@ class Scraping(BaseCog):
         )
 
         weather_embed = (
-            discord.Embed(
+            DwelloEmbed(
                 title=f"Current weather in {data['name']}",
                 description=payload,
                 color=discord.Colour.blurple(),

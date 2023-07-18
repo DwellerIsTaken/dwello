@@ -10,7 +10,7 @@ import discord
 from discord.ext import commands
 
 import constants as cs  # noqa: F401
-from core import Dwello, DwelloContext
+from core import Dwello, DwelloContext, DwelloEmbed
 
 
 async def setup(bot: Dwello):
@@ -82,7 +82,7 @@ class Owner(commands.Cog):
     async def display(self, ctx: DwelloContext) -> discord.Message:
         records = await self.bot.pool.fetch("SELECT * FROM blacklist")
 
-        embed: discord.Embed = discord.Embed(
+        embed: DwelloEmbed = DwelloEmbed(
             title="Blacklisted users",
         )
 

@@ -10,7 +10,7 @@ from discord.ext import commands
 from discord.ui import Button, View, button
 
 import constants as cs
-from core import BaseCog, Dwello, DwelloContext
+from core import BaseCog, Dwello, DwelloContext, DwelloEmbed
 from utils import apostrophize, interaction_check, member_check
 
 from .timeout import tempmute
@@ -94,7 +94,7 @@ class Warnings(BaseCog):
                     )
 
             warns = sum(bool(result["warn_text"]) for result in results)
-            embed: discord.Embed = discord.Embed(
+            embed: DwelloEmbed = DwelloEmbed(
                 title="Warned",
                 description=(
                     "Goede morgen!\n"
@@ -113,7 +113,7 @@ class Warnings(BaseCog):
             except discord.HTTPException as e:  # HANDLE IT SOMEHOW OR PASS
                 print(e)
 
-            embed: discord.Embed = discord.Embed(
+            embed: DwelloEmbed = DwelloEmbed(
                 title="User is warned!",
                 description=f"*Warned by:* {ctx.author.mention}\n"
                 f"\n**{member}** has been successfully warned! \nReason: `{reason}`",
@@ -154,7 +154,7 @@ class Warnings(BaseCog):
                     reason_list = []
                     date_list = []
 
-                    embed: discord.Embed = discord.Embed(color=cs.WARNING_COLOR, timestamp=discord.utils.utcnow())
+                    embed: DwelloEmbed = DwelloEmbed(color=cs.WARNING_COLOR, timestamp=discord.utils.utcnow())
                     embed.set_author(
                         name=f"{apostrophize(member.name)} warnings",
                         icon_url=str(member.display_avatar),
@@ -173,7 +173,7 @@ class Warnings(BaseCog):
 
                     if warns == 0:
                         return await ctx.reply(
-                            embed=discord.Embed(
+                            embed=DwelloEmbed(
                                 description=f"{string} no warnings yet.",
                             ),
                             user_mistake=True,
@@ -204,7 +204,7 @@ class Warnings(BaseCog):
                     await ctx.reply(embed=embed, mention_author=False)
 
             if suggest:
-                embed: discord.Embed = discord.Embed(
+                embed: DwelloEmbed = DwelloEmbed(
                     title="A lot of warnings",
                     description=f"Would you like to time **{member}** out for 12 hours?",
                     color=cs.WARNING_COLOR,
@@ -226,7 +226,7 @@ class Warnings(BaseCog):
                 async with conn.transaction():
                     if member == ctx.author:
                         return await ctx.reply(
-                            embed=discord.Embed(
+                            embed=DwelloEmbed(
                                 title="Permission Denied.",
                                 description="**Do. Not. Attempt.**",
                                 color=cs.WARNING_COLOR,
@@ -270,7 +270,7 @@ class Warnings(BaseCog):
                         )
                         warnings = 1
 
-            embed: discord.Embed = discord.Embed(
+            embed: DwelloEmbed = DwelloEmbed(
                 title="Removed",
                 description=(
                     f"*Removed by:* {ctx.author.mention} \n \nSuccessfully removed *{warnings}* warning(s) from {member}."

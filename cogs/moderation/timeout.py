@@ -8,8 +8,8 @@ from discord.app_commands import Choice
 from discord.ext import commands
 
 import constants as cs
-from core import BaseCog, Dwello, DwelloContext
 from utils import HandleHTTPException, member_check
+from core import BaseCog, Dwello, DwelloContext, DwelloEmbed
 
 
 async def tempmute(
@@ -37,7 +37,7 @@ async def tempmute(
         message = "Provided member is already timed out!"
         return await ctx.reply(message, mention_author=True, ephemeral=True)
 
-    embed: discord.Embed = discord.Embed(
+    embed: DwelloEmbed = DwelloEmbed(
         title="Timed out",
         description=(
             f"Guten tag! \nYou have been timed out in **{ctx.channel.guild.name}**, in case you were wondering. "
@@ -56,7 +56,7 @@ async def tempmute(
     except discord.HTTPException as e:
         print(e)
 
-    embed: discord.Embed = discord.Embed(
+    embed: DwelloEmbed = DwelloEmbed(
         title="User is timed out!",
         description=f"*Timed out by:* {ctx.author.mention}\n"
         f"\n**{member}** has been successfully timed out for awhile from this server! \nReason: `{reason}`",
@@ -108,7 +108,7 @@ class Timeout(BaseCog):
         error: Union[commands.MissingPermissions, commands.BotMissingPermissions, Any],
     ):
         if isinstance(error, commands.MissingPermissions):
-            missing_permissions_embed = discord.Embed(
+            missing_permissions_embed = DwelloEmbed(
                 title="Permission Denied.",
                 description=(
                     f"You (or the bot) don't have permission to use this command."
@@ -154,7 +154,7 @@ class Timeout(BaseCog):
         async with ctx.typing(ephemeral=True):
             if member.id == self.bot.user.id:
                 return await ctx.reply(
-                    embed=discord.Embed(
+                    embed=DwelloEmbed(
                         title="Permission Denied.",
                         description="**I'm no hannibal Lector though, no need to unmute.**",
                         color=cs.WARNING_COLOR,
@@ -167,7 +167,7 @@ class Timeout(BaseCog):
 
             elif ctx.author == member:
                 return await ctx.reply(
-                    embed=discord.Embed(
+                    embed=DwelloEmbed(
                         title="Permission Denied.",
                         description="Don't try to unmute yourself if you aren't muted.",
                         color=cs.WARNING_COLOR,
@@ -179,7 +179,7 @@ class Timeout(BaseCog):
                 await member.timeout(None, reason="Unmuted")
 
             return await ctx.reply(
-                embed=discord.Embed(
+                embed=DwelloEmbed(
                     title="Unmuted",
                     description=f"{member} is unmuted.",
                 ),
@@ -211,7 +211,7 @@ class Timeout(BaseCog):
                         reason_list.append(str(reason))
                     timed_out_list.append(member)
 
-            embed: discord.Embed = discord.Embed(title="Timed out list")
+            embed: DwelloEmbed = DwelloEmbed(title="Timed out list")
 
             if not timed_out_list:
                 embed.add_field(name="\u2800", value="`Nobody is timed out.`")

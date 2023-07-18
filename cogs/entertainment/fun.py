@@ -10,8 +10,9 @@ from discord import app_commands
 from discord.ext import commands
 
 import constants as cs  # noqa: F401
-from core import BaseCog, Dwello, DwelloContext
+
 from utils import ENV
+from core import BaseCog, Dwello, DwelloContext, DwelloEmbed
 
 
 class Fun(BaseCog):
@@ -72,7 +73,7 @@ class Fun(BaseCog):
         title = result["content_description"]
         item_url = result["itemurl"]
 
-        embed: discord.Embed = discord.Embed(
+        embed: DwelloEmbed = DwelloEmbed(
             title=title,
             type="gifv",
             url=item_url,
@@ -89,7 +90,7 @@ class Fun(BaseCog):
             return
 
         dt: datetime.datetime = datetime.datetime.utcfromtimestamp(data["created_utc"])
-        embed: discord.Embed = discord.Embed(
+        embed: DwelloEmbed = DwelloEmbed(
             title=data["title"],
             url=data["url"],
         )
@@ -113,7 +114,7 @@ class Fun(BaseCog):
             )
 
         dt: datetime.datetime = datetime.datetime.utcfromtimestamp(data["created_utc"])
-        embed: discord.Embed = discord.Embed(
+        embed: DwelloEmbed = DwelloEmbed(
             title=data["title"],
             url=data["url"],
         )
@@ -160,7 +161,7 @@ class Fun(BaseCog):
         file: discord.File = discord.File(bytes, "spotify.png")
         artists: str = ", ".join(spotify.artists)
 
-        embed: discord.Embed = discord.Embed(description=f"**{spotify.title}** by **{artists}**")
+        embed: DwelloEmbed = DwelloEmbed(description=f"**{spotify.title}** by **{artists}**")
         embed.set_author(
             name=f"{discord.utils.escape_markdown(member.display_name)}'s Spotify",
             url=spotify.track_url,

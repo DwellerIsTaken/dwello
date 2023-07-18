@@ -21,7 +21,7 @@ from discord.ui import Select, button, select
 from typing_extensions import override
 
 import constants as cs
-from core import Dwello, DwelloContext
+from core import Dwello, DwelloContext, DwelloEmbed
 
 from .news import NewsViewer
 
@@ -50,7 +50,7 @@ class HelpCentre(discord.ui.View):
         self.stop()
 
     async def start(self, interaction: discord.Interaction):
-        embed = discord.Embed(
+        embed = DwelloEmbed(
             title="Here is a guide on how to understand this help command",
             description="\n__**Do not not include these brackets when running a command!**__"
             "\n__**They are only there to indicate the argument type**__",
@@ -123,7 +123,7 @@ class HelpView(discord.ui.View):
         self.help_command = help_command
         self.message: discord.Message = None
         self.main_embed = self.build_main_page()
-        self.embeds: List[discord.Embed] = [self.main_embed]
+        self.embeds: List[DwelloEmbed] = [self.main_embed]
         self.owner_cmds: List[commands.Command] = self.construct_owner_commands()
 
     @select(placeholder="Select a category", row=0)
@@ -172,7 +172,7 @@ class HelpView(discord.ui.View):
 
         return count
 
-    def build_embeds(self, cog: commands.Cog) -> List[discord.Embed]:
+    def build_embeds(self, cog: commands.Cog) -> List[DwelloEmbed]:
         embeds = []
 
         for cog_, comm in self.data.items():
@@ -187,7 +187,7 @@ class HelpView(discord.ui.View):
             description_clean: str = (
                 " ".join(cog.description.splitlines()) if cog.description else "No description provided."
             )  # noqa: E501
-            embed: discord.Embed = discord.Embed(
+            embed: DwelloEmbed = DwelloEmbed(
                 title=f"{cog.qualified_name} commands [{self.clean_command_count(cog_, comm)}]",
                 description=description_clean,
             )
@@ -213,7 +213,7 @@ class HelpView(discord.ui.View):
 
                 if len(embed.fields) == 5:
                     embeds.append(embed)
-                    embed = discord.Embed(
+                    embed = DwelloEmbed(
                         title=f"{cog.qualified_name} commands [{len(comm)}]",
                         description=description_clean,
                     )
@@ -236,8 +236,8 @@ class HelpView(discord.ui.View):
             brief = getattr(cog, "select_brief", None)
             self.category_select.add_option(label=label, value=cog.qualified_name, emoji=emoji, description=brief)
 
-    def build_main_page(self) -> discord.Embed:
-        embed: discord.Embed = discord.Embed(
+    def build_main_page(self) -> DwelloEmbed:
+        embed: DwelloEmbed = DwelloEmbed(
             title="Dwello Help Menu",
             description=(
                 "Hello, I'm Dwello! I'm still in development, but you can use me.\n"
@@ -397,7 +397,7 @@ class MyHelp(commands.HelpCommand):
         await view.start()
 
     async def send_command_help(self, command: commands.Command):
-        embed = discord.Embed(
+        embed = DwelloEmbed(
             title=f"`{self.context.clean_prefix}{command}`",
             description="**Description:**\n"
             + (command.help or command.description or "No help given...").replace("%PRE%", self.context.clean_prefix),
@@ -476,7 +476,7 @@ class MyHelp(commands.HelpCommand):
             description_clean: str = (
                 " ".join(cog.description.splitlines()) if cog.description else "No description provided."
             )  # noqa: E501
-            embed = discord.Embed(
+            embed = DwelloEmbed(
                 title=f"`{cog.qualified_name}` category commands",
                 description="**Description:**\n" + description_clean.replace("%PRE%", self.context.clean_prefix),
             )
@@ -489,7 +489,7 @@ class MyHelp(commands.HelpCommand):
             await self.context.send(f"No commands found in {cog.qualified_name}")
 
     async def send_group_help(self, group: commands.Group):
-        embed = discord.Embed(
+        embed = DwelloEmbed(
             title=f"`{self.context.clean_prefix}{group}`",
             description="**Description:**\n"
             + (group.help or group.description or "No help given...").replace("%PRE%", self.context.clean_prefix),
@@ -633,7 +633,7 @@ class MyHelp(commands.HelpCommand):
     async def on_help_command_error(self, ctx, error):
         if isinstance(error, commands.CommandInvokeError):
             await ctx.send(
-                embed=discord.Embed(
+                embed=DwelloEmbed(
                     title=str(error.original),
                     description="".join(traceback.format_exception(error.__class__, error, error.__traceback__)),
                 )
@@ -746,7 +746,7 @@ class About(commands.Cog):
             commit_signatures[author_] = signature
             commit_counts[author_] += 1
 
-        embed: discord.Embed = discord.Embed(
+        embed: DwelloEmbed = DwelloEmbed(
             title="About Me",
             description=main_desc+links,
             url=cs.WEBSITE, # link to about page ?
@@ -782,7 +782,7 @@ class About(commands.Cog):
     async def uptime(self, ctx: DwelloContext) -> Optional[discord.Message]:
         timestamp = self.get_startup_timestamp()
 
-        embed: discord.Embed = discord.Embed(
+        embed: DwelloEmbed = DwelloEmbed(
             title="Current Uptime",
             description=f"**{self.get_uptime(complete=True)}**",
         )
@@ -819,7 +819,7 @@ class About(commands.Cog):
 
         return await message.edit(
             content=None,
-            embed=discord.Embed(
+            embed=DwelloEmbed(
                 description=(
                     f"**`Websocket -> {round(latency_ms, 3)}ms{' ' * (9 - len(str(round(latency_ms, 3))))}`**\n"
                     f"**`Typing    -> {round(typing_ms, 3)}ms{' ' * (9 - len(str(round(typing_ms, 3))))}`**\n"
@@ -869,7 +869,7 @@ class About(commands.Cog):
             "\n"
         )
         revision = self.get_last_commits()
-        embed: discord.Embed = discord.Embed(
+        embed: DwelloEmbed = DwelloEmbed(
             title=f'{self.bot.user.name} Statistics',
             description=links + '**Latest Changes:**\n' + revision,
             url=cs.INVITE_LINK,
@@ -953,7 +953,7 @@ class About(commands.Cog):
                 for match in matches:
                     description += f"\n• `{match}`"
 
-                embed: discord.Embed = discord.Embed(
+                embed: DwelloEmbed = DwelloEmbed(
                     title=f"Doesn't seem like command `{command_name}` exists",
                     description=f"\n{description}",
                     color=cs.WARNING_COLOR,
@@ -972,7 +972,7 @@ class About(commands.Cog):
 
         source_link = f"> [**Source**]({git}tree/main/{path}{git_lines}) {cs.GITHUB_EMOJI}\n> **{path}{git_lines}**\n"
 
-        embed: discord.Embed = discord.Embed(
+        embed: DwelloEmbed = DwelloEmbed(
             title=f"Source for `{command_name}`",
             description=(source_link + await ctx.create_codeblock(source)),
         )
