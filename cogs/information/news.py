@@ -10,7 +10,6 @@ import asyncpg
 import discord
 from discord import ButtonStyle, app_commands
 from discord.ext import commands
-from typing_extensions import Self
 
 import constants as cs  # noqa: F401
 from core import BaseCog, Dwello, DwelloContext
@@ -210,12 +209,6 @@ class NewsViewer(discord.ui.View):
 
             self.add_item(self.go_back)
 
-    async def interaction_check(self, interaction: discord.Interaction[Dwello]) -> Optional[bool]:
-        if val := interaction.user == self.author:
-            return val
-        else:
-            return await interaction.response.send_message(content="Hey! You can't do that!", ephemeral=True)
-
     async def get_embed(self, page: Page) -> discord.Embed:
         """:class:`discord.Embed`: Used to get the embed for the current page."""
 
@@ -254,6 +247,17 @@ class NewsViewer(discord.ui.View):
 
         next_page_num = self.news.max_pages - self.news.news.index(self.news.next)
         self.next.disabled = next_page_num == self.news.max_pages
+
+    async def interaction_check(self, interaction: discord.Interaction[Dwello]) -> Optional[bool]:
+        if val := interaction.user == self.author:
+            return val
+        else:
+            return await interaction.response.send_message(content="Hey! You can't do that!", ephemeral=True)
+        
+    async def on_timeout(self) -> None:
+        self.clear_items()
+        with contextlib.suppress(discord.errors.NotFound):
+            await self.message.edit(view=self)
 
     @classmethod
     async def start(
@@ -306,15 +310,6 @@ class NewsViewer(discord.ui.View):
         # new.bot.views.add(new)
         await new.wait()
         return new
-
-    async def on_timeout(self: Self) -> None:
-        # self.bot.views.discard(self)
-        if self.message:
-            await self.message.edit(view=None)
-
-    """def stop(self: Self) -> None:
-        #self.bot.views.discard(self)
-        super().stop()"""
 
 
 class News(BaseCog):

@@ -14,7 +14,7 @@ from typing_extensions import Self
 from yarl import URL
 
 import constants as cs
-from core import BaseCog, Dwello, DwelloContext
+from core import BaseCog, Dwello, DwelloContext, DwelloEmbed
 from utils import ENV, capitalize_greek_numbers, get_unix_timestamp, DefaultPaginator
 
 if TYPE_CHECKING:
@@ -158,7 +158,7 @@ class Scraping(BaseCog):
         
         # loop if you want to make a paginator or dropdown
 
-        embeds: List[discord.Embed] = [] # type
+        embeds: List[DwelloEmbed] = [] # type
         for album in albums:
             album: Dict[str, Any] # = albums[0]
 
@@ -175,7 +175,7 @@ class Scraping(BaseCog):
             except ValueError:
                 timestamp = release_date
             embed = (
-                discord.Embed(
+                DwelloEmbed(
                     title=name,
                     url=link,
                 )
@@ -195,7 +195,7 @@ class Scraping(BaseCog):
                 )
             embeds.append(embed)
 
-        return await DefaultPaginator.start(ctx, embeds, delete_button=True)
+        return await DefaultPaginator.start(ctx, embeds)
 
     @commands.hybrid_command(
         name="artist",
@@ -318,41 +318,43 @@ class Scraping(BaseCog):
                 user_mistake=True,
             )
 
-        _track: Track = tracks[0]
-        _album: PartialAlbum = _track.album
-        _artists: List[Tuple[str, str]] = [(artist.name, artist.external_urls.spotify) for artist in _track.artists][:2]
+        embeds: List[DwelloEmbed] = []
+        for _track in tracks:
+            _album: PartialAlbum = _track.album
+            _artists: List[Tuple[str, str]] = [(artist.name, artist.external_urls.spotify) for artist in _track.artists][:2]
 
-        duration_in_minutes = _track.duration / 1000 / 60
+            duration_in_minutes = _track.duration / 1000 / 60
 
-        duration_str = (
-            f"**Duration**: {'{:.2f}'.format(duration_in_minutes)} min"
-            if duration_in_minutes >= 1
-            else "{:.2f}".format(_track.duration / 1000) + " sec"
-        )
-
-        release_str = "\n**Release Date**: "
-        try:
-            release_str += get_unix_timestamp(_album.release_date.date, "%Y-%m-%d", style="d")
-        except ValueError:
-            release_str += _album.release_date.date
-
-        embed = (
-            discord.Embed(
-                title=_track.name,
-                url=f"https://open.spotify.com/track/{_track.id}",
-                description=duration_str + release_str,
+            duration_str = (
+                f"**Duration**: {'{:.2f}'.format(duration_in_minutes)} min"
+                if duration_in_minutes >= 1
+                else "{:.2f}".format(_track.duration / 1000) + " sec"
             )
-            .add_field(
-                name="Artist" if len(_artists) == 1 else "Artists",
-                value="\n".join([f"> [{i[0].title()}]({i[1]})" for i in _artists]),
-            )
-            .add_field(name="Album", value=f"[{_album.name}]({_album.external_urls.spotify})")
-        )
-        image: Image = _album.images[1] if _album.images else None
-        if image:
-            embed.set_thumbnail(url=image.url)
 
-        return await ctx.reply(embed=embed)
+            release_str = "\n**Release Date**: "
+            try:
+                release_str += get_unix_timestamp(_album.release_date.date, "%Y-%m-%d", style="d")
+            except ValueError:
+                release_str += _album.release_date.date
+
+            embed = (
+                DwelloEmbed(
+                    title=_track.name,
+                    url=f"https://open.spotify.com/track/{_track.id}",
+                    description=duration_str + release_str,
+                )
+                .add_field(
+                    name="Artist" if len(_artists) == 1 else "Artists",
+                    value="\n".join([f"> [{i[0].title()}]({i[1]})" for i in _artists]),
+                )
+                .add_field(name="Album", value=f"[{_album.name}]({_album.external_urls.spotify})")
+            )
+            image: Image = _album.images[1] if _album.images else None
+            if image:
+                embed.set_thumbnail(url=image.url)
+            embeds.append(embed)
+
+        return await DefaultPaginator.start(ctx, embeds)
 
     async def get_game_by_name(self, name: str) -> int:
         url: URL = "http://api.steampowered.com/ISteamApps/GetAppList/v2/"

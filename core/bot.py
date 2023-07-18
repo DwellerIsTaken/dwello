@@ -27,6 +27,7 @@ else:
 from ._utils import ENV, AiohttpWeb, AutoComplete, DataBaseOperations, LevellingUtils, ListenersFunctions, OtherUtils, Twitch
 from utils import get_avatar_dominant_color, DwelloTranslator
 from .context import DwelloContext
+from .embed import DwelloEmbed
 import constants as cs
 
 if TYPE_CHECKING:
@@ -279,6 +280,7 @@ class Dwello(commands.AutoShardedBot):
 
         if not hasattr(self, "default_color"):
             self.default_color = await get_avatar_dominant_color(self.user)
+            DwelloEmbed.bot_dominant_colour = self.default_color
 
     @override
     async def load_extension(self, name: str, *, package: Optional[str] = None, _raise: bool = True) -> None:

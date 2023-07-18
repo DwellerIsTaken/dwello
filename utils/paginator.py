@@ -13,9 +13,10 @@ from typing import (
 )
 
 import constants as cs  # noqa: F401
+import contextlib
 
 if TYPE_CHECKING:
-    from core import Dwello, DwelloContext
+    from core import Dwello, DwelloContext, DwelloEmbed
 
 DPT = TypeVar("DPT", bound="DefaultPaginator")
 
@@ -98,7 +99,7 @@ class DefaultPaginator(View):
     def __init__(
         self,
         obj: Union[DwelloContext, Interaction[Dwello]],
-        embeds: List[Embed],
+        embeds: List[Union[Embed, DwelloEmbed]],
         /,
         delete_button: Optional[bool] = False,
         **kwargs,
@@ -114,7 +115,7 @@ class DefaultPaginator(View):
             self.author = obj.user
             self.bot: Dwello = obj.client
 
-        self.embeds = self._embed_page_numbering(embeds)
+        self.embeds = self._reconstruct_embeds(embeds)
 
         self.delete_button = delete_button
         self.kwargs = kwargs
@@ -135,8 +136,8 @@ class DefaultPaginator(View):
         self.current_page = 0
         self.message: discord.Message = None
 
-    def _embed_page_numbering(self, embeds: List[Embed]) -> List[Embed]:
-        _embeds = []
+    def _reconstruct_embeds(self, embeds: List[DwelloEmbed]) -> List[DwelloEmbed]:
+        _embeds: List[DwelloEmbed] = []
         for i, embed in enumerate(embeds):
             if not embed.footer:
                 embed.set_footer(text=f"Page: {i+1}")
@@ -170,7 +171,8 @@ class DefaultPaginator(View):
 
     async def on_timeout(self) -> None:
         self.clear_items()
-        await self.message.edit(view=self)
+        with contextlib.suppress(discord.errors.NotFound):
+            await self.message.edit(view=self)
 
     @classmethod
     async def start(

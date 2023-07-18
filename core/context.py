@@ -6,7 +6,6 @@ import random
 import re
 from contextlib import suppress
 from operator import attrgetter
-from typing import Generic  # noqa: F401
 from typing import TYPE_CHECKING, Any, Callable, Iterable, LiteralString, Optional, Sequence, Tuple, TypeVar, Union
 
 import discord

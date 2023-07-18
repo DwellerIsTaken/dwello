@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import asyncio
+import contextlib
 import datetime
 import difflib
 import inspect
@@ -324,7 +325,8 @@ class HelpView(discord.ui.View):
 
     async def on_timeout(self) -> None:
         self.clear_items()
-        await self.message.edit(view=self)
+        with contextlib.suppress(discord.errors.NotFound):
+            await self.message.edit(view=self)
 
     async def start(self) -> Optional[discord.Message]:
         self.build_select()
