@@ -156,9 +156,9 @@ class Fun(BaseCog):
             "artists": spotify.artists,
         }
         async with self.bot.http_session.get("https://api.jeyy.xyz/discord/spotify", params=params) as response:
-            bytes = io.BytesIO(await response.read())
+            buffer = io.BytesIO(await response.read())
 
-        file: discord.File = discord.File(bytes, "spotify.png")
+        file: discord.File = discord.File(buffer, "spotify.png")
         artists: str = ", ".join(spotify.artists)
 
         embed: DwelloEmbed = DwelloEmbed(description=f"**{spotify.title}** by **{artists}**")

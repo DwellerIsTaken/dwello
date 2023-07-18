@@ -137,7 +137,7 @@ class DwelloContext(commands.Context):  # [commands.Bot], Generic[T]
                         "Bot don't have either Embed Links/Send Messages permission in that channel. "
                         "Please give sufficient permissions to the bot."
                     ),
-                    view=self.send_view(),  # create that (?)
+                    view=self.send_view(),
                 )
                 return None
 
@@ -387,3 +387,13 @@ class DwelloContext(commands.Context):  # [commands.Bot], Generic[T]
     async def create_codeblock(self, content: str) -> str:
         fmt: LiteralString = "`" * 3
         return f"{fmt}py\n{content}{fmt}"
+
+    def send_view(self):
+        class View(discord.ui.View):
+            def __init__(self):
+                super().__init__()
+                self.add_item(
+                    discord.ui.Button(label=f"Sent from {self.guild}", style=discord.ButtonStyle.blurple, disabled=True)
+                )
+        
+        return View()
