@@ -7,18 +7,20 @@ from discord.app_commands import Choice
 from discord.ext import commands
 
 import constants as cs
-from utils import HandleHTTPException, member_check
 from core import BaseCog, Dwello, DwelloContext, DwelloEmbed
+from utils import HandleHTTPException, member_check
 
 
 class StandardModeration(BaseCog):
     def __init__(self, bot: Dwello) -> None:
         self.bot = bot
 
+    async def cog_check(self, ctx: DwelloContext) -> bool:
+        return ctx.guild is not None
+
     @commands.hybrid_command(name="ban", help="Bans users with bad behaviour.", with_app_command=True)
     @commands.bot_has_guild_permissions(ban_members=True)
     @commands.has_guild_permissions(ban_members=True)
-    @commands.guild_only()
     async def ban(
         self,
         ctx: DwelloContext,
@@ -62,42 +64,44 @@ class StandardModeration(BaseCog):
 
             return await ctx.channel.send(embed=embed)
 
-    # has_permissions
-    # has_guild_permissions
-    # bot_has_permissions
-    # bot_has_guild_permissions
-
-    # guild.bans (?) <- unban cmd
-    # REDO
-
     @commands.hybrid_command(name="unban", help="Unbans users for good behaviour.", with_app_command=True)
     @commands.bot_has_permissions(send_messages=True, view_audit_log=True, ban_members=True)
     @commands.has_guild_permissions(ban_members=True)
-    @commands.guild_only()
-    async def unban(
-        self, ctx: DwelloContext, member_object: str
-    ) -> Union[discord.Message, discord.InteractionMessage, None]:
-        async with ctx.typing(ephemeral=True):
-            member = discord.Object(id=member_object)  # member_object type str?
-
+    async def unban(self, ctx: DwelloContext, member: str) -> Union[discord.Message, discord.InteractionMessage, None]:
+        if member.isdigit():
+            member_id = int(member, base=10)
             try:
-                async with HandleHTTPException(ctx, title=f"Failed to unban {member}"):
-                    await ctx.guild.unban(member)
+                ban_entry = await ctx.guild.fetch_ban(discord.Object(id=member_id))
+                member = ban_entry.user
+            except discord.NotFound:
+                await ctx.reply("The provided member doesn't exist or isn't banned.", user_mistake=True)
+        else:
+            async for entry in ctx.guild.bans():
+                if member in {
+                    str(entry.user),
+                    str(entry.user.id),
+                    entry.user.name,
+                    entry.user.display_name,
+                    entry.user.mention,
+                }:
+                    member = entry.user
+                    break
 
-                return await ctx.reply(
-                    embed=DwelloEmbed(
-                        description="The provided member is un-banned.",
-                    ),
-                    permission_cmd=True,
-                )
+        if not isinstance(member, (discord.User, discord.Object)):
+            return await ctx.reply("The provided member doesn't exist or isn't banned.", user_mistake=True)
 
-            except commands.UserNotFound:
-                return await ctx.reply(
-                    "The provided member doesn't exist or isn't banned.",
-                    user_mistake=True,
-                )
+        async with ctx.typing(ephemeral=True):
+            async with HandleHTTPException(ctx, title=f"Failed to unban {member}"):
+                await ctx.guild.unban(member)
 
-    @unban.autocomplete("member_object")
+            return await ctx.reply(
+                embed=DwelloEmbed(
+                    description="The provided member is un-banned.",
+                ),
+                permission_cmd=True,
+            )
+
+    @unban.autocomplete("member")
     async def autocomplete_callback(self, interaction: discord.Interaction, current: str):
         item = len(current)
         choices = []
@@ -117,7 +121,6 @@ class StandardModeration(BaseCog):
     )
     @commands.bot_has_permissions(send_messages=True, kick_members=True)
     @commands.has_permissions(kick_members=True)
-    @commands.guild_only()
     async def kick(
         self,
         ctx: DwelloContext,
@@ -151,7 +154,6 @@ class StandardModeration(BaseCog):
     )
     @commands.bot_has_guild_permissions(manage_nicknames=True)
     @commands.has_guild_permissions(manage_nicknames=True)
-    @commands.guild_only()
     async def nick(
         self,
         ctx: DwelloContext,
@@ -177,9 +179,3 @@ class StandardModeration(BaseCog):
                 await member.edit(nick=nickname)
 
             return await ctx.channel.send(embed=embed)
-
-        # async with HandleHTTPException(ctx, title=f'Failed to set nickname for {member}.'):
-        # await member.edit(nick=nickname)
-
-        # message = 'Changed nickname of **{user}** to **{nick}**.' if nickname else 'Removed nickname of **{user}**.'
-        # return await ctx.send(message.format(user=mdr(member), nick=mdr(nickname)))
