@@ -9,7 +9,7 @@ from discord.ui import Button, View, button
 
 import constants as cs
 from utils import HandleHTTPException
-from core import BaseCog, Dwello, DwelloContext, Embed
+from core import BaseCog, Dwello, Context, Embed
 
 
 class ChannelsFunctions:
@@ -18,7 +18,7 @@ class ChannelsFunctions:
 
     async def counter_func(
         self,
-        ctx: DwelloContext,
+        ctx: Context,
         name: Literal["all", "member", "bot", "category"],
     ) -> Optional[
         Union[discord.VoiceChannel, discord.CategoryChannel]
@@ -122,7 +122,7 @@ class ChannelsFunctions:
         )  # DISPLAEYD IN DISCORD LOGS
         return counter_channel
 
-    async def move_channel(self, ctx: DwelloContext, category: discord.CategoryChannel, *args: str) -> None:
+    async def move_channel(self, ctx: Context, category: discord.CategoryChannel, *args: str) -> None:
         async with self.bot.pool.acquire() as conn:
             conn: asyncpg.Connection
             async with conn.transaction():
@@ -139,7 +139,7 @@ class ChannelsFunctions:
 
 
 class Stats_View(View):
-    def __init__(self, bot: Dwello, ctx: DwelloContext, name: str, *, timeout: int = None):
+    def __init__(self, bot: Dwello, ctx: Context, name: str, *, timeout: int = None):
         super().__init__(timeout=timeout)
         self.bot = bot
         self.ctx = ctx
@@ -210,7 +210,7 @@ class Channels(BaseCog):
     @commands.bot_has_permissions(manage_channels=True)
     @commands.has_permissions(manage_channels=True)
     @commands.guild_only()
-    async def counter(self, ctx: DwelloContext):
+    async def counter(self, ctx: Context):
         async with ctx.typing(ephemeral=True):
             return await ctx.send_help(ctx.command)
 
@@ -218,30 +218,30 @@ class Channels(BaseCog):
         name="all",
         help="Creates a [voice] channel with all-user (bots included) count on this server.",
     )
-    async def all(self, ctx: DwelloContext):
+    async def all(self, ctx: Context):
         return await self.cf.counter_func(ctx, "all")
 
     @counter.command(
         name="members",
         help="Creating a [voice] channel with all-member count on this specific server.",
     )
-    async def members(self, ctx: DwelloContext):
+    async def members(self, ctx: Context):
         return await self.cf.counter_func(ctx, "member")
 
     @counter.command(
         name="bots",
         help="Creating a [voice] channel with all-bot count on this specific server.",
     )
-    async def bots(self, ctx: DwelloContext):
+    async def bots(self, ctx: Context):
         return await self.cf.counter_func(ctx, "bot")
 
     @counter.command(name="category", help="Creates a category where your counter(s) will be stored.")
-    async def category(self, ctx: DwelloContext):
+    async def category(self, ctx: Context):
         category = await self.cf.counter_func(ctx, "category")
         return await self.cf.move_channel(ctx, category[1], "all", "member", "bot")
 
     @counter.command(name="list", aliases=["show", "display"], help="Shows a list of counters you can create.")
-    async def list(self, ctx: DwelloContext):
+    async def list(self, ctx: Context):
         async with ctx.typing(ephemeral=True):
             embed: Embed = Embed(
                 title=":bar_chart: AVAILABLE COUNTERS :bar_chart:",

@@ -9,12 +9,12 @@ from discord.ext import commands
 
 import constants as cs
 from utils import HandleHTTPException, member_check
-from core import BaseCog, Dwello, DwelloContext, Embed
+from core import BaseCog, Dwello, Context, Embed
 
 
 async def tempmute(
     bot: Dwello,
-    ctx: DwelloContext,
+    ctx: Context,
     member: discord.Member,
     duration: int,
     period: Optional[str] = None,
@@ -90,7 +90,7 @@ class Timeout(BaseCog):
     @commands.guild_only()
     async def mute(
         self,
-        ctx: DwelloContext,
+        ctx: Context,
         member: discord.Member,
         duration: int,
         period: Optional[Choice[str]],
@@ -104,7 +104,7 @@ class Timeout(BaseCog):
     @mute.error
     async def mute_error(
         self,
-        ctx: DwelloContext,
+        ctx: Context,
         error: Union[commands.MissingPermissions, commands.BotMissingPermissions, Any],
     ):
         if isinstance(error, commands.MissingPermissions):
@@ -150,7 +150,7 @@ class Timeout(BaseCog):
     @commands.bot_has_permissions(moderate_members=True)
     @commands.has_permissions(moderate_members=True)
     @commands.guild_only()
-    async def unmute(self, ctx: DwelloContext, member: discord.Member) -> Optional[discord.Message]:
+    async def unmute(self, ctx: Context, member: discord.Member) -> Optional[discord.Message]:
         async with ctx.typing(ephemeral=True):
             if member.id == self.bot.user.id:
                 return await ctx.reply(
@@ -194,7 +194,7 @@ class Timeout(BaseCog):
     )  # MODERATION OR MEMBER-FRIENDLY (PERMS)?
     @commands.bot_has_permissions(view_audit_log=True)
     @commands.guild_only()
-    async def timed_out(self, ctx: DwelloContext) -> Optional[discord.Message]:
+    async def timed_out(self, ctx: Context) -> Optional[discord.Message]:
         async with ctx.typing(ephemeral=True):
             timed_out_list: List[discord.Member] = []
             reason_list: List[str] = []

@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from core import BaseCog, Dwello, DwelloContext  # noqa: F401
+from core import BaseCog, Dwello, Context  # noqa: F401
 
 
 class BotConfig(BaseCog):

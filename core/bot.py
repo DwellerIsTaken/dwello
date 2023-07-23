@@ -29,7 +29,7 @@ from utils import get_avatar_dominant_color
 from utils import NewTranslator as Translator
 from utils import NewEmbed as Embed
 
-from .context import DwelloContext
+from .context import NewContext as Context
 import constants as cs
 
 if TYPE_CHECKING:
@@ -37,7 +37,7 @@ if TYPE_CHECKING:
     from asyncpg.transaction import Transaction
 
 DBT = TypeVar("DBT", bound="Dwello")
-DCT = TypeVar("DCT", bound="DwelloContext")
+DCT = TypeVar("DCT", bound="Context")
 
 logging.basicConfig(
     format="%(asctime)s [%(levelname)s] - %(name)s: %(message)s",
@@ -92,7 +92,7 @@ def countlines(directory: str, /, lines=0, ext=".py", skip_blank=False):
 
 
 # GLOBAL CHECKS
-def blacklist_check(ctx: DwelloContext) -> bool:
+def blacklist_check(ctx: Context) -> bool:
     return not ctx.bot.is_blacklisted(ctx.author.id)
 
 
@@ -256,7 +256,7 @@ class Dwello(commands.AutoShardedBot):
         return user_id in self.blacklisted_users  # rewrite member and user and put it there as a property
 
     @override
-    async def get_context(self, message, *, cls: Any = DwelloContext):
+    async def get_context(self, message, *, cls: Any = Context):
         return await super().get_context(message, cls=cls)
 
     @override

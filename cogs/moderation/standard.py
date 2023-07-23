@@ -7,7 +7,7 @@ from discord.app_commands import Choice
 from discord.ext import commands
 
 import constants as cs
-from core import BaseCog, Dwello, DwelloContext, Embed
+from core import BaseCog, Dwello, Context, Embed
 from utils import HandleHTTPException, member_check
 
 
@@ -15,7 +15,7 @@ class StandardModeration(BaseCog):
     def __init__(self, bot: Dwello) -> None:
         self.bot = bot
 
-    async def cog_check(self, ctx: DwelloContext) -> bool:
+    async def cog_check(self, ctx: Context) -> bool:
         return ctx.guild is not None
 
     @commands.hybrid_command(name="ban", help="Bans users with bad behaviour.", with_app_command=True)
@@ -23,7 +23,7 @@ class StandardModeration(BaseCog):
     @commands.has_guild_permissions(ban_members=True)
     async def ban(
         self,
-        ctx: DwelloContext,
+        ctx: Context,
         member: discord.Member,
         *,
         reason: Optional[str] = None,
@@ -67,7 +67,7 @@ class StandardModeration(BaseCog):
     @commands.hybrid_command(name="unban", help="Unbans users for good behaviour.", with_app_command=True)
     @commands.bot_has_permissions(send_messages=True, view_audit_log=True, ban_members=True)
     @commands.has_guild_permissions(ban_members=True)
-    async def unban(self, ctx: DwelloContext, member: str) -> Union[discord.Message, discord.InteractionMessage, None]:
+    async def unban(self, ctx: Context, member: str) -> Union[discord.Message, discord.InteractionMessage, None]:
         if member.isdigit():
             member_id = int(member, base=10)
             try:
@@ -123,7 +123,7 @@ class StandardModeration(BaseCog):
     @commands.has_permissions(kick_members=True)
     async def kick(
         self,
-        ctx: DwelloContext,
+        ctx: Context,
         member: discord.Member,
         *,
         reason: Optional[str] = None,
@@ -156,7 +156,7 @@ class StandardModeration(BaseCog):
     @commands.has_guild_permissions(manage_nicknames=True)
     async def nick(
         self,
-        ctx: DwelloContext,
+        ctx: Context,
         member: discord.Member,
         *,
         nickname: Optional[str] = None,

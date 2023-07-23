@@ -5,7 +5,7 @@ import discord
 
 from discord.ext import commands
 from typing_extensions import Self
-from core import BaseCog, Dwello, DwelloContext  # noqa: F401
+from core import BaseCog, Dwello, Context  # noqa: F401
 
 
 class Events(BaseCog):
@@ -13,7 +13,7 @@ class Events(BaseCog):
         self.bot = bot
 
     '''@commands.hybrid_command(name="table", with_app_command=False)
-    async def test(self, ctx: DwelloContext):
+    async def test(self, ctx: Context):
         await self.bot.listeners.bot_join(ctx.guild)'''
 
     @commands.Cog.listener()
@@ -40,11 +40,11 @@ class Events(BaseCog):
         # await levelling.get_user_data(message.author.id, message.guild.id)
         
     @commands.Cog.listener()
-    async def on_command(self, ctx: DwelloContext) -> None:
+    async def on_command(self, ctx: Context) -> None:
         ...
         
     @commands.Cog.listener()
-    async def on_command_completion(self, ctx: DwelloContext) -> None:
+    async def on_command_completion(self, ctx: Context) -> None:
         self.bot.commands_executed += 1
 
     """@commands.Cog.listener()

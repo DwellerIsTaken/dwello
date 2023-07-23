@@ -12,7 +12,7 @@ from discord.ext import commands
 import constants as cs  # noqa: F401
 
 from utils import ENV
-from core import BaseCog, Dwello, DwelloContext, Embed
+from core import BaseCog, Dwello, Context, Embed
 
 
 class Fun(BaseCog):
@@ -23,7 +23,7 @@ class Fun(BaseCog):
 
     async def retrieve_subreddit(
         self,
-        ctx: DwelloContext,
+        ctx: Context,
         subreddit: str,
         /,
         listing: str = "hot",
@@ -52,7 +52,7 @@ class Fun(BaseCog):
         aliases=["tenor"],
         with_app_command=True,
     )
-    async def gif(self, ctx: DwelloContext, *, gif: str = "dankmeme") -> Optional[discord.Message]:
+    async def gif(self, ctx: Context, *, gif: str = "dankmeme") -> Optional[discord.Message]:
         key: str = ENV["TENOR_KEY"]
         limit: int = 1
         ckey: str = self.bot.user.id
@@ -84,7 +84,7 @@ class Fun(BaseCog):
         return await ctx.reply(embed=embed)
 
     @commands.hybrid_command(name="meme", help="Returns a subreddit meme.", with_app_command=True)
-    async def meme(self, ctx: DwelloContext) -> Optional[discord.Message]:
+    async def meme(self, ctx: Context) -> Optional[discord.Message]:
         data = await self.retrieve_subreddit(ctx, "dankmeme")
         if isinstance(data, discord.Message):
             return
@@ -102,7 +102,7 @@ class Fun(BaseCog):
         return await ctx.reply(embed=embed)
 
     @commands.hybrid_command(name="reddit", help="Returns a subreddit.", with_app_command=True)
-    async def reddit(self, ctx: DwelloContext, subreddit: str) -> Optional[discord.Message]:
+    async def reddit(self, ctx: Context, subreddit: str) -> Optional[discord.Message]:
         data: Dict[str, Any] = await self.retrieve_subreddit(ctx, subreddit)
         if isinstance(data, discord.Message):
             return
@@ -133,7 +133,7 @@ class Fun(BaseCog):
         help="Shows the song member is listening to.",
         with_app_command=True,
     )
-    async def spotify(self, ctx: DwelloContext, *, member: discord.Member = commands.Author) -> Optional[discord.Message]:
+    async def spotify(self, ctx: Context, *, member: discord.Member = commands.Author) -> Optional[discord.Message]:
         if ctx.interaction:
             member: discord.Member = ctx.guild.get_member(member.id)
             await ctx.defer()

@@ -12,7 +12,7 @@ import constants as cs
 from utils import ENV
 
 if TYPE_CHECKING:
-    from core import Dwello, DwelloContext
+    from core import Context, Dwello
 
 
 CLIENT_ID = ENV["TWITCH_CLIENT_ID"]
@@ -82,7 +82,7 @@ class Twitch:
         return _username
 
     async def event_subscription(
-        self, ctx: DwelloContext, type_: str, username: str
+        self, ctx: Context, type_: str, username: str
     ) -> Union[Tuple[discord.Message, dict], Any]:
         async with self.bot.pool.acquire() as conn:
             conn: asyncpg.Connection
@@ -173,7 +173,7 @@ class Twitch:
         # type_ = stream.online
 
     # return a list of users the guild is subscribed to
-    async def guild_twitch_subscriptions(self, ctx: DwelloContext) -> Optional[discord.Message]:
+    async def guild_twitch_subscriptions(self, ctx: Context) -> Optional[discord.Message]:
         async with self.bot.pool.acquire() as conn:
             conn: asyncpg.Connection
             async with conn.transaction():
@@ -203,7 +203,7 @@ class Twitch:
         return await ctx.reply(embed=twitch_embed)
 
     async def twitch_unsubscribe_from_streamer(
-        self, ctx: DwelloContext, username: Union[str, Literal["all"]]
+        self, ctx: Context, username: Union[str, Literal["all"]]
     ) -> Optional[
         discord.Message
     ]:  # IF ALL: GET ALL TWITCH USERS THAT GUILD IS SUBSCRIBED TO AND UNSUB (what if the same user for multiple guilds)

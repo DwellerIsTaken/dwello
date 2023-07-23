@@ -8,7 +8,7 @@ import asyncpg
 import discord
 
 import constants as cs  # noqa: F401
-from core import Dwello, DwelloContext, Embed
+from core import Dwello, Context, Embed
 
 
 class SharedEcoUtils:
@@ -16,7 +16,7 @@ class SharedEcoUtils:
         self.bot = bot
 
     async def fetch_basic_job_data_by_username(
-        self, ctx: DwelloContext, member: discord.Member = None
+        self, ctx: Context, member: discord.Member = None
     ) -> Optional[Tuple[Optional[str], Optional[int], Union[str, None], Optional[int]]]:
         async with self.bot.pool.acquire() as conn:
             conn: asyncpg.Connection
@@ -79,7 +79,7 @@ class SharedEcoUtils:
 
                 return balance
 
-    async def work(self, ctx: DwelloContext, name: str) -> Optional[discord.Message]:
+    async def work(self, ctx: Context, name: str) -> Optional[discord.Message]:
         async with self.bot.pool.acquire() as conn:
             conn: asyncpg.Connection
             async with conn.transaction():

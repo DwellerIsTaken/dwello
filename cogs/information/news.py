@@ -13,7 +13,7 @@ from discord.ext import commands
 
 import constants as cs  # noqa: F401
 from utils import get_unix_timestamp, is_discord_link
-from core import BaseCog, Dwello, DwelloContext, Embed
+from core import BaseCog, Dwello, Context, Embed
 
 NVT = TypeVar("NVT", bound="NewsViewer")
 
@@ -167,11 +167,11 @@ class NewsViewer(discord.ui.View):
 
     if TYPE_CHECKING:
         message: discord.Message
-        ctx: Optional[DwelloContext]
+        ctx: Optional[Context]
 
     def __init__(
         self,
-        obj: Union[DwelloContext, discord.Interaction[Dwello]],
+        obj: Union[Context, discord.Interaction[Dwello]],
         news: List[asyncpg.Record] = None,
         /,
         embed: Embed = None,
@@ -179,7 +179,7 @@ class NewsViewer(discord.ui.View):
     ):
         super().__init__()
 
-        if isinstance(obj, DwelloContext):
+        if isinstance(obj, Context):
             self.author = obj.author
             self.bot: Dwello = obj.bot
             self.ctx = obj
@@ -262,7 +262,7 @@ class NewsViewer(discord.ui.View):
     @classmethod
     async def start(
         cls: Type[NVT],
-        ctx: DwelloContext,
+        ctx: Context,
         news: List[asyncpg.Record] = None,
         /,
         embed: Embed = None,
@@ -323,14 +323,14 @@ class News(BaseCog):
         return await NewsViewer.from_interaction(interaction, news)
 
     @commands.group(invoke_without_command=True)
-    async def news(self, ctx: DwelloContext) -> NewsViewer:
+    async def news(self, ctx: Context) -> NewsViewer:
         news = await self.bot.pool.fetch("SELECT * FROM news ORDER BY news_id DESC")
 
         return await NewsViewer.start(ctx, news)
 
     @commands.is_owner()
     @news.command(hidden=True, aliases=["publish"])
-    async def add(self, ctx: DwelloContext, link: str, *, title: str):
+    async def add(self, ctx: Context, link: str, *, title: str):
         if not await ctx.bot.is_owner(ctx.author):
             return await self.news(ctx)
 
@@ -374,7 +374,7 @@ class News(BaseCog):
 
     @commands.is_owner()
     @news.command(hidden=True)
-    async def remove(self, ctx: DwelloContext, news_id: int):
+    async def remove(self, ctx: Context, news_id: int):
         if not await ctx.bot.is_owner(ctx.author):
             return await self.news(ctx)
 

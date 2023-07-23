@@ -49,7 +49,7 @@ class Confirm(discord.ui.View):
         super().__init__(timeout=timeout)
         self.message = None
         self.value = None
-        self.ctx: DwelloContext = None
+        self.ctx: NewContext = None
         self.add_item(
             ConfirmButton(
                 emoji=buttons[0][0],
@@ -88,7 +88,7 @@ class Confirm(discord.ui.View):
         return False
 
 
-class DwelloContext(commands.Context):  # [commands.Bot], Generic[T]
+class NewContext(commands.Context):  # [commands.Bot], Generic[T]
     if TYPE_CHECKING:
         from .bot import Dwello
 

@@ -10,7 +10,7 @@ import discord
 from discord.ext import commands
 
 import constants as cs  # noqa: F401
-from core import Dwello, DwelloContext, Embed
+from core import Dwello, Context, Embed
 
 
 async def setup(bot: Dwello):
@@ -40,7 +40,7 @@ class Owner(commands.Cog):
     @commands.group(name="blacklist", invoke_without_command=True, hidden=True)
     async def blacklist_group(
         self,
-        ctx: DwelloContext,
+        ctx: Context,
         user: Union[discord.User, int] = None,
         *,
         reason: str = None,
@@ -54,7 +54,7 @@ class Owner(commands.Cog):
     @blacklist_group.command(name="add", hidden=True)
     async def add(
         self,
-        ctx: DwelloContext,
+        ctx: Context,
         user: Union[discord.User, int],
         *,
         reason: str = None,
@@ -79,7 +79,7 @@ class Owner(commands.Cog):
 
     @commands.is_owner()
     @blacklist_group.command(name="display", hidden=True)
-    async def display(self, ctx: DwelloContext) -> discord.Message:
+    async def display(self, ctx: Context) -> discord.Message:
         records = await self.bot.pool.fetch("SELECT * FROM blacklist")
 
         embed: Embed = Embed(
@@ -99,7 +99,7 @@ class Owner(commands.Cog):
 
     @commands.is_owner()
     @blacklist_group.command(name="remove", hidden=True)
-    async def remove(self, ctx: DwelloContext, user: Union[discord.User, int]) -> discord.Message:
+    async def remove(self, ctx: Context, user: Union[discord.User, int]) -> discord.Message:
         user_id = user if isinstance(user, int) else user.id
         async with ctx.bot.safe_connection() as conn:
             query = """
@@ -117,7 +117,7 @@ class Owner(commands.Cog):
 
     @commands.command()
     @commands.is_owner()
-    async def sync(self, ctx: DwelloContext) -> Optional[discord.Message]:
+    async def sync(self, ctx: Context) -> Optional[discord.Message]:
         commands: List[Any] = await self.bot.tree.sync()
         return await ctx.send(f"Synced {len(commands)} global commands")
 
@@ -126,7 +126,7 @@ class Owner(commands.Cog):
     @commands.guild_only()
     async def umbra_sync(
         self,
-        ctx: DwelloContext,
+        ctx: Context,
         guilds: commands.Greedy[discord.Object],
         spec: Optional[Literal["~", "*", "^"]] = None,
     ) -> Optional[discord.Message]:
@@ -163,11 +163,11 @@ class Owner(commands.Cog):
     """@commands.command()
     @commands.is_owner()
     @commands.guild_only()
-    async def list_eventsubs(self, ctx: DwelloContext):
+    async def list_eventsubs(self, ctx: Context):
         return self.bot.twitch.event_subscription_list()
 
     @commands.command()
     @commands.is_owner()
     @commands.guild_only()
-    async def wipe_all_eventsubs(self, ctx: DwelloContext):
+    async def wipe_all_eventsubs(self, ctx: Context):
         return self.bot.twitch.unsubscribe_from_all_eventsubs()"""

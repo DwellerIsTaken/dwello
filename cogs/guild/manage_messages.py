@@ -5,7 +5,7 @@ from typing import Optional
 import discord
 from discord.ext import commands
 
-from core import BaseCog, Dwello, DwelloContext
+from core import BaseCog, Dwello, Context
 
 
 class Messages(BaseCog):  # RENAME CLASS
@@ -20,7 +20,7 @@ class Messages(BaseCog):  # RENAME CLASS
     )
     @commands.bot_has_permissions(manage_messages=True)
     @commands.has_permissions(manage_messages=True)
-    async def clear(self, ctx: DwelloContext, limit: int = 5, member: discord.Member = None) -> Optional[discord.Message]:
+    async def clear(self, ctx: Context, limit: int = 5, member: discord.Member = None) -> Optional[discord.Message]:
         async with ctx.typing(ephemeral=True):
             msg = []
 

@@ -15,7 +15,7 @@ from typing_extensions import Self
 from yarl import URL
 
 import constants as cs
-from core import BaseCog, Dwello, DwelloContext, Embed
+from core import BaseCog, Dwello, Context, Embed
 from utils import ENV, capitalize_greek_numbers, get_unix_timestamp, DefaultPaginator
 
 if TYPE_CHECKING:
@@ -36,7 +36,7 @@ UNSPLASH_DEMO_ACCESS_KEY = ENV["UNSPLASH_DEMO_ACCESS_KEY"]
 class OptionSelectView(discord.ui.View):
     def __init__(
         self,
-        ctx: DwelloContext,
+        ctx: Context,
         options: List[Tuple[str, Embed]],
     ):
         super().__init__()
@@ -120,7 +120,7 @@ class Scraping(BaseCog):
         aliases=["images"],
         with_app_command=True,
     )
-    async def image(self, ctx: DwelloContext, *, image: str) -> Optional[discord.Message]:
+    async def image(self, ctx: Context, *, image: str) -> Optional[discord.Message]:
         url: URL = "https://api.unsplash.com/photos/random"
 
         headers = {
@@ -154,7 +154,7 @@ class Scraping(BaseCog):
         aliases=["albums"],
         with_app_command=True,
     )
-    async def album(self, ctx: DwelloContext, *, album: str) -> Optional[discord.Message]:
+    async def album(self, ctx: Context, *, album: str) -> Optional[discord.Message]:
         data: SearchResult = await self.spotify_client.search(query=album, types=[ObjectType.Album], limit=5)
 
         albums: List[Dict[str, Any]] = data._data["albums"]["items"]
@@ -211,7 +211,7 @@ class Scraping(BaseCog):
         aliases=["artists"],
         with_app_command=True,
     )
-    async def artist(self, ctx: DwelloContext, *, artist: str) -> Optional[discord.Message]:
+    async def artist(self, ctx: Context, *, artist: str) -> Optional[discord.Message]:
         data: SearchResult = await self.spotify_client.search(query=artist, types=[ObjectType.Artist], limit=5)
 
         artists: List[Artist] = data.artists.items
@@ -281,7 +281,7 @@ class Scraping(BaseCog):
         aliases=["playlists"],
         with_app_command=True,
     )
-    async def playlist(self, ctx: DwelloContext, *, playlist: str) -> Optional[discord.Message]:
+    async def playlist(self, ctx: Context, *, playlist: str) -> Optional[discord.Message]:
         data: SearchResult = await self.spotify_client.search(query=playlist, types=[ObjectType.Playlist], limit=5)
 
         playlists: List[Dict[str, Any]] = data._data["playlists"]["items"]
@@ -316,7 +316,7 @@ class Scraping(BaseCog):
         return await ctx.reply(embed=embed)
 
     @commands.hybrid_command(name="track", help="Returns a track.", aliases=["tracks"], with_app_command=True)
-    async def track(self, ctx: DwelloContext, *, track: str) -> Optional[discord.Message]:
+    async def track(self, ctx: Context, *, track: str) -> Optional[discord.Message]:
         data: SearchResult = await self.spotify_client.search(query=track, types=[ObjectType.Track], limit=5)
 
         tracks: List[Track] = data.tracks.items
@@ -383,7 +383,7 @@ class Scraping(BaseCog):
         raise commands.BadArgument(f"Couldn't find a game by the name *{mk(name)}*")
 
     @commands.hybrid_command(name="game", help="Returns a game.", aliases=["games"], with_app_command=True)
-    async def game(self, ctx: DwelloContext, *, game: str) -> Optional[discord.Message]:
+    async def game(self, ctx: Context, *, game: str) -> Optional[discord.Message]:
         game_id = await self.get_game_by_name(game)
 
         url: URL = f"https://store.steampowered.com/api/appdetails?appids={game_id}&l=en"
@@ -427,7 +427,7 @@ class Scraping(BaseCog):
         aliases=["actors", "actress", "actresses"],
         with_app_command=True,
     )  # amybe people alias, but later if there are no other ppl aliases
-    async def movie_person(self, ctx: DwelloContext, *, person: str) -> Optional[discord.Message]:
+    async def movie_person(self, ctx: Context, *, person: str) -> Optional[discord.Message]:
         pages: int = 1
         url: URL = (
             f"https://api.themoviedb.org/3/search/person?query={person}&include_adult=True&language=en-US&page={pages}"
@@ -475,7 +475,7 @@ class Scraping(BaseCog):
         help="Returns a movie by its title.",
         aliases=["film", "films", "movies"],
     )
-    async def movie(self, ctx: DwelloContext, *, movie: str) -> Optional[discord.Message]:
+    async def movie(self, ctx: Context, *, movie: str) -> Optional[discord.Message]:
         # Docs: https://developer.themoviedb.org/reference/intro/getting-started
 
         pages: int = 1
@@ -556,7 +556,7 @@ class Scraping(BaseCog):
         return await interaction.response.send_message(embed=embed)
 
     @commands.command(name="show", help="Returns a TV show by its title.", aliases=["series", "shows"])
-    async def show(self, ctx: DwelloContext, *, show: str) -> Optional[discord.Message]:
+    async def show(self, ctx: Context, *, show: str) -> Optional[discord.Message]:
         pages: int = 1
         url: URL = f"https://api.themoviedb.org/3/search/tv?query={show}&include_adult=True&language=en-US&page={pages}"
         async with self.bot.http_session.get(url=url, headers=self.tmdb_headers) as response:
@@ -639,7 +639,7 @@ class Scraping(BaseCog):
         help="Shows you the temparature in the city you've typed in.",
         with_app_command=True,
     )
-    async def weather(self, ctx: DwelloContext, *, city: str) -> Optional[discord.Message]:
+    async def weather(self, ctx: Context, *, city: str) -> Optional[discord.Message]:
         if not city:
             return await ctx.reply("Please provide a city or a contry.", mention_author=True)
 

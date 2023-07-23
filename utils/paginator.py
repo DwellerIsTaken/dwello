@@ -6,7 +6,7 @@ from discord.emoji import Emoji
 from discord.ui import Button, View
 from discord.enums import ButtonStyle
 from discord.partial_emoji import PartialEmoji
-from discord.ext.commands.context import Context
+from discord.ext.commands.context import Context as _Context
 
 from typing import (
     TYPE_CHECKING, Any, Dict, List, Optional, Set, Tuple, Type, TypeVar, Union  # noqa: F401
@@ -16,7 +16,7 @@ import constants as cs  # noqa: F401
 import contextlib
 
 if TYPE_CHECKING:
-    from core import Dwello, DwelloContext, Embed
+    from core import Context, Dwello, Embed
 
 DPT = TypeVar("DPT", bound="DefaultPaginator")
 
@@ -98,7 +98,7 @@ class DefaultPaginator(View):
 
     def __init__(
         self,
-        obj: Union[DwelloContext, Interaction[Dwello]],
+        obj: Union[Context, Interaction[Dwello]],
         embeds: List[Embed],
         /,
         delete_button: Optional[bool] = False,
@@ -107,7 +107,7 @@ class DefaultPaginator(View):
         super().__init__()
 
         if any(
-            (issubclass(obj.__class__, Context), isinstance(obj, Context)),
+            (issubclass(obj.__class__, _Context), isinstance(obj, _Context)),
         ):
             self.bot: Dwello = obj.bot
             self.author = obj.author
@@ -177,7 +177,7 @@ class DefaultPaginator(View):
     @classmethod
     async def start(
         cls: Type[DPT],
-        obj: Union[DwelloContext, Interaction[Dwello]],
+        obj: Union[Context, Interaction[Dwello]],
         embeds: List[Embed],
         /,
         delete_button: Optional[bool] = False,
@@ -187,7 +187,7 @@ class DefaultPaginator(View):
         new._update_buttons()
         embed = new.embeds[0]
         if any(
-            (issubclass(obj.__class__, Context), isinstance(obj, Context)),
+            (issubclass(obj.__class__, _Context), isinstance(obj, _Context)),
         ):
             new.message = await obj.send(embed=embed, view=new)
         else:

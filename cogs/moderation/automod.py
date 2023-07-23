@@ -8,7 +8,7 @@ from discord.ext import commands  # noqa: F401
 from collections import defaultdict
 
 from utils import SpamChecker, HandleHTTPException
-from core import BaseCog, Dwello, DwelloContext  # noqa: F401
+from core import BaseCog, Dwello, Context  # noqa: F401
 
 
 class AutoMod(BaseCog):

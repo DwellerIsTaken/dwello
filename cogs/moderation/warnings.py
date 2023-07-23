@@ -10,7 +10,7 @@ from discord.ext import commands
 from discord.ui import Button, View, button
 
 import constants as cs
-from core import BaseCog, Dwello, DwelloContext, Embed
+from core import BaseCog, Dwello, Context, Embed
 from utils import apostrophize, interaction_check, member_check
 
 from .timeout import tempmute
@@ -20,7 +20,7 @@ class TimeoutSuggestion(View):
     def __init__(
         self,
         bot: Dwello,
-        ctx: DwelloContext,
+        ctx: Context,
         member: discord.Member,
         reason: str,
         timeout: int = None,
@@ -54,7 +54,7 @@ class Warnings(BaseCog):
         self.bot = bot
 
     @commands.hybrid_group(invoke_without_command=True, with_app_command=True)
-    async def warning(self, ctx: DwelloContext):
+    async def warning(self, ctx: Context):
         return await ctx.send_help(ctx.command)
 
     @warning.command(name="warn", help="Gives member a warning.", with_app_command=True)
@@ -63,7 +63,7 @@ class Warnings(BaseCog):
     @commands.guild_only()
     async def warn(
         self,
-        ctx: DwelloContext,
+        ctx: Context,
         member: discord.Member,
         reason: Optional[str] = None,
     ) -> Optional[discord.Message]:
@@ -127,7 +127,7 @@ class Warnings(BaseCog):
     @warning.command(name="warnings", help="Shows member's warnings.", with_app_command=True)
     @commands.bot_has_permissions(moderate_members=True)
     @commands.guild_only()
-    async def warnings(self, ctx: DwelloContext, member: discord.Member = None) -> Optional[discord.Message]:
+    async def warnings(self, ctx: Context, member: discord.Member = None) -> Optional[discord.Message]:
         async with ctx.typing(ephemeral=True):
             async with self.bot.pool.acquire() as conn:
                 conn: asyncpg.Connection
@@ -219,7 +219,7 @@ class Warnings(BaseCog):
     @commands.bot_has_permissions(moderate_members=True)
     @commands.has_permissions(moderate_members=True)
     @commands.guild_only()
-    async def remove_warn(self, ctx: DwelloContext, member: discord.Member, warning: str) -> Optional[discord.Message]:
+    async def remove_warn(self, ctx: Context, member: discord.Member, warning: str) -> Optional[discord.Message]:
         async with ctx.typing(ephemeral=True):
             async with self.bot.pool.acquire() as conn:
                 conn: asyncpg.Connection

@@ -16,7 +16,7 @@ from core import BaseCog, Embed
 if TYPE_CHECKING:
     from asyncpg import Record
 
-    from core import Dwello, DwelloContext
+    from core import Dwello, Context
 
 
 class EditDueDateButton(Button):
@@ -231,12 +231,12 @@ class Todo(BaseCog):
         await interaction.response.send_modal(modal)
 
     @commands.group(description="Commands for dealing with Todos'")
-    async def todo(self, ctx: DwelloContext):
+    async def todo(self, ctx: Context):
         if not ctx.invoked_subcommand:
             await ctx.send_help(ctx.command)
 
     @todo.command(description="Adds a Todo")
-    async def add(self, ctx: DwelloContext, *, content: str):
+    async def add(self, ctx: Context, *, content: str):
         todo = TodoItem(
             user_id=ctx.author.id,
             channel_id=ctx.channel.id,
@@ -251,7 +251,7 @@ class Todo(BaseCog):
         await ctx.send(embed=embed, view=view)
 
     @todo.command(description="Shows one of your Todos' by it's ID")
-    async def show(self, ctx: DwelloContext, id: int):
+    async def show(self, ctx: Context, id: int):
         todo = await self.get_todo(id)
         if todo is None or todo.user_id != ctx.author.id:
             return await ctx.send("Couldn't find that todo...")

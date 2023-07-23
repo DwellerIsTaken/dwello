@@ -23,7 +23,7 @@ from typing_extensions import override
 
 import constants as cs
 from utils import create_codeblock
-from core import Dwello, DwelloContext, Embed
+from core import Dwello, Context, Embed
 
 from .news import NewsViewer
 
@@ -39,7 +39,7 @@ async def setup(bot: Dwello):
 class HelpCentre(discord.ui.View):
     def __init__(
         self,
-        ctx: DwelloContext,
+        ctx: Context,
         other_view: discord.ui.View,
     ):
         super().__init__()
@@ -115,7 +115,7 @@ class HelpCentre(discord.ui.View):
 class HelpView(discord.ui.View):
     def __init__(
         self,
-        ctx: DwelloContext,
+        ctx: Context,
         data: Dict[commands.Cog, List[Union[commands.Command, discord.app_commands.Command]]],
         help_command: commands.HelpCommand,
     ):
@@ -341,7 +341,7 @@ class HelpView(discord.ui.View):
 class MyHelp(commands.HelpCommand):
     def __init__(self, **options):
         super().__init__(**options)
-        self.context: DwelloContext
+        self.context: Context
 
     @override
     def get_bot_mapping(self):
@@ -713,14 +713,14 @@ class About(commands.Cog):
 
     # make uptime: add here -> trigger on mention in on_message
     @commands.hybrid_command(name="hello", aliases=cs.HELLO_ALIASES, with_app_command=True)
-    async def hello(self, ctx: DwelloContext) -> Optional[discord.Message]:
+    async def hello(self, ctx: Context) -> Optional[discord.Message]:
         # make variations for the response
         prefix: str = str(self.bot.DEFAULT_PREFIXES[0])
         content: str = f"Hello there! I'm {self.bot.user.name}. Use `{prefix}help` for more."  # {self.bot.help_command}?
         return await ctx.send(content=content)  # display more info about bot
 
     @commands.hybrid_command(name="about", aliases=["botinfo", "info", "bi"], with_app_command=True)
-    async def about(self, ctx: DwelloContext) -> Optional[discord.Message]:
+    async def about(self, ctx: Context) -> Optional[discord.Message]:
 
         #information: discord.AppInfo = await self.bot.application_info()
         author: discord.User = self.bot.get_user(548846436570234880)
@@ -783,7 +783,7 @@ class About(commands.Cog):
         return await ctx.send(embed=embed)
 
     @commands.hybrid_command(name="uptime", help="Returns bot's uptime.", with_app_command=True)
-    async def uptime(self, ctx: DwelloContext) -> Optional[discord.Message]:
+    async def uptime(self, ctx: Context) -> Optional[discord.Message]:
         timestamp = self.get_startup_timestamp()
 
         embed: Embed = Embed(
@@ -799,7 +799,7 @@ class About(commands.Cog):
         help="Pong.",
         with_app_command=True,
     )
-    async def ping(self, ctx: DwelloContext) -> Optional[discord.Message]:  # work on return design?
+    async def ping(self, ctx: Context) -> Optional[discord.Message]:  # work on return design?
         typing_start = time.monotonic()
         await ctx.typing()
         typing_end = time.monotonic()
@@ -835,7 +835,7 @@ class About(commands.Cog):
         )
 
     @commands.hybrid_command(name="stats", help="Returns some of the bot's stats", with_app_command=True)
-    async def stats(self, ctx: DwelloContext) -> Optional[discord.Message]:
+    async def stats(self, ctx: Context) -> Optional[discord.Message]:
 
         typing_start = time.monotonic()
         await ctx.typing()
@@ -899,7 +899,7 @@ class About(commands.Cog):
         return await ctx.reply(embed=embed)
 
     @commands.hybrid_command(name="source", help="Returns command's source.", with_app_command=True)
-    async def source(self, ctx: DwelloContext, *, command_name: Optional[str]) -> Optional[discord.Message]:
+    async def source(self, ctx: Context, *, command_name: Optional[str]) -> Optional[discord.Message]:
         git = cs.GITHUB
         if not command_name:
             return await ctx.reply(git)
@@ -1044,11 +1044,11 @@ class ShowFileButton(discord.ui.Button["SourceView"]):
         await interaction.response.edit_message(attachments=att, view=view)
         
 
-Context: Type[commands.Context] = commands.Context
+_Context: Type[commands.Context] = commands.Context
 class SourceView(discord.ui.View):
     def __init__(
         self,
-        obj: Union[DwelloContext, Interaction[Dwello]],
+        obj: Union[Context, Interaction[Dwello]],
         embed: Embed,
         source_lines: List[str],
         /,
@@ -1058,7 +1058,7 @@ class SourceView(discord.ui.View):
         super().__init__(**kwargs)
         
         if any(
-            (issubclass(obj.__class__, Context), isinstance(obj, Context)),
+            (issubclass(obj.__class__, _Context), isinstance(obj, _Context)),
         ):
             self.bot: Dwello = obj.bot
             self.author = obj.author
@@ -1113,7 +1113,7 @@ class SourceView(discord.ui.View):
     @classmethod # separate start method for all the views / custom view with that classmethod
     async def start(
         cls: Type[SVT],
-        obj: Union[DwelloContext, Interaction[Dwello]],
+        obj: Union[Context, Interaction[Dwello]],
         embed: Embed,
         source_lines: List[str],
         /,
@@ -1122,7 +1122,7 @@ class SourceView(discord.ui.View):
     ) -> SVT:
         new = cls(obj, embed, source_lines, filename, **kwargs)
         if any(
-            (issubclass(obj.__class__, Context), isinstance(obj, Context)),
+            (issubclass(obj.__class__, _Context), isinstance(obj, _Context)),
         ):
             new.message = await obj.reply(embed=embed, view=new) # reply or send?
         else:
