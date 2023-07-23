@@ -7,7 +7,7 @@ import discord
 from discord.ext import commands
 
 import constants as cs
-from core import BaseCog, Dwello, DwelloContext, DwelloEmbed
+from core import BaseCog, Dwello, DwelloContext, Embed
 
 from .shared import SharedEcoUtils
 
@@ -63,7 +63,7 @@ class GuildEcoUtils:
                     description,
                 )
 
-        embed: DwelloEmbed = DwelloEmbed(
+        embed: Embed = Embed(
             title="Job added",
             description=f"You have successfully created a job on your server.\n"
             f"\n*Job name:* {name}\n*Job salary:* {salary}\n*Job description:* ```{description}```",
@@ -94,11 +94,11 @@ class GuildEcoUtils:
                     ctx.guild.id,
                 )
 
-                job_embed: DwelloEmbed = DwelloEmbed(
+                job_embed: Embed = Embed(
                     title="Joblist",
                     description="Jobs currently available on this server",
                 )
-                failure_embed: DwelloEmbed = DwelloEmbed(
+                failure_embed: Embed = Embed(
                     description="No jobs currently available on this server",
                     color=cs.WARNING_COLOR,
                 )
@@ -155,7 +155,7 @@ class GuildEcoUtils:
                 )
 
         # MAYBE CREATE SOME LOG FOR CMDS WITHIN SERVER AND STORE UNOFFICIAL MANAGEMENT THERE, SO IT WOULD BE SEEN WHO CREATED/REMOVED THE JOB(S)  # noqa: E501
-        embed: DwelloEmbed = DwelloEmbed(
+        embed: Embed = Embed(
             description=f"{'Your job' if member == ctx.author else f'The job of {member}'} is removed.\n"
             f"\n**Details**\nJob name: {name}\nSalary: {salary}\n"
             f"Description: {f'```{description}```' if description else description}",
@@ -220,7 +220,7 @@ class GuildEcoUtils:
                     )
                 )
 
-                public_embed: DwelloEmbed = DwelloEmbed(
+                public_embed: Embed = Embed(
                     title="Removed!",
                     description=f"*Removed by:* {ctx.author.mention} \n{embed_string}",
                 )
@@ -243,7 +243,7 @@ class Guild_Economy(BaseCog): # REDO
 
     @commands.hybrid_group(name="server", invoke_without_command=True, with_app_command=True)
     async def server(self, ctx: DwelloContext) -> Optional[discord.Message]:
-        embed = DwelloEmbed(
+        embed = Embed(
             title="Denied",
             description="```$server [subgroup name]```",
         )  # TURN THESE DESCRIPTIONS INTO POINTERS TO HELP COMMAND
@@ -251,7 +251,7 @@ class Guild_Economy(BaseCog): # REDO
 
     @server.group(name="job", invoke_without_command=True, with_app_command=True)
     async def jobs(self, ctx: DwelloContext) -> Optional[discord.Message]:
-        embed = DwelloEmbed(title="Denied", description="```$job list```")
+        embed = Embed(title="Denied", description="```$job list```")
         return await ctx.reply(embed=embed)
 
     @jobs.command(
@@ -317,7 +317,7 @@ class Guild_Economy(BaseCog): # REDO
 
         await self.bot.db.fetch_table_data("jobs")
         return await ctx.reply(
-            embed=DwelloEmbed(description=f"The job is set to: **{name}**"),
+            embed=Embed(description=f"The job is set to: **{name}**"),
             mention_author=False,
         )
 
@@ -338,7 +338,7 @@ class Guild_Economy(BaseCog): # REDO
                 description,
                 job_id,
             ) = await self.se.fetch_basic_job_data_by_username(ctx, member)
-            embed: DwelloEmbed = DwelloEmbed(
+            embed: Embed = Embed(
                 title="Your job",
                 description=f"**{name}**\n*Salary:* {salary}\n*Description:* {description}",
                 color=cs.RANDOM_COLOR,

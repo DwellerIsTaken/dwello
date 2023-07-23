@@ -1,10 +1,10 @@
 from __future__ import annotations
 
 import discord
+from discord import Interaction
 from discord.emoji import Emoji
 from discord.ui import Button, View
 from discord.enums import ButtonStyle
-from discord import Interaction, Embed
 from discord.partial_emoji import PartialEmoji
 from discord.ext.commands.context import Context
 
@@ -16,7 +16,7 @@ import constants as cs  # noqa: F401
 import contextlib
 
 if TYPE_CHECKING:
-    from core import Dwello, DwelloContext, DwelloEmbed
+    from core import Dwello, DwelloContext, Embed
 
 DPT = TypeVar("DPT", bound="DefaultPaginator")
 
@@ -99,7 +99,7 @@ class DefaultPaginator(View):
     def __init__(
         self,
         obj: Union[DwelloContext, Interaction[Dwello]],
-        embeds: List[Union[Embed, DwelloEmbed]],
+        embeds: List[Embed],
         /,
         delete_button: Optional[bool] = False,
         **kwargs,
@@ -136,8 +136,8 @@ class DefaultPaginator(View):
         self.current_page = 0
         self.message: discord.Message = None
 
-    def _reconstruct_embeds(self, embeds: List[DwelloEmbed]) -> List[DwelloEmbed]:
-        _embeds: List[DwelloEmbed] = []
+    def _reconstruct_embeds(self, embeds: List[Embed]) -> List[Embed]:
+        _embeds: List[Embed] = []
         for i, embed in enumerate(embeds):
             if not embed.footer:
                 embed.set_footer(text=f"Page: {i+1}")
@@ -159,7 +159,7 @@ class DefaultPaginator(View):
         else:
             return await interaction.response.send_message(
                 embed=(
-                    DwelloEmbed(
+                    Embed(
                         title="Failed to interact with the view",
                         description="Hey there! Sorry, but you can't interact with someone else's view.\n",
                         timestamp=discord.utils.utcnow(),
@@ -178,7 +178,7 @@ class DefaultPaginator(View):
     async def start(
         cls: Type[DPT],
         obj: Union[DwelloContext, Interaction[Dwello]],
-        embeds: List[DwelloEmbed],
+        embeds: List[Embed],
         /,
         delete_button: Optional[bool] = False,
         **kwargs,

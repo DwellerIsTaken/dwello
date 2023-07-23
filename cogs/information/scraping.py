@@ -15,7 +15,7 @@ from typing_extensions import Self
 from yarl import URL
 
 import constants as cs
-from core import BaseCog, Dwello, DwelloContext, DwelloEmbed
+from core import BaseCog, Dwello, DwelloContext, Embed
 from utils import ENV, capitalize_greek_numbers, get_unix_timestamp, DefaultPaginator
 
 if TYPE_CHECKING:
@@ -37,12 +37,12 @@ class OptionSelectView(discord.ui.View):
     def __init__(
         self,
         ctx: DwelloContext,
-        options: List[Tuple[str, DwelloEmbed]],
+        options: List[Tuple[str, Embed]],
     ):
         super().__init__()
         self.ctx = ctx
         self.options = options
-        self.embeds: List[DwelloEmbed] = [embed[1] for embed in options]
+        self.embeds: List[Embed] = [embed[1] for embed in options]
 
         self.main_embed = self.embeds[0]
 
@@ -140,7 +140,7 @@ class Scraping(BaseCog):
                     f"Something went wrong while trying to get an image for {mk(image)}",
                 )
 
-        embed = DwelloEmbed(
+        embed = Embed(
             title=data["alt_description"].capitalize(),
             url=data["links"]["download"],
             description=f"Photo by [{data['user']['name']}]({data['user']['links']['html']}) on [Unsplash](https://unsplash.com)",
@@ -166,7 +166,7 @@ class Scraping(BaseCog):
         
         # loop if you want to make a paginator or dropdown
 
-        embeds: List[DwelloEmbed] = [] # type
+        embeds: List[Embed] = [] # type
         for album in albums:
             album: Dict[str, Any] # = albums[0]
 
@@ -183,7 +183,7 @@ class Scraping(BaseCog):
             except ValueError:
                 timestamp = release_date
             embed = (
-                DwelloEmbed(
+                Embed(
                     title=name,
                     url=link,
                 )
@@ -255,7 +255,7 @@ class Scraping(BaseCog):
 
         _description = f"**Followers**: {artist.followers.total:,}\n**Genres**: " + ", ".join(list(artist.genres[:2]))
         embed = (
-            DwelloEmbed(
+            Embed(
                 title=artist.name,
                 url=artist.external_urls.spotify,
                 description=_description,
@@ -302,7 +302,7 @@ class Scraping(BaseCog):
         description = playlist["description"] or None
 
         embed = (
-            DwelloEmbed(
+            Embed(
                 title=name,
                 url=url,
                 description=description,
@@ -326,7 +326,7 @@ class Scraping(BaseCog):
                 user_mistake=True,
             )
 
-        embeds: List[DwelloEmbed] = []
+        embeds: List[Embed] = []
         for _track in tracks:
             _album: PartialAlbum = _track.album
             _artists: List[Tuple[str, str]] = [(artist.name, artist.external_urls.spotify) for artist in _track.artists][:2]
@@ -346,7 +346,7 @@ class Scraping(BaseCog):
                 release_str += _album.release_date.date
 
             embed = (
-                DwelloEmbed(
+                Embed(
                     title=_track.name,
                     url=f"https://open.spotify.com/track/{_track.id}",
                     description=duration_str + release_str,
@@ -405,7 +405,7 @@ class Scraping(BaseCog):
         price = data["price_overview"]["final_formatted"]
 
         embed = (
-            DwelloEmbed(
+            Embed(
                 title=name,
                 url=website,
                 description=short_description,
@@ -449,7 +449,7 @@ class Scraping(BaseCog):
         top_movies = list(person["known_for"])
 
         embed = (
-            DwelloEmbed(
+            Embed(
                 title=person["original_name"],
                 description=f"{page.summary[:500]}..." if len(page.summary) > 500 else "",
                 url=f"https://www.themoviedb.org/person/{person['id']}",
@@ -493,7 +493,7 @@ class Scraping(BaseCog):
             return await ctx.reply(f"Couldn't find a movie by the name of {movie}.", user_mistake=True)
 
         embed = (
-            DwelloEmbed(
+            Embed(
                 title=movie["title"],
                 description=movie["overview"],
                 url=f"https://www.themoviedb.org/movie/{movie['id']}",
@@ -536,7 +536,7 @@ class Scraping(BaseCog):
                 f"Couldn't find a movie by the name of {movie}.", ephemeral=True
             )  # noqa: E501
 
-        embed = DwelloEmbed(
+        embed = Embed(
             title=movie["title"],
             description=movie["overview"],
             url=f"https://www.themoviedb.org/movie/{movie['id']}",
@@ -572,7 +572,7 @@ class Scraping(BaseCog):
             return await ctx.reply(f"Couldn't find a show by the name of {show}.", user_mistake=True)
 
         embed = (
-            DwelloEmbed(
+            Embed(
                 title=show["original_name"],
                 description=show["overview"],
                 url=f"https://www.themoviedb.org/tv/{show['id']}",
@@ -614,7 +614,7 @@ class Scraping(BaseCog):
             return await interaction.response.send_message(f"Couldn't find a show by the name of {show}.", ephemeral=True)
 
         embed = (
-            DwelloEmbed(
+            Embed(
                 title=show["original_name"],
                 description=show["overview"],
                 url=f"https://www.themoviedb.org/tv/{show['id']}",
@@ -669,7 +669,7 @@ class Scraping(BaseCog):
                 for match in clean_matches:
                     description += f"\n{match}"
 
-            matches_embed = DwelloEmbed(
+            matches_embed = Embed(
                 description=f"Sorry, but I couldn't recognise the city **{args.title()}**." f"\n{description}",
                 color=cs.WARNING_COLOR,
             )
@@ -687,7 +687,7 @@ class Scraping(BaseCog):
         )
 
         weather_embed = (
-            DwelloEmbed(
+            Embed(
                 title=f"Current weather in {data['name']}",
                 description=payload,
                 color=discord.Colour.blurple(),

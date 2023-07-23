@@ -7,7 +7,7 @@ import discord  # noqa: F401
 from discord.ext import commands
 
 import constants as cs  # noqa: F401
-from core import BaseCog, Dwello, DwelloContext, DwelloEmbed
+from core import BaseCog, Dwello, DwelloContext, Embed
 
 from .shared import SharedEcoUtils
 
@@ -31,7 +31,7 @@ class BotEcoUtils:
 
                 if money < amount:
                     return await ctx.reply(
-                        embed=DwelloEmbed(
+                        embed=Embed(
                             title="Permission denied",
                             description="You don't have enough currency to execute this action!",
                         )

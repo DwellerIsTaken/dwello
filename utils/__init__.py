@@ -11,3 +11,5 @@ from .flags import * # noqa: F401, F403  # pylint: disable=unused-wildcard-impor
 from .paginator import * # noqa: F401, F403  # pylint: disable=unused-wildcard-import
 from .translator import * # noqa: F401, F403  # pylint: disable=unused-wildcard-import
 from .twitch import *  # noqa: F401, F403  # pylint: disable=unused-wildcard-import
+
+from utils.dpy.embed import * # noqa: F401, F403  # pylint: disable=unused-wildcard-import

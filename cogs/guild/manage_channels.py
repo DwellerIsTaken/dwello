@@ -9,7 +9,7 @@ from discord.ui import Button, View, button
 
 import constants as cs
 from utils import HandleHTTPException
-from core import BaseCog, Dwello, DwelloContext, DwelloEmbed
+from core import BaseCog, Dwello, DwelloContext, Embed
 
 
 class ChannelsFunctions:
@@ -88,7 +88,7 @@ class ChannelsFunctions:
                     )  # return embed instead (?)
 
                 if not deny_result and not counter_category_id:
-                    embed: DwelloEmbed = DwelloEmbed(
+                    embed: Embed = Embed(
                         description="**Do you want to create a category for your counters?**",
                     ).set_footer(text=cs.FOOTER)
                     return await ctx.reply(
@@ -115,7 +115,7 @@ class ChannelsFunctions:
                     )
 
         await ctx.reply(
-            embed=DwelloEmbed(
+            embed=Embed(
                 description=f"**{counter_channel.name}** is successfully created!",
             ),
             permission_cmd=True,
@@ -152,7 +152,7 @@ class Stats_View(View):
         if interaction.user.id == self.ctx.author.id:
             return True
 
-        missing_permissions_embed = DwelloEmbed(
+        missing_permissions_embed = Embed(
             title="Permission Denied.",
             description="You can't interact with someone else's buttons.",
         )
@@ -243,7 +243,7 @@ class Channels(BaseCog):
     @counter.command(name="list", aliases=["show", "display"], help="Shows a list of counters you can create.")
     async def list(self, ctx: DwelloContext):
         async with ctx.typing(ephemeral=True):
-            embed: DwelloEmbed = DwelloEmbed(
+            embed: Embed = Embed(
                 title=":bar_chart: AVAILABLE COUNTERS :bar_chart:",
                 description=cs.server_statistics_list_help_embed_description,
                 color=cs.WARNING_COLOR,

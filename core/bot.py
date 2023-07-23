@@ -25,9 +25,11 @@ else:
         asyncio.set_event_loop_policy(uvloop.EventLoopPolicy())
 
 from ._utils import ENV, AiohttpWeb, AutoComplete, DataBaseOperations, LevellingUtils, ListenersFunctions, OtherUtils, Twitch
-from utils import get_avatar_dominant_color, DwelloTranslator
+from utils import get_avatar_dominant_color
+from utils import NewTranslator as Translator
+from utils import NewEmbed as Embed
+
 from .context import DwelloContext
-from .embed import DwelloEmbed
 import constants as cs
 
 if TYPE_CHECKING:
@@ -229,7 +231,7 @@ class Dwello(commands.AutoShardedBot):
             )
         )'''
 
-        await self.tree.set_translator(DwelloTranslator())
+        await self.tree.set_translator(Translator())
 
         asyncio.create_task(self.web.run(port=8081))
 
@@ -286,7 +288,7 @@ class Dwello(commands.AutoShardedBot):
 
         if not hasattr(self, "default_color"):
             self.default_color = await get_avatar_dominant_color(self.user)
-            DwelloEmbed.bot_dominant_colour = self.default_color
+            Embed.bot_dominant_colour = self.default_color
 
     @override
     async def load_extension(self, name: str, *, package: Optional[str] = None, _raise: bool = True) -> None:

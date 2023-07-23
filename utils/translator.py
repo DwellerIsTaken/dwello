@@ -6,7 +6,10 @@ from discord.app_commands import (
 )
 
 # TRANSLATOR
-class DwelloTranslator(Translator):
+class NewTranslator(Translator):
+    """
+    Custom translator class inherrited from :class:`discord.Translator`.
+    """
     async def translate(
         self, string: locale_str, locale: discord.Locale, context: TranslationContext
     ):  # noqa: E501

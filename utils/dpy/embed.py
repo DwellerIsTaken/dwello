@@ -5,14 +5,13 @@ from __future__ import annotations
 import datetime
 
 import discord
-from discord import Embed
 
 from typing import TYPE_CHECKING, Any, Callable, ClassVar, Iterable, LiteralString, Optional, Sequence, Tuple, TypeVar, Union  # noqa: F401, E501
 
 if TYPE_CHECKING:
     from discord.types.embed import Embed as EmbedData, EmbedType  # noqa: F401
     
-class DwelloEmbed(Embed):
+class NewEmbed(discord.Embed):
     bot_dominant_colour: ClassVar[Optional[Union[int, discord.Colour]]] = None
 
     # someone fix pls

@@ -7,7 +7,7 @@ import discord
 from discord.ext import commands
 
 import constants as cs
-from core import BaseCog, Dwello, DwelloContext, DwelloEmbed
+from core import BaseCog, Dwello, DwelloContext, Embed
 
 
 class PrefixConfig:
@@ -34,7 +34,7 @@ class PrefixConfig:
         # await self.bot.db.fetch_table_data("prefixes")
         self.bot.guild_prefixes[ctx.guild.id].append(prefix)
         return await ctx.reply(
-            embed=DwelloEmbed(description=f"The prefix is set to `{prefix}`"),
+            embed=Embed(description=f"The prefix is set to `{prefix}`"),
             permission_cmd=True,
         )
 
@@ -45,7 +45,7 @@ class PrefixConfig:
                 prefixes = await conn.fetch("SELECT prefix FROM prefixes WHERE guild_id = $1", ctx.guild.id)
                 default_prefixes: List[str] = self.bot.DEFAULT_PREFIXES + [f"<@!{self.bot.user.id}>"]
 
-                embed: DwelloEmbed = DwelloEmbed(title="Prefixes")
+                embed: Embed = Embed(title="Prefixes")
 
                 if ctx.guild:
                     embed.add_field(
@@ -91,7 +91,7 @@ class PrefixConfig:
         # await self.bot.db.fetch_table_data("prefixes")
         self.bot.guild_prefixes[ctx.guild.id].remove(prefix)
         return await ctx.reply(
-            embed=DwelloEmbed(
+            embed=Embed(
                 description=f"{'Prefix has' if count == 1 else f'{count} prefixes have'} been removed.",
             ),
             permission_cmd=True,
@@ -145,7 +145,7 @@ class ChannelConfig:
                 string = f"{name.capitalize()} message has been {'updated' if result[0] else 'set'} to: ```{text}```"
 
         return await ctx.reply(
-            embed=DwelloEmbed(description=string),
+            embed=Embed(description=string),
             permission_cmd=True,
         )
 
@@ -184,12 +184,12 @@ class ChannelConfig:
                 )
 
         await channel.send(
-            embed=DwelloEmbed(
+            embed=Embed(
                 description=f"This channel has been set as a *{name}* channel.",
             )
         )
         return await ctx.reply(
-            embed=DwelloEmbed(description=string),
+            embed=Embed(description=string),
             permission_cmd=True,
         )
 
@@ -210,7 +210,7 @@ class ChannelConfig:
                     )
 
         return await ctx.reply(
-            embed=DwelloEmbed(
+            embed=Embed(
                 title=f"{name.capitalize()} channel message",
                 description=f"```{result[0]}```",
             ),
@@ -237,7 +237,7 @@ class ChannelConfig:
                 channel = ctx.guild.get_channel(result[0])
 
         return await ctx.reply(
-            embed=DwelloEmbed(
+            embed=Embed(
                 description=f"{name.capitalize()} channel is currently set to {channel.mention}",
             ),
             permission_cmd=True,
@@ -265,7 +265,7 @@ class ChannelConfig:
                     name,
                 )
         return await ctx.reply(
-            embed=DwelloEmbed(
+            embed=Embed(
                 description=f"{name.capitalize()} channel has been removed.",
             ),
             permission_cmd=True,
@@ -319,7 +319,7 @@ class Config(BaseCog):
     @welcome.group(invoke_without_command=True, with_app_command=True, name="message")
     async def welcome_mesage(self, ctx: DwelloContext):
         async with ctx.typing(ephemeral=True):
-            embed = DwelloEmbed(
+            embed = Embed(
                 description="```$welcome message [command name]```",
                 color=cs.WARNING_COLOR,
             )
@@ -328,7 +328,7 @@ class Config(BaseCog):
     @welcome.group(invoke_without_command=True, with_app_command=True, name="channel")
     async def welcome_channel(self, ctx: DwelloContext):
         async with ctx.typing(ephemeral=True):
-            embed = DwelloEmbed(
+            embed = Embed(
                 description="```$welcome channel [command name]```",
                 color=cs.WARNING_COLOR,
             )
@@ -367,7 +367,7 @@ class Config(BaseCog):
     """@welcome.command(name="help", description="Welcome help.")
     async def help(self, ctx: DwelloContext): # maybe add a dict attribute to this class and save it like {'welcome': "extra description on formatting etc"}  # noqa: E501
         async with ctx.typing(ephemeral=True):
-            help_welcome_help_embed = DwelloEmbed(
+            help_welcome_help_embed = Embed(
                 title="✨ COMPREHENSIVE WELCOME/LEAVE HELP ✨",
                 description=cs.on_member_join_help_welcome_help_embed_description,
                 color=cs.RANDOM_COLOR,
@@ -388,7 +388,7 @@ class Config(BaseCog):
     @leave.group(invoke_without_command=True, with_app_command=True, name="message")
     async def leave_message(self, ctx: DwelloContext):
         async with ctx.typing(ephemeral=True):
-            embed = DwelloEmbed(
+            embed = Embed(
                 description="```$leave message [command name]```",
                 color=cs.WARNING_COLOR,
             )
@@ -397,7 +397,7 @@ class Config(BaseCog):
     @leave.group(invoke_without_command=True, with_app_command=True, name="channel")
     async def leave_channel(self, ctx: DwelloContext):
         async with ctx.typing(ephemeral=True):
-            embed = DwelloEmbed(
+            embed = Embed(
                 description="```$leave channel [command name]```",
                 color=cs.WARNING_COLOR,
             )
@@ -436,7 +436,7 @@ class Config(BaseCog):
     """@leave.command(name="help", description="Leave help.")
     async def l_help(self, ctx: commands.Context):
         async with ctx.typing(ephemeral=True):
-            help_leave_help_embed = DwelloEmbed(
+            help_leave_help_embed = Embed(
                 title="✨ COMPREHENSIVE WELCOME/LEAVE HELP ✨",
                 description=cs.on_member_join_help_welcome_help_embed_description,
                 color=cs.RANDOM_COLOR,
@@ -457,7 +457,7 @@ class Config(BaseCog):
     @twitch.group(invoke_without_command=True, with_app_command=True, name="message")
     async def twitch_message(self, ctx: DwelloContext):
         async with ctx.typing(ephemeral=True):
-            embed = DwelloEmbed(
+            embed = Embed(
                 description="```$twitch message [command_name]```",
                 color=cs.WARNING_COLOR,
             )
@@ -469,7 +469,7 @@ class Config(BaseCog):
     @twitch.group(invoke_without_command=True, with_app_command=True, name="channel")
     async def twitch_channel(self, ctx: DwelloContext):
         async with ctx.typing(ephemeral=True):
-            embed = DwelloEmbed(
+            embed = Embed(
                 description="```$twitch channel [command_name]```",
                 color=cs.WARNING_COLOR,
             )
