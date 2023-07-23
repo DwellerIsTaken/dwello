@@ -6,6 +6,7 @@ import re
 from typing import TYPE_CHECKING, Any, Dict, List, Optional, Tuple
 
 import discord
+import contextlib
 import wikipediaapi
 from aiospotify import Artist, Image, ObjectType, PartialAlbum, SearchResult, SpotifyClient, Track, http
 from discord import app_commands
@@ -82,10 +83,13 @@ class Scraping(BaseCog):
             session=self.bot.http_session,
         )
 
-        self.wiki: wikipediaapi.Wikipedia = wikipediaapi.Wikipedia(
-            language="en",
-            headers=self.wiki_headers,
-        )
+        # for some reason user_agent is a required argument on the laptop
+        # but not on the pc (for me at least)
+        with contextlib.suppress(TypeError):
+            self.wiki: wikipediaapi.Wikipedia = wikipediaapi.Wikipedia(
+                language="en",
+                headers=self.wiki_headers,
+            )
 
     @property
     def tmdb_key(self: Self) -> str:
@@ -103,8 +107,12 @@ class Scraping(BaseCog):
         return self.spotify_client.http
 
     @property
+    def wiki_user_agent(self) -> str:
+        return "CoolBot/0.0 (https://example.org/coolbot/; coolbot@example.org)"
+    
+    @property
     def wiki_headers(self) -> Dict[str, str]:
-        return {"User-Agent": "CoolBot/0.0 (https://example.org/coolbot/; coolbot@example.org)"}
+        return {"User-Agent": self.wiki_user_agent}
 
     @commands.hybrid_command(
         name="image",

@@ -21,7 +21,7 @@ if TYPE_CHECKING:
 DPT = TypeVar("DPT", bound="DefaultPaginator")
 
 
-class PreviousPageButton(Button[DPT]):
+class PreviousPageButton(Button["DefaultPaginator"]):
     def __init__(
         self,
         *,
@@ -39,7 +39,7 @@ class PreviousPageButton(Button[DPT]):
         await interaction.response.edit_message(embed=view.embeds[view.current_page], view=view)
 
 
-class StopViewButton(Button[DPT]):
+class StopViewButton(Button["DefaultPaginator"]):
     def __init__(
         self,
         *,
@@ -57,7 +57,7 @@ class StopViewButton(Button[DPT]):
         return await interaction.message.delete(delay=0)
     
 
-class NextPageButton(Button[DPT]):
+class NextPageButton(Button["DefaultPaginator"]):
     def __init__(
         self,
         *,
@@ -75,7 +75,7 @@ class NextPageButton(Button[DPT]):
         await interaction.response.edit_message(embed=view.embeds[view.current_page], view=view)
     
 
-class GoBackButton(Button[DPT]):
+class GoBackButton(Button["DefaultPaginator"]):
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
 

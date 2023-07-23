@@ -5,16 +5,16 @@ import discord
 
 from discord.ext import commands
 from typing_extensions import Self
-from core import BaseCog, Dwello, DwelloContext
+from core import BaseCog, Dwello, DwelloContext  # noqa: F401
 
 
 class Events(BaseCog):
     def __init__(self, bot: Dwello):
         self.bot = bot
 
-    @commands.hybrid_command(name="table", with_app_command=False)
+    '''@commands.hybrid_command(name="table", with_app_command=False)
     async def test(self, ctx: DwelloContext):
-        await self.bot.listeners.bot_join(ctx.guild)
+        await self.bot.listeners.bot_join(ctx.guild)'''
 
     @commands.Cog.listener()
     async def on_guild_join(self, guild: discord.Guild):
@@ -38,14 +38,14 @@ class Events(BaseCog):
             self.bot.reply_count += 1
 
         # await levelling.get_user_data(message.author.id, message.guild.id)
-
-        """if message.content.startswith('+'):
-            prompt = message.content.split('+')
-            prompt = prompt[1]
-
-            response = requests.post("https://api.openai.com/v1/engines/davinci/completions",json={"prompt":prompt, "temperature":0.5, "max_tokens":100},headers=headers)
-
-            await message.reply(embed=discord.Embed(description= response.json()["choices"][0]['text'], color=discord.Color.random()), mention_author=False)"""  # noqa: E501
+        
+    @commands.Cog.listener()
+    async def on_command(self, ctx: DwelloContext) -> None:
+        ...
+        
+    @commands.Cog.listener()
+    async def on_command_completion(self, ctx: DwelloContext) -> None:
+        self.bot.commands_executed += 1
 
     """@commands.Cog.listener()
     async def on_interaction(self, interaction: discord.interactions.Interaction):

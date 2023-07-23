@@ -163,6 +163,8 @@ class Dwello(commands.AutoShardedBot):
         self.repo = cs.GITHUB
 
         self.reply_count: int = 0
+        self.commands_executed: int = 0
+        
         self._was_ready = False
         self.test_instance = False
         self.main_prefix: str = self.DEFAULT_PREFIXES[0]
@@ -257,12 +259,16 @@ class Dwello(commands.AutoShardedBot):
 
     @override
     async def get_prefix(self, message: discord.Message) -> list[str]:
+        prefixes = []
         if guild_prefixes := self.guild_prefixes.get(message.guild.id):  # type: ignore
-            prefixes = []
             prefixes.extend(guild_prefixes)
         else:
-            prefixes = self.DEFAULT_PREFIXES
+            prefixes.extend(self.DEFAULT_PREFIXES)
 
+        if await self.is_owner(message.author) and guild_prefixes:
+            prefixes.extend(self.DEFAULT_PREFIXES)
+            
+        # override or extend
         return commands.when_mentioned_or(*prefixes)(self, message)
 
     async def on_ready(self) -> None:

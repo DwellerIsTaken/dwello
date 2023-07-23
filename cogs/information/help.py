@@ -5,13 +5,14 @@ import contextlib
 import datetime
 import difflib
 import inspect
+import io
 import itertools
 import os
 import psutil
 import pygit2
 import time
 import traceback
-from typing import Any, Dict, List, Optional, Set, Tuple, TypeVar, Union  # noqa: F401
+from typing import Any, Dict, List, Optional, Set, Tuple, Type, TypeVar, Union  # noqa: F401
 
 import discord
 from discord import app_commands  # noqa: F401
@@ -21,9 +22,12 @@ from discord.ui import Select, button, select
 from typing_extensions import override
 
 import constants as cs
+from utils import create_codeblock
 from core import Dwello, DwelloContext, DwelloEmbed
 
 from .news import NewsViewer
+
+SVT = TypeVar("SVT", bound="SourceView")
 
 newline = "\n"
 
@@ -964,150 +968,166 @@ class About(commands.Cog):
             if cog:
                 target = type(cog)
 
-        source: str = inspect.getsource(target)
+        #source: str = inspect.getsource(target)
         file: str = inspect.getsourcefile(target)
-        lines: Tuple[List[str], int] = inspect.getsourcelines(target)
-        git_lines = f"#L{lines[1]}-L{len(lines[0])+lines[1]}"
+        lines, _ = inspect.getsourcelines(target)
+        git_lines = f"#L{_}-L{len(lines)+_}"
         path = os.path.relpath(file)
 
         source_link = f"> [**Source**]({git}tree/main/{path}{git_lines}) {cs.GITHUB_EMOJI}\n> **{path}{git_lines}**\n"
 
         embed: DwelloEmbed = DwelloEmbed(
             title=f"Source for `{command_name}`",
-            description=(source_link + await ctx.create_codeblock(source)),
+            description=source_link,
         )
-        try:
-            return await ctx.reply(embed=embed)
 
-        except discord.errors.HTTPException:
-            embed.description = source_link
-            return await ctx.reply(embed=embed)
+        return await SourceView.start(ctx, embed, lines, filename=f"{command_name}.py")
 
 
-# SOME USELESS PIECE OF SHIT
-class ManualHelp:
-    def __init__(self, bot: Dwello = None):
-        self.bot = bot
-        self.ignored_cogs = ["CommandErrorHandler", "Other", "Jishaku"]
-
-    def get_bot_cog_structure_as_dict(
+class ShowCodeButton(discord.ui.Button["SourceView"]):
+    def __init__(
         self,
-    ) -> Dict[str, Dict[str, Union[None, str, Dict[str, Union[None, str]]]]]:
-        """Retrieves the bot cog-structure in a dictionary form."""
+        *,
+        label: Optional[str] = "Code",
+        **kwargs,
+    ):
+        super().__init__(label=label, **kwargs)
+        
+    async def callback(self, interaction: Interaction):
+        assert self.view is not None
+        view: SourceView = self.view
+        
+        embed = view.embed
 
-        structure = {}
-
-        for name, cog in self.bot.cogs.items():
-            if name in self.ignored_cogs:
-                continue
-
-            cog_structure = {}
-            comm_list = cog.get_commands()
-
-            for command in comm_list:
-                if isinstance(command, commands.Group):
-                    group_structure = {}
-
-                    for group_command in command.commands:
-                        if isinstance(group_command, commands.Group):
-                            subgroup_structure = {
-                                subgroup_command.name: subgroup_command.help for subgroup_command in group_command.commands
-                            }
-                            group_structure[group_command.name] = subgroup_structure
-
-                        else:
-                            group_structure[group_command.name] = group_command.help
-
-                    cog_structure[command.name] = group_structure
-
-                else:
-                    cog_structure[command.name] = command.help
-
-            structure[name] = cog_structure
-
-        return structure
-
-    def print_cog_structure(self, structure: dict) -> str:
-        """Outdated. You can use it to print the full cog-structure returned by get_bot_cog_structure_as_dict()."""
-
-        structure_text = "{"
-        for cog_name, cog in structure.items():
-            structure_text += f"\n\t'{cog_name}': {{"
-            if isinstance(cog, dict):
-                for command, substructure in cog.items():
-                    if isinstance(substructure, dict):
-                        structure_text += f"\n\t\t'{command} (group)': {{"
-                        for group_name, subgroup in substructure.items():
-                            if isinstance(subgroup, dict):
-                                structure_text += f"\n\t\t\t'{group_name} (subgroup)': {{"
-                                for subgroup_name, subgroup_help in subgroup.items():
-                                    structure_text += f"\n\t\t\t\t'{subgroup_name} (command)': '{subgroup_help}',"
-                                structure_text += "\n\t\t\t}"
-                            else:
-                                structure_text += f"\n\t\t\t'{group_name} (command)': '{subgroup}',"
-                        structure_text += "\n\t\t}"
-                    else:
-                        structure_text += f"\n\t\t'{command} (command)': '{substructure}',"
-            else:
-                structure_text += f"\n\t'{cog_name}': '{cog}',"
-            structure_text += "\n\t}"
-        structure_text += "\n}"
-        return structure_text
-
-    def get_command_hierarchy(self, command: Union[commands.Group, commands.Command]) -> str:
-        """Returns the hierarchical representation of a command or command group."""
-
-        return (
-            f"{command.name} {self.get_command_hierarchy(command.all_commands[list(command.all_commands.keys())[0]])}"
-            if isinstance(command, commands.Group)
-            else command.name
+        if self.label.lower() == "code":
+            description = embed.description + f"\n {view.code_snippet}"
+            label = "Hide"
+        else:
+            description = embed.description
+            label = "Code"
+        
+        embed_ = DwelloEmbed(
+            colour=embed.colour,
+            title=embed.title,
+            type=embed.type,
+            url=embed.url,
+            description=description[:4096], # add ... where code ends?
+            timestamp=embed.timestamp,
         )
 
-    def leo_bot_mapping(self):
-        bot = self.context.bot
-        ignored_cogs = [
-            "CommandErrorHandler",
-            "Jishaku",
-            "Other",
-        ]
-        return {
-            cog: cog.get_commands()
-            for cog in sorted(
-                bot.cogs.values(),
-                key=lambda c: len(c.get_commands()),
-                reverse=True,
+        self.label = label
+        await interaction.response.edit_message(embed=embed_, view=view)
+        
+        
+class ShowFileButton(discord.ui.Button["SourceView"]):
+    def __init__(
+        self,
+        *,
+        label: Optional[str] = "File",
+        **kwargs,
+    ):
+        super().__init__(label=label, **kwargs)
+        
+    async def callback(self, interaction: Interaction):
+        assert self.view is not None
+        view: SourceView = self.view
+
+        att: List[discord.File] = []
+        if self.label.lower() == "file":
+            view._update_file()
+            att = [view.file]
+            label = "Hide"
+        else:
+            label = "File"
+            
+        self.label = label
+        await interaction.response.edit_message(attachments=att, view=view)
+        
+
+Context: Type[commands.Context] = commands.Context
+class SourceView(discord.ui.View):
+    def __init__(
+        self,
+        obj: Union[DwelloContext, Interaction[Dwello]],
+        embed: DwelloEmbed,
+        source_lines: List[str],
+        /,
+        filename: Optional[str] = "code.py",
+        **kwargs,
+    ):
+        super().__init__(**kwargs)
+        
+        if any(
+            (issubclass(obj.__class__, Context), isinstance(obj, Context)),
+        ):
+            self.bot: Dwello = obj.bot
+            self.author = obj.author
+        else:
+            self.author = obj.user
+            self.bot: Dwello = obj.client
+            
+        self.embed = embed
+        self.filename = filename
+        
+        self._code_str = ''.join(source_lines)
+        self._fp = self._code_str.encode('utf-8')
+        
+        self.code_snippet = create_codeblock(self._code_str)
+        self.file = self._create_file()
+        
+        self.add_item(ShowCodeButton())
+        self.add_item(ShowFileButton())
+            
+        self.message: discord.Message = None
+        
+    def _update_file(self) -> None:
+        self.file = self._create_file()
+        
+    def _create_file(self) -> discord.File:
+        return discord.File(
+            filename=self.filename,
+            fp=io.BytesIO(self._fp),
+        )
+        
+    async def interaction_check(self, interaction: Interaction[Dwello]) -> Optional[bool]:
+        if val := interaction.user == self.author:
+            return val
+        else:
+            return await interaction.response.send_message(
+                embed=(
+                    DwelloEmbed(
+                        title="Failed to interact with the view",
+                        description="Hey there! Sorry, but you can't interact with someone else's view.\n",
+                        timestamp=discord.utils.utcnow(),
+                    )
+                    .set_image(url="https://media.tenor.com/jTKDchcLtrcAAAAd/walter-white-walter-crying.gif")
+                ),
+                ephemeral=True,
             )
-            if cog.qualified_name not in ignored_cogs
-        }
 
-    def new_bot_mapping(self) -> Dict[commands.Cog, List[commands.Command]]:
-        """Retrieves full bot mapping that includes every (user-) available command: all command/parent groups are unpacked."""  # noqa: E501
+    async def on_timeout(self) -> None:
+        self.clear_items()
+        with contextlib.suppress(discord.errors.NotFound):
+            await self.message.edit(view=self)
 
-        bot = self.bot
-        mapping = {}
-
-        for cog in sorted(bot.cogs.values(), key=lambda c: len(c.get_commands()), reverse=True):
-            if cog.qualified_name in self.ignored_cogs:
-                continue
-
-            commands_list: List[commands.Command] = []
-            for command in cog.walk_commands():
-                if isinstance(command, commands.Group):
-                    subcommands = command.commands
-                    while (
-                        isinstance(subcommands, list)
-                        and len(subcommands) == 1
-                        and isinstance(subcommands[0], commands.Group)
-                    ):
-                        subcommands = subcommands[0].commands
-
-                    if isinstance(subcommands, list):
-                        commands_list.extend(subcommands)
-                    elif isinstance(subcommands, commands.Command):
-                        commands_list.append(subcommands)
-                else:
-                    commands_list.append(command)
-
-            mapping[cog] = commands_list
-
-        return mapping
+    @classmethod # separate start method for all the views / custom view with that classmethod
+    async def start(
+        cls: Type[SVT],
+        obj: Union[DwelloContext, Interaction[Dwello]],
+        embed: DwelloEmbed,
+        source_lines: List[str],
+        /,
+        filename: Optional[str] = "code.py",
+        **kwargs,
+    ) -> SVT:
+        new = cls(obj, embed, source_lines, filename, **kwargs)
+        if any(
+            (issubclass(obj.__class__, Context), isinstance(obj, Context)),
+        ):
+            new.message = await obj.reply(embed=embed, view=new) # reply or send?
+        else:
+            send = obj.response.send_message
+            await send(embed=embed, view=new)
+            new.message = await obj.original_response()
+        await new.wait()
+        return new

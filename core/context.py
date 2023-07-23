@@ -6,7 +6,7 @@ import random
 import re
 from contextlib import suppress
 from operator import attrgetter
-from typing import TYPE_CHECKING, Any, Callable, Iterable, LiteralString, Optional, Sequence, Tuple, TypeVar, Union
+from typing import TYPE_CHECKING, Any, Callable, Iterable, Optional, Sequence, Tuple, TypeVar, Union
 
 import discord
 from discord.ext import commands
@@ -371,7 +371,7 @@ class DwelloContext(commands.Context):  # [commands.Bot], Generic[T]
         with suppress(discord.Forbidden, discord.HTTPException):
             await super().typing()
 
-    @property
+    @property # maybe call bot.is_owner(), but its async so
     def is_bot_owner(self) -> bool:
         return self.author.id in self.bot.owner_ids
 
@@ -383,10 +383,6 @@ class DwelloContext(commands.Context):  # [commands.Bot], Generic[T]
     @property
     def referenced_user(self) -> Optional[discord.abc.User]:
         return getattr(self.reference, "author", None)
-
-    async def create_codeblock(self, content: str) -> str:
-        fmt: LiteralString = "`" * 3
-        return f"{fmt}py\n{content}{fmt}"
 
     def send_view(self):
         class View(discord.ui.View):
