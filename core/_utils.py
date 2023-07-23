@@ -14,9 +14,9 @@ import discord
 from aiohttp import web
 from discord.app_commands import Choice
 
-import constants as cs  # noqa: E402
-from utils import ENV, DataBaseOperations, Twitch  # noqa: F401, E402
+import constants as cs
 
+# REDO
 
 class AiohttpWeb:
     def __init__(self, bot: Dwello):

@@ -12,10 +12,10 @@ import psutil
 import pygit2
 import time
 import traceback
-from typing import Any, Dict, List, Optional, Set, Tuple, Type, TypeVar, Union  # noqa: F401
+from typing import Any, Dict, List, Optional, Tuple, Type, TypeVar, Union
 
 import discord
-from discord import app_commands  # noqa: F401
+from discord import app_commands
 from discord import Interaction
 from discord.ext import commands
 from discord.ui import Select, button, select
@@ -23,7 +23,7 @@ from typing_extensions import override
 
 import constants as cs
 from utils import create_codeblock
-from core import Dwello, Context, Embed
+from core import Context, Dwello, Embed
 
 from .news import NewsViewer
 

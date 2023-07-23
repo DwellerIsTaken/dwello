@@ -16,7 +16,7 @@ from core import BaseCog, Embed
 if TYPE_CHECKING:
     from asyncpg import Record
 
-    from core import Dwello, Context
+    from core import Context, Dwello
 
 
 class EditDueDateButton(Button):

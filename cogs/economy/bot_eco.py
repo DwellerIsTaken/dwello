@@ -3,11 +3,9 @@ from __future__ import annotations
 from typing import Optional
 
 import asyncpg
-import discord  # noqa: F401
 from discord.ext import commands
 
-import constants as cs  # noqa: F401
-from core import BaseCog, Dwello, Context, Embed
+from core import BaseCog, Context, Dwello, Embed
 
 from .shared import SharedEcoUtils
 

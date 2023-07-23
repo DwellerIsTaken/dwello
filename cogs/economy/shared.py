@@ -7,8 +7,7 @@ from typing import Optional, Tuple, Union
 import asyncpg
 import discord
 
-import constants as cs  # noqa: F401
-from core import Dwello, Context, Embed
+from core import Context, Dwello, Embed
 
 
 class SharedEcoUtils:

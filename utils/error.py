@@ -11,7 +11,7 @@ from discord.ext import commands
 import constants as cs
 
 if TYPE_CHECKING:
-    from core import Dwello, Context
+    from core import Context, Dwello
 
 
 async def setup(bot: Dwello):

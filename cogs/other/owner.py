@@ -9,8 +9,7 @@ import asyncpg
 import discord
 from discord.ext import commands
 
-import constants as cs  # noqa: F401
-from core import Dwello, Context, Embed
+from core import Context, Dwello, Embed
 
 
 async def setup(bot: Dwello):

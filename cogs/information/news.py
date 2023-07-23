@@ -4,16 +4,15 @@ import contextlib
 import datetime
 import re
 from dataclasses import dataclass
-from typing import TYPE_CHECKING, List, Optional, Tuple, Type, TypeVar, Union  # noqa: F401
+from typing import TYPE_CHECKING, List, Optional, Tuple, Type, TypeVar, Union
 
 import asyncpg
 import discord
 from discord import ButtonStyle, app_commands
 from discord.ext import commands
 
-import constants as cs  # noqa: F401
 from utils import get_unix_timestamp, is_discord_link
-from core import BaseCog, Dwello, Context, Embed
+from core import BaseCog, Context, Dwello, Embed
 
 NVT = TypeVar("NVT", bound="NewsViewer")
 

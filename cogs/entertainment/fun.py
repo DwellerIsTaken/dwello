@@ -9,10 +9,8 @@ import discord
 from discord import app_commands
 from discord.ext import commands
 
-import constants as cs  # noqa: F401
-
 from utils import ENV
-from core import BaseCog, Dwello, Context, Embed
+from core import BaseCog, Context, Dwello, Embed
 
 
 class Fun(BaseCog):

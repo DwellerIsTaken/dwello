@@ -8,8 +8,7 @@ from discord.ext import tasks
 from pytz import timezone
 from typing_extensions import Self
 
-from core import BaseCog, Dwello, Context  # noqa: F401
-
+from core import BaseCog, Dwello
 
 class Tasks(BaseCog):
     def __init__(self, bot: Dwello) -> None:

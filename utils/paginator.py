@@ -9,10 +9,9 @@ from discord.partial_emoji import PartialEmoji
 from discord.ext.commands.context import Context as _Context
 
 from typing import (
-    TYPE_CHECKING, Any, Dict, List, Optional, Set, Tuple, Type, TypeVar, Union  # noqa: F401
+    TYPE_CHECKING, List, Optional, Type, TypeVar, Union,
 )
 
-import constants as cs  # noqa: F401
 import contextlib
 
 if TYPE_CHECKING:

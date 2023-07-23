@@ -15,7 +15,7 @@ from typing_extensions import Self
 from yarl import URL
 
 import constants as cs
-from core import BaseCog, Dwello, Context, Embed
+from core import BaseCog, Context, Dwello, Embed
 from utils import ENV, capitalize_greek_numbers, get_unix_timestamp, DefaultPaginator
 
 if TYPE_CHECKING:

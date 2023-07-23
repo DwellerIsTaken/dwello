@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from typing import Any, Optional, MutableMapping  # noqa: F401
+from typing import Optional, MutableMapping
 
 import discord
 import datetime

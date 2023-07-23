@@ -1,14 +1,12 @@
 from __future__ import annotations
 
-from typing import Any, Optional, MutableMapping  # noqa: F401
-
 import discord
 import contextlib
-from discord.ext import commands  # noqa: F401
+from discord.ext import commands
 from collections import defaultdict
 
 from utils import SpamChecker, HandleHTTPException
-from core import BaseCog, Dwello, Context  # noqa: F401
+from core import BaseCog, Dwello
 
 
 class AutoMod(BaseCog):

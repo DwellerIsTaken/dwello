@@ -5,7 +5,7 @@ from typing import Optional
 import discord
 from discord.ext import commands
 
-from core import BaseCog, Dwello, Context
+from core import BaseCog, Context, Dwello
 
 
 class Messages(BaseCog):  # RENAME CLASS

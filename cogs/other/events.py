@@ -5,7 +5,7 @@ import discord
 
 from discord.ext import commands
 from typing_extensions import Self
-from core import BaseCog, Dwello, Context  # noqa: F401
+from core import BaseCog, Context, Dwello
 
 
 class Events(BaseCog):
