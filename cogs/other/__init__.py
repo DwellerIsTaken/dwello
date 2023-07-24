@@ -1,6 +1,8 @@
 from __future__ import annotations
 
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Dict
+
+from discord import Message
 
 from .botconfig import BotConfig
 from .events import Events
@@ -12,6 +14,9 @@ if TYPE_CHECKING:
 
 
 class Other(Events, Tasks, BotConfig, Todo):
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.message_cache: Dict[int, Message] = {}
     """Other Class"""
 
 
