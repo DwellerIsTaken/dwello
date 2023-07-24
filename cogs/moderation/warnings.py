@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 import datetime
-from typing import List, Optional
+from typing import List, Optional, Union
 
 import asyncpg
 import discord
@@ -64,34 +64,37 @@ class Warnings(BaseCog):
     async def warn(
         self,
         ctx: Context,
-        member: discord.Member,
+        member: Union[discord.Member, int],
         reason: Optional[str] = None,
     ) -> Optional[discord.Message]:
         async with ctx.typing(ephemeral=True):
-            async with self.bot.pool.acquire() as conn:
-                conn: asyncpg.Connection
-                async with conn.transaction():
-                    if not await member_check(ctx, member, self.bot):
-                        return
+            if isinstance(member, int):
+                member = ctx.guild.get_member(member)
+            if not member:
+                return await ctx.reply("Couldn't find the member.")
+            
+            if not await member_check(ctx, member, self.bot):
+                return
 
-                    if not reason:
-                        reason = "Not specified"
+            if not reason:
+                reason = "Not specified"
 
-                    await self.bot.levelling.create_user(member.id, ctx.guild.id)
+            await self.bot.levelling.create_user(member.id, ctx.guild.id)
 
-                    await conn.execute(
-                        "INSERT INTO warnings(guild_id, user_id, warn_text, created_at, warned_by) VALUES($1,$2,$3,$4,$5)",
-                        ctx.guild.id,
-                        member.id,
-                        reason,
-                        discord.utils.utcnow(),
-                        ctx.author.id,
-                    )
-                    results = await conn.fetch(
-                        "SELECT * FROM warnings WHERE guild_id = $1 AND user_id = $2",
-                        ctx.guild.id,
-                        member.id,
-                    )
+            async with self.bot.safe_connection() as conn:
+                await conn.execute(
+                    "INSERT INTO warnings(guild_id, user_id, warn_text, created_at, warned_by) VALUES($1,$2,$3,$4,$5)",
+                    ctx.guild.id,
+                    member.id,
+                    reason,
+                    discord.utils.utcnow(),
+                    ctx.author.id,
+                )
+                results = await conn.fetch(
+                    "SELECT * FROM warnings WHERE guild_id = $1 AND user_id = $2",
+                    ctx.guild.id,
+                    member.id,
+                )
 
             warns = sum(bool(result["warn_text"]) for result in results)
             embed: Embed = Embed(
