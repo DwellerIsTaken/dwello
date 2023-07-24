@@ -14,5 +14,6 @@ typing_extensions
 dateparser
 pygit2
 psutil
+python-dotenv
 lru-dict
 git+https://github.com/blanketsucks/aiospotify

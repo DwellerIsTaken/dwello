@@ -74,7 +74,8 @@ CREATE TABLE IF NOT EXISTS todo(
     guild_id BIGINT,
     content TEXT,
     due_at TIMESTAMP,
-    completed_at TIMESTAMP
+    completed_at TIMESTAMP,
+    cached_content TEXT
 );
 
 ALTER SEQUENCE jobs_id_seq START 10000000 INCREMENT BY 1;
