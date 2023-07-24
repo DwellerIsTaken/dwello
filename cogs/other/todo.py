@@ -12,12 +12,12 @@ from discord import app_commands
 from discord.ext import commands
 from discord.ui import Button, Modal, TextInput, View
 
-from core import BaseCog, Embed
+from core import BaseCog
 
 if TYPE_CHECKING:
     from asyncpg import Record
 
-    from core import Dwello, Context
+    from core import Context, Dwello
 
 Interaction = DiscordInteraction["Dwello"]
 
@@ -516,7 +516,7 @@ class Todo(BaseCog):
             await ctx.send_help(ctx.command)
 
     @todo.command(description="Adds a Todo")
-    async def add(self, ctx: DwelloContext, *, content: str):
+    async def add(self, ctx: Context, *, content: str):
         todo = await self.add_todo(user_id=ctx.author.id, content=content)
         embed = discord.Embed(title="Added todo!", description=content, color=todo.color)
         embed.set_footer(text=f"ID: {todo.id}")
@@ -541,7 +541,7 @@ class Todo(BaseCog):
         await ctx.send(embed=embed, view=view)
 
     @todo.command()
-    async def list(self, ctx: DwelloContext):
+    async def list(self, ctx: Context):
         todos = await self.get_todos(ctx.author.id)
         if not todos:
             return await ctx.send("You don't have any todos.")
