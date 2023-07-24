@@ -524,7 +524,7 @@ class Todo(BaseCog):
         view.add_item(EditDueDateButton(todo, self, label="Edit Due Date"))
         await ctx.send(embed=embed, view=view)
     
-    @todo.command(description="Delets a todo", aliases=["remove"])
+    @todo.command(description="Deletes a Todo", aliases=["remove"])
     async def delete(self, ctx: Context, id: int):
         todo = await self.get_todo(id)
         if todo is None or todo.user_id != ctx.author.id:
