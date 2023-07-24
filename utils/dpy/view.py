@@ -1,0 +1,139 @@
+from __future__ import annotations
+
+from typing import TYPE_CHECKING, Optional, Type, TypeVar, Union, overload
+
+import contextlib
+
+import discord
+from discord.ui import View
+from discord import Interaction
+from discord.ext.commands.context import Context as _Context
+
+from .embed import NewEmbed as Embed
+
+if TYPE_CHECKING:
+    from core import Context, Dwello
+
+NVT = TypeVar("NVT", bound="NewView")
+
+
+class NewView(View):
+    """
+    Custom view class inherrited from :class:`discord.ui.View`.
+    
+    Attributes
+    -----------
+    
+    timeout: Optional[:class:`float`]
+        Timeout in seconds from last interaction with the UI before no longer accepting input.
+        If ``None`` then there is no timeout.
+        
+    kwargs: :class:`dict`
+        A dictionary of transformed arguments that were passed into the command.
+        These would be passed onto `Context.send()` for when you `start()` the view.
+    """
+    def __init__(
+        self,
+        obj: Optional[Union[Context, Interaction[Dwello]]],
+        *,
+        timeout: float | None = 180,
+        **kwargs,
+    ):
+        super().__init__(timeout=timeout)
+        
+        self.kwargs = kwargs
+        
+        self.ctx = None
+        self.interaction = None
+        
+        if any(
+            (issubclass(obj.__class__, _Context), isinstance(obj, _Context)),
+        ):
+            self.bot: Dwello = obj.bot
+            self.author = obj.author
+            self.ctx: Context = obj
+        else:
+            self.author = obj.user
+            self.bot: Dwello = obj.client
+            self.interaction: Interaction = obj
+        
+        self.message: discord.Message = None
+        
+    async def from_context(self) -> discord.Message: # should be rewritten when creating new view
+        return await self.ctx.reply(view=self, **self.kwargs)
+    
+    async def from_interaction(self) -> None: # should be rewritten when creating new view
+        return await self.interaction.response.send_message(view=self, **self.kwargs)
+        
+    async def interaction_check(self, interaction: Interaction[Dwello]) -> Optional[bool]:
+        if val := interaction.user == self.author:
+            return val
+        else:
+            return await interaction.response.send_message(
+                embed=(
+                    Embed(
+                        title="Failed to interact with the view",
+                        description="Hey there! Sorry, but you can't interact with someone else's view.\n",
+                        timestamp=discord.utils.utcnow(),
+                    )
+                    .set_image(url="https://media.tenor.com/jTKDchcLtrcAAAAd/walter-white-walter-crying.gif")
+                ),
+                ephemeral=True,
+            )
+
+    async def on_timeout(self) -> discord.Message:
+        self.clear_items()
+        with contextlib.suppress(discord.errors.NotFound):
+            await self.message.edit(view=self)
+            
+    @classmethod
+    @overload
+    async def start(
+        cls: Type[NVT],
+        obj: None = None,
+        *,
+        timeout: None = 180,
+        **kwargs,
+    ) -> NVT:
+        ...
+
+    @classmethod
+    @overload
+    async def start(
+        cls: Type[NVT],
+        obj: Context,
+        *,
+        timeout: float | None = 180,
+        **kwargs,
+    ) -> NVT:
+        ...
+
+    @classmethod
+    @overload
+    async def start(
+        cls: Type[NVT],
+        obj: Interaction[Dwello],
+        *,
+        timeout: float | None = 180,
+        **kwargs,
+    ) -> NVT:
+        ...
+
+    @classmethod
+    async def start(
+        cls: Type[NVT],
+        obj: Optional[Union[Context, Interaction[Dwello]]],
+        *,
+        timeout: float | None = 180,
+        **kwargs,
+    ) -> NVT:
+        new = cls(obj, timeout, **kwargs)
+        if new.ctx:
+            new.message = await new.from_context()
+        elif new.interaction:
+            await new.from_interaction()
+            new.message = await obj.original_response()
+        await new.wait()
+        return new
+        
+    

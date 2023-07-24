@@ -28,6 +28,7 @@ from ._utils import ENV, AiohttpWeb, AutoComplete, DataBaseOperations, Levelling
 from utils import get_avatar_dominant_color
 from utils import NewTranslator as Translator
 from utils import NewEmbed as Embed
+from utils import NewView as View  # noqa: F401
 
 from .context import NewContext as Context
 import constants as cs
