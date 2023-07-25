@@ -65,16 +65,18 @@ async def tempmute(
     )
     embed.set_footer(text=f"Timed out for {time_delta}")
 
-    async with HandleHTTPException(ctx, title=f"Failed to unban {member}"):
+    async with HandleHTTPException(ctx, title=f"Failed to mute {member}"):
         await member.timeout(time_delta, reason=reason)
 
     return await ctx.send(embed=embed)
-
+    # interaction.response.send_message
 
 class Timeout(BaseCog):
     def __init__(self, bot: Dwello) -> None:
         self.bot = bot
 
+    # should be an app cmd and prefix cmd
+    # and duration and period should be one whole (and two) (optional thus) in prefix cmd
     @commands.hybrid_command(name="mute", help="Mutes member.", with_app_command=True)
     @discord.app_commands.choices(
         period=[
@@ -95,7 +97,7 @@ class Timeout(BaseCog):
         duration: int,
         period: Optional[Choice[str]],
         *,
-        reason=None,
+        reason: Optional[str],
     ) -> None:
         async with ctx.typing(ephemeral=True):
             return await tempmute(self.bot, ctx, member, duration, period, reason)

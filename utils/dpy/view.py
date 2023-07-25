@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Optional, Type, TypeVar, Union, overload
+from typing import TYPE_CHECKING, Any, Optional, Type, TypeVar, Union, overload
 
 import contextlib
 
@@ -59,11 +59,25 @@ class NewView(View):
         
         self.message: discord.Message = None
         
-    async def from_context(self) -> discord.Message: # should be rewritten when creating new view
-        return await self.ctx.reply(view=self, **self.kwargs)
+    async def from_context(self) -> Any: # should be rewritten when creating new view
+        return await self.send()
     
-    async def from_interaction(self) -> None: # should be rewritten when creating new view
-        return await self.interaction.response.send_message(view=self, **self.kwargs)
+    async def from_interaction(self) -> Any: # should be rewritten when creating new view
+        return await self.send()
+    
+    @overload
+    async def send(self) -> discord.Message:
+        ...
+        
+    @overload
+    async def send(self) -> None:
+        ...
+        
+    async def send(self) -> Union[discord.Message, None]:
+        if self.ctx:
+            return await self.ctx.reply(view=self, **self.kwargs)
+        else:
+            return await self.interaction.response.send_message(view=self, **self.kwargs)
         
     async def interaction_check(self, interaction: Interaction[Dwello]) -> Optional[bool]:
         if val := interaction.user == self.author:
@@ -85,6 +99,10 @@ class NewView(View):
         self.clear_items()
         with contextlib.suppress(discord.errors.NotFound):
             await self.message.edit(view=self)
+            
+    def finish(self) -> None:
+        self.clear_items()
+        self.stop()
             
     @classmethod
     @overload

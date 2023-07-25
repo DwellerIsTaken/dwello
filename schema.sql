@@ -12,7 +12,7 @@ CREATE TABLE IF NOT EXISTS users(
     event_type TEXT,
     job_id BIGINT,
     PRIMARY KEY (user_id, guild_id, event_type)
-);
+); -- shouldnt be bound to guild
 
 CREATE TABLE IF NOT EXISTS twitch_users(
     username TEXT,
@@ -24,8 +24,8 @@ CREATE TABLE IF NOT EXISTS twitch_users(
 CREATE TABLE IF NOT EXISTS warnings(
     user_id BIGINT,
     guild_id BIGINT,
-    warn_id SERIAL PRIMARY KEY,
-    warn_text TEXT,
+    warn_id SERIAL PRIMARY KEY, --rename to id
+    warn_text TEXT, -- rename to reason
     created_at TIMESTAMP,
     warned_by BIGINT
 );

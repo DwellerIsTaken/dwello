@@ -1,17 +1,17 @@
 from __future__ import annotations
 
-import datetime
 from typing import List, Optional
 
 import asyncpg
 import discord
-from discord.app_commands import Choice
+import contextlib
 from discord.ext import commands
-from discord.ui import Button, View, button
+from discord.ui import Button, button
+from discord.app_commands import Choice
 
 import constants as cs
-from core import BaseCog, Context, Dwello, Embed
-from utils import apostrophize, interaction_check, member_check
+from core import BaseCog, Context, Dwello, Embed, Member, View
+from utils import Warning, apostrophize, interaction_check, member_check
 
 from .timeout import tempmute
 
@@ -21,98 +21,72 @@ class TimeoutSuggestion(View):
         self,
         bot: Dwello,
         ctx: Context,
-        member: discord.Member,
+        member: Member,
         reason: str,
-        timeout: int = None,
+        **kwargs,
     ):
-        super().__init__(timeout=timeout)  # timeout is float: passed int
+        super().__init__(**kwargs)
+        
         self.bot = bot
         self.ctx = ctx
         self.member = member
         self.reason = reason
-
+        
     @button(label="Yes", style=discord.ButtonStyle.green)
-    async def yes(self, interaction: discord.Interaction, button: Button):
+    async def _yes(self, interaction: discord.Interaction, button: Button) -> None:
         await interaction_check(interaction, self.ctx.author)
 
         # await self.ctx.interaction.response.defer()
         await tempmute(self.bot, self.ctx, self.member, 12, None, self.reason)
 
-        await interaction.message.edit(view=None)
+        self.finish()
         return await interaction.message.delete()
 
     @button(label="No", style=discord.ButtonStyle.red)
-    async def no(self, interaction: discord.Interaction, button: Button):
+    async def _no(self, interaction: discord.Interaction, button: Button) -> None:
         await interaction_check(interaction, self.ctx.author)
 
-        await interaction.message.edit(view=None)
+        self.finish()
         return await interaction.message.delete()
 
 
 class Warnings(BaseCog):
     def __init__(self, bot: Dwello) -> None:
         self.bot = bot
-
-    @commands.hybrid_group(invoke_without_command=True, with_app_command=True)
-    async def warning(self, ctx: Context):
-        return await ctx.send_help(ctx.command)
-
-    @warning.command(name="warn", help="Gives member a warning.", with_app_command=True)
-    @commands.bot_has_permissions(moderate_members=True)
-    @commands.has_permissions(moderate_members=True)
-    @commands.guild_only()
-    async def warn(
+        
+    async def cog_check(self, ctx: Context) -> bool:
+        return ctx.guild is not None
+        
+    async def _warn(
         self,
         ctx: Context,
-        member: discord.Member,
-        reason: Optional[str] = None,
+        member: Member,
+        reason: Optional[str] = "Not specified",
     ) -> Optional[discord.Message]:
-        async with ctx.typing(ephemeral=True):
             
-            if not await member_check(ctx, member, self.bot):
-                return
+        if not await member_check(ctx, member, self.bot):
+            return
 
-            if not reason:
-                reason = "Not specified"
-
-            await self.bot.levelling.create_user(member.id, ctx.guild.id)
-
-            async with self.bot.safe_connection() as conn:
-                await conn.execute(
-                    "INSERT INTO warnings(guild_id, user_id, warn_text, created_at, warned_by) VALUES($1,$2,$3,$4,$5)",
-                    ctx.guild.id,
-                    member.id,
-                    reason,
-                    discord.utils.utcnow().replace(tzinfo=None),
-                    ctx.author.id,
+        await member.warn(ctx, reason)
+        warns: int = len(await member.get_warnings(ctx))
+        with contextlib.suppress(discord.HTTPException):
+            await member.send(
+                embed=Embed(
+                    title="Warned",
+                    description=(
+                        "Goede morgen!\n"
+                        "You have been warned. Try to avoid being warned next time or it might get bad...\n\n"
+                        f"Reason: **{reason}**\n\nYour amount of warnings: `{warns}`"
+                    ),
+                    color=cs.WARNING_COLOR,
+                    timestamp=discord.utils.utcnow(),
                 )
-                results = await conn.fetch(
-                    "SELECT * FROM warnings WHERE guild_id = $1 AND user_id = $2",
-                    ctx.guild.id,
-                    member.id,
-                )
-
-            warns = sum(bool(result["warn_text"]) for result in results)
-            embed: Embed = Embed(
-                title="Warned",
-                description=(
-                    "Goede morgen!\n"
-                    "You have been warned. Try to avoid being warned next time or it might get bad...\n\n"
-                    f"Reason: **{reason}**\n\nYour amount of warnings: `{warns}`"
-                ),
-                color=cs.WARNING_COLOR,
-                timestamp=discord.utils.utcnow(),
+                .set_footer(text=cs.FOOTER)
+                .set_image(url="https://c.tenor.com/GDm0wZykMA4AAAAd/thanos-vs-vision-thanos.gif"),
             )
-            embed.set_image(url="https://c.tenor.com/GDm0wZykMA4AAAAd/thanos-vs-vision-thanos.gif")
-            embed.set_footer(text=cs.FOOTER)  #  •
-
-            try:
-                await member.send(embed=embed)
-
-            except discord.HTTPException as e:  # HANDLE IT SOMEHOW OR PASS
-                print(e)
-
-            embed: Embed = Embed(
+            
+        return await ctx.send(
+            embed=Embed(
                 title="User is warned!",
                 description=(
                     f"*Warned by:* {ctx.author.mention}\n"
@@ -121,106 +95,80 @@ class Warnings(BaseCog):
                 color=cs.WARNING_COLOR,
                 timestamp=discord.utils.utcnow(),
             )
-            embed.set_footer(text=f"Amount of warnings: {warns}")
+            .set_footer(text=f"Amount of warnings: {warns}"),
+        )
+    
+    async def _warnings(self, ctx: Context, member: Member = commands.Author) -> Optional[discord.Message]:
+        warnings: List[Warning] = await member.get_warnings(ctx)
 
-            return await ctx.send(embed=embed)
+        embed: Embed = Embed(timestamp=discord.utils.utcnow())
+        embed.set_thumbnail(url=f"{member.display_avatar}")
+        embed.set_footer(text=cs.FOOTER)
+        embed.set_author(
+            name=f"{apostrophize(member.name)} warnings",
+            icon_url=str(member.display_avatar),
+        )
 
-    @warning.command(name="warnings", help="Shows member's warnings.", with_app_command=True)
-    @commands.bot_has_permissions(moderate_members=True)
-    @commands.guild_only()
-    async def warnings(self, ctx: Context, member: discord.Member = None) -> Optional[discord.Message]:
-        async with ctx.typing(ephemeral=True):
-            async with self.bot.pool.acquire() as conn:
-                conn: asyncpg.Connection
-                async with conn.transaction():
-                    # SHORTEN
+        warns = 0
+        for warning in warnings:
+            if reason := warning.reason:
+                embed.add_field(
+                    name=f"Warning #{warns+1}",
+                    value=(
+                        f"Reason: *{reason}*\n"
+                        f"Date: {discord.utils.format_dt(warning.created_at)}"
+                    ),
+                    inline=False,
+                )
+                warns += 1
 
-                    if not member:
-                        member = ctx.author
+        if not warns:
+            embed=Embed(description=f"{'You have' if member == ctx.author else 'This user has'} no warnings yet.")
+            
+        await ctx.defer() # because view can be called (?)
+        await ctx.reply(embed=embed, mention_author=False)
 
-                    if member == ctx.author:
-                        string = "You have"
-                        suggest = False
-
-                    else:
-                        suggest = True
-                        string = "This user has"
-
-                    results = await conn.fetch(
-                        "SELECT * FROM warnings WHERE guild_id = $1 AND user_id = $2",
-                        ctx.guild.id,
-                        member.id,
-                    )
-
-                    reason_list = []
-                    date_list = []
-
-                    embed: Embed = Embed(color=cs.WARNING_COLOR, timestamp=discord.utils.utcnow())
-                    embed.set_author(
-                        name=f"{apostrophize(member.name)} warnings",
-                        icon_url=str(member.display_avatar),
-                    )
-                    embed.set_thumbnail(url=f"{member.display_avatar}")
-                    embed.set_footer(text=cs.FOOTER)
-
-                    warns = 0
-                    for result in results:
-                        date = result["created_at"]
-
-                        if reason := result["warn_text"]:
-                            reason_list.append(str(reason))
-                            date_list.append(date)
-                            warns += 1
-
-                    if warns == 0:
-                        return await ctx.reply(
-                            embed=Embed(
-                                description=f"{string} no warnings yet.",
-                            ),
-                            user_mistake=True,
-                        )  # kind of success, so embed can be used
-
-                    warns_1 = 0
-                    for _ in range(warns):
-                        if warns_1 > 4:
-                            embed.add_field(
-                                name="\u2800",
-                                value=f"This member has **{warns - warns_1}** more warnings.",
-                            )
-                            break
-
-                        date = datetime.datetime.strptime(
-                            str(date_list[int(warns_1)]), "%Y-%m-%d %H:%M:%S.%f%z"
-                        )  # 2022-09-25 18:26:08.602989+00:00
-                        date = discord.utils.format_dt(date)
-
-                        embed.add_field(
-                            name=f"Warning:   {int(warns_1) + 1}",
-                            value=f"Reason: `{reason_list[int(warns_1)]}`\nDate: *{date}*",
-                            inline=False,
-                        )  # -1
-                        warns_1 += 1
-
-                    await ctx.defer()  # because view can be called (?)
-                    await ctx.reply(embed=embed, mention_author=False)
-
-            if suggest:
-                embed: Embed = Embed(
+        if member != ctx.author and warns > 3 and ctx.author.guild_permissions.moderate_members:
+            return await ctx.send(
+                embed=Embed(
                     title="A lot of warnings",
                     description=f"Would you like to time **{member}** out for 12 hours?",
                     color=cs.WARNING_COLOR,
-                )
-                if warns > 3 and ctx.author.guild_permissions.moderate_members:
-                    return await ctx.send(
-                        embed=embed,
-                        view=TimeoutSuggestion(self.bot, ctx, member, "Too many warnings!"),
-                    )
+                ),
+                view=TimeoutSuggestion(self.bot, ctx, member, "Too many warnings!"),
+            )
+    
+    @commands.command(name='warn', help='Gives member a warning.')
+    @commands.has_permissions(moderate_members=True)
+    async def warn(self, ctx: Context, member: Member, reason: Optional[str]) -> Optional[discord.Message]:
+        async with ctx.typing(ephemeral=True):
+            print(member.name, type(member))
+            return await self._warn(ctx, member, reason)
+        
+    @commands.command(name='warnings', help="Shows member's warnings.")
+    @commands.has_permissions(moderate_members=True)
+    async def warnings(self, ctx: Context, member: Member = commands.Author) -> Optional[discord.Message]:
+        async with ctx.typing(ephemeral=True):
+            return await self._warnings(ctx, member)
+        
+    @commands.hybrid_group(name='warning', invoke_without_command=True, with_app_command=True)
+    async def warning(self, ctx: Context):
+        return await ctx.send_help(ctx.command)
+    
+    @warning.command(name="warn", help="Gives member a warning.", with_app_command=True)
+    @commands.has_permissions(moderate_members=True)
+    async def hybrid_warn(self, ctx: Context, member: Member, reason: Optional[str]) -> Optional[discord.Message]:
+        async with ctx.typing(ephemeral=True):
+            return await self._warn(ctx, member, reason)
+        
+    @warning.command(name="warnings", aliases=['show', 'display'], help="Shows member's warnings.", with_app_command=True)
+    async def hybrid_warnings(self, ctx: Context, member: Member = commands.Author) -> Optional[discord.Message]:
+        async with ctx.typing(ephemeral=True):
+            return await self._warnings(ctx, member)
 
     @warning.command(name="remove", help="Removes selected warnings.", with_app_command=True)
-    @commands.bot_has_permissions(moderate_members=True)
     @commands.has_permissions(moderate_members=True)
-    @commands.guild_only()
-    async def remove_warn(self, ctx: Context, member: discord.Member, warning: str) -> Optional[discord.Message]:
+    async def remove_warn(self, ctx: Context, member: Member, warning: str) -> Optional[discord.Message]:
         async with ctx.typing(ephemeral=True):
             async with self.bot.pool.acquire() as conn:
                 conn: asyncpg.Connection

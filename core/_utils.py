@@ -53,10 +53,12 @@ class LevellingUtils:
         async with self.bot.pool.acquire() as conn:
             conn: asyncpg.Connection
             async with conn.transaction():
-                query: str = """
+                query: str = (
+                    """
                     INSERT INTO users(user_id, guild_id, event_type) VALUES($1, $2, 'server'), ($1, $2, 'bot')
                     ON CONFLICT (user_id, guild_id, event_type) DO NOTHING
                     """
+                )
                 await conn.execute(
                     query,
                     user_id,
