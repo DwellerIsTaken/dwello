@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 import datetime
-from typing import List, Optional, Union
+from typing import List, Optional
 
 import asyncpg
 import discord
@@ -64,14 +64,10 @@ class Warnings(BaseCog):
     async def warn(
         self,
         ctx: Context,
-        member: Union[discord.Member, int],
+        member: discord.Member,
         reason: Optional[str] = None,
     ) -> Optional[discord.Message]:
         async with ctx.typing(ephemeral=True):
-            if isinstance(member, int):
-                member = ctx.guild.get_member(member)
-            if not member:
-                return await ctx.reply("Couldn't find the member.")
             
             if not await member_check(ctx, member, self.bot):
                 return
@@ -87,7 +83,7 @@ class Warnings(BaseCog):
                     ctx.guild.id,
                     member.id,
                     reason,
-                    discord.utils.utcnow(),
+                    discord.utils.utcnow().replace(tzinfo=None),
                     ctx.author.id,
                 )
                 results = await conn.fetch(
@@ -118,8 +114,10 @@ class Warnings(BaseCog):
 
             embed: Embed = Embed(
                 title="User is warned!",
-                description=f"*Warned by:* {ctx.author.mention}\n"
-                f"\n**{member}** has been successfully warned! \nReason: `{reason}`",
+                description=(
+                    f"*Warned by:* {ctx.author.mention}\n"
+                    f"\n**{member}** has been successfully warned! \nReason: `{reason}`"
+                ),
                 color=cs.WARNING_COLOR,
                 timestamp=discord.utils.utcnow(),
             )

@@ -1,5 +1,4 @@
 import random
-from typing import Union
 
 import discord
 from discord.ext import commands
@@ -10,7 +9,7 @@ import constants as cs
 # remove debugging dir
 
 
-async def member_check(ctx: commands.Context, member: discord.Member, bot: commands.Bot) -> Union[discord.Message, bool]:
+async def member_check(ctx: commands.Context, member: discord.Member, bot: commands.Bot) -> bool:
     string = ctx.command.name
     monologue = random.choice(cs.bot_reply_list)
 
@@ -20,22 +19,25 @@ async def member_check(ctx: commands.Context, member: discord.Member, bot: comma
             description=f"Hi **{ctx.author.name}**! The member you are trying to {string} is **YOU**! "
             f"So don't be stupid and don't {string} yourself. Call an admin and he will {string} you immidiately.",
         )
-        return await ctx.reply(embed=embed, ephemeral=True)
+        await ctx.reply(embed=embed, ephemeral=True)
+        return False
 
     elif member.id == bot.user.id:
-        return await ctx.reply(
+        await ctx.reply(
             embed=discord.Embed(
                 title="Permission Denied.",
                 description=str(monologue),
             ),
             ephemeral=True,
         )
+        return False
 
     if member.top_role > ctx.author.top_role:
-        return await ctx.reply(
+        await ctx.reply(
             f"You can't {string} a member who has a higher role than you!",
             ephemeral=True,
         )
+        return False
 
     return True
 

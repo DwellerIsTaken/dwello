@@ -3,7 +3,7 @@
 
 from __future__ import annotations
 
-from typing import Any, Set, List, Literal, Optional, Union
+from typing import Any, Set, List, Literal, Optional
 
 import asyncpg
 import discord
@@ -40,7 +40,7 @@ class Owner(commands.Cog):
     async def blacklist_group(
         self,
         ctx: Context,
-        user: Union[discord.User, int] = None,
+        user: discord.User = None,
         *,
         reason: str = None,
     ):
@@ -54,7 +54,7 @@ class Owner(commands.Cog):
     async def add(
         self,
         ctx: Context,
-        user: Union[discord.User, int],
+        user: discord.User,
         *,
         reason: str = None,
     ) -> discord.Message:
@@ -98,7 +98,7 @@ class Owner(commands.Cog):
 
     @commands.is_owner()
     @blacklist_group.command(name="remove", hidden=True)
-    async def remove(self, ctx: Context, user: Union[discord.User, int]) -> discord.Message:
+    async def remove(self, ctx: Context, user: discord.User) -> discord.Message:
         user_id = user if isinstance(user, int) else user.id
         async with ctx.bot.safe_connection() as conn:
             query = """
