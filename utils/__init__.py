@@ -10,10 +10,9 @@ from .translator import * # noqa: F401, F403  # pylint: disable=unused-wildcard-
 from .twitch import *  # noqa: F401, F403  # pylint: disable=unused-wildcard-import
 
 from .database.operations import * # noqa: F401, F403  # pylint: disable=unused-wildcard-import
-from .database.orm.warning import * # noqa: F401, F403  # pylint: disable=unused-wildcard-import
+from .database.orm import * # noqa: F401, F403  # pylint: disable=unused-wildcard-import
 
 from .debugging.checks import *  # noqa: F401,, F403  # pylint: disable=unused-wildcard-import
 
-from .dpy.member import * # noqa: F401, F403  # pylint: disable=unused-wildcard-import
 from .dpy.embed import * # noqa: F401, F403  # pylint: disable=unused-wildcard-import
 from .dpy.view import * # noqa: F401, F403  # pylint: disable=unused-wildcard-import

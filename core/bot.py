@@ -27,7 +27,6 @@ else:
 from ._utils import ENV, AiohttpWeb, AutoComplete, DataBaseOperations, LevellingUtils, ListenersFunctions, OtherUtils, Twitch
 from utils import get_avatar_dominant_color
 from utils import NewTranslator as Translator
-from utils import NewMember as Member # noqa: F401
 from utils import NewEmbed as Embed
 from utils import NewView as View  # noqa: F401
 
@@ -184,10 +183,11 @@ class Dwello(commands.AutoShardedBot):
             commands.BucketType.member,
         )
 
+        # redo except db
         self.autocomplete = AutoComplete(self)
         self.listeners = ListenersFunctions(self)
         self.levelling = LevellingUtils(self)
-        self.db = DataBaseOperations(self)
+        self.db: DataBaseOperations = DataBaseOperations(self)
         self.otherutils = OtherUtils(self)
         self.web = AiohttpWeb(self)
 

@@ -8,7 +8,7 @@ CREATE TABLE IF NOT EXISTS users(
     messages BIGINT DEFAULT 0,
     total_xp BIGINT DEFAULT 0,
     money TEXT DEFAULT 0,
-    worked BIGINT DEFAULT 0,
+    worked BIT DEFAULT 0,
     event_type TEXT,
     job_id BIGINT,
     PRIMARY KEY (user_id, guild_id, event_type)
@@ -36,7 +36,7 @@ CREATE TABLE IF NOT EXISTS server_data(
     channel_id BIGINT,
     event_type TEXT,
     counter_name TEXT,
-    deny_clicked INTEGER,
+    deny_clicked BIT,
     PRIMARY KEY (guild_id, event_type, counter_name)
 );
 

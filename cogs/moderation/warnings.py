@@ -2,7 +2,6 @@ from __future__ import annotations
 
 from typing import List, Optional
 
-import asyncpg
 import discord
 import contextlib
 from discord.ext import commands
@@ -10,7 +9,7 @@ from discord.ui import Button, button
 from discord.app_commands import Choice
 
 import constants as cs
-from core import BaseCog, Context, Dwello, Embed, Member, View
+from core import BaseCog, Context, Dwello, Embed, View
 from utils import Warning, apostrophize, interaction_check, member_check
 
 from .timeout import tempmute
@@ -21,7 +20,7 @@ class TimeoutSuggestion(View):
         self,
         bot: Dwello,
         ctx: Context,
-        member: Member,
+        member: discord.Member,
         reason: str,
         **kwargs,
     ):
@@ -60,15 +59,17 @@ class Warnings(BaseCog):
     async def _warn(
         self,
         ctx: Context,
-        member: Member,
+        member: discord.Member,
         reason: Optional[str] = "Not specified",
     ) -> Optional[discord.Message]:
+        
+        db = self.bot.db
             
         if not await member_check(ctx, member, self.bot):
             return
 
-        await member.warn(ctx, reason)
-        warns: int = len(await member.get_warnings(ctx))
+        await db.warn(member.id, ctx.guild, ctx.author, reason=reason)
+        warns: int = len(await db.get_warnings(member.id, ctx.guild))
         with contextlib.suppress(discord.HTTPException):
             await member.send(
                 embed=Embed(
@@ -97,9 +98,39 @@ class Warnings(BaseCog):
             )
             .set_footer(text=f"Amount of warnings: {warns}"),
         )
+        
+    async def _unwarn(self, ctx: Context, member: discord.Member, warn_id: str) -> Optional[discord.Message]:
+        if not await member_check(ctx, member, self.bot):
+            return
+        
+        db = self.bot.db
+
+        if not (all:= warn_id=='all'):
+            warn_id = int(warn_id)
+            if not await db.get_warning_by_id(warn_id, member.id, ctx.guild):
+                return await ctx.reply(
+                    f"Warning already removed! Use `{self.bot.main_prefix}warnings [member]` for more.",
+                    user_mistake=True,
+                )
+            
+        warnings = len(await self.bot.db.unwarn(warn_id if not all else 0, member.id, ctx.guild, all=all))
+        return await ctx.reply(
+            embed=Embed(
+                timestamp=discord.utils.utcnow(),
+                title="Removed",
+                description=(
+                    f"*Removed by:* {ctx.author.mention}\n\n"
+                    f"Successfully removed *{warnings}* warning(s) from {member}."
+                ),
+            ),
+            permission_cmd=True,
+        )
     
-    async def _warnings(self, ctx: Context, member: Member = commands.Author) -> Optional[discord.Message]:
-        warnings: List[Warning] = await member.get_warnings(ctx)
+    async def _warnings(self, ctx: Context, member: discord.Member = commands.Author) -> Optional[discord.Message]:
+        
+        db = self.bot.db
+        
+        warnings: List[Warning] = await db.get_warnings(member.id, ctx.guild)
 
         embed: Embed = Embed(timestamp=discord.utils.utcnow())
         embed.set_thumbnail(url=f"{member.display_avatar}")
@@ -116,7 +147,8 @@ class Warnings(BaseCog):
                     name=f"Warning #{warns+1}",
                     value=(
                         f"Reason: *{reason}*\n"
-                        f"Date: {discord.utils.format_dt(warning.created_at)}"
+                        f"Date: {discord.utils.format_dt(warning.created_at)}\n"
+                        f"ID: `{warning.id}`"
                     ),
                     inline=False,
                 )
@@ -140,14 +172,21 @@ class Warnings(BaseCog):
     
     @commands.command(name='warn', help='Gives member a warning.')
     @commands.has_permissions(moderate_members=True)
-    async def warn(self, ctx: Context, member: Member, reason: Optional[str]) -> Optional[discord.Message]:
+    async def warn(self, ctx: Context, member: discord.Member, *, reason: Optional[str]) -> Optional[discord.Message]:
         async with ctx.typing(ephemeral=True):
-            print(member.name, type(member))
             return await self._warn(ctx, member, reason)
+        
+    @commands.command(name="unwarn", help="Removes selected warnings.")
+    @commands.has_permissions(moderate_members=True)
+    async def unwarn(self, ctx: Context, member: discord.Member, warning: str) -> Optional[discord.Message]:
+        async with ctx.typing(ephemeral=True):
+            if not warning.isdigit() and warning != 'all':
+                return await ctx.reply("Please provide a valid ID.", user_mistake=True)
+            return await self._unwarn(ctx, member, warning)
         
     @commands.command(name='warnings', help="Shows member's warnings.")
     @commands.has_permissions(moderate_members=True)
-    async def warnings(self, ctx: Context, member: Member = commands.Author) -> Optional[discord.Message]:
+    async def warnings(self, ctx: Context, member: discord.Member = commands.Author) -> Optional[discord.Message]:
         async with ctx.typing(ephemeral=True):
             return await self._warnings(ctx, member)
         
@@ -157,111 +196,45 @@ class Warnings(BaseCog):
     
     @warning.command(name="warn", help="Gives member a warning.", with_app_command=True)
     @commands.has_permissions(moderate_members=True)
-    async def hybrid_warn(self, ctx: Context, member: Member, reason: Optional[str]) -> Optional[discord.Message]:
+    async def hybrid_warn(self, ctx: Context, member: discord.Member, *, reason: Optional[str]) -> Optional[discord.Message]:
         async with ctx.typing(ephemeral=True):
             return await self._warn(ctx, member, reason)
         
     @warning.command(name="warnings", aliases=['show', 'display'], help="Shows member's warnings.", with_app_command=True)
-    async def hybrid_warnings(self, ctx: Context, member: Member = commands.Author) -> Optional[discord.Message]:
+    async def hybrid_warnings(self, ctx: Context, member: discord.Member = commands.Author) -> Optional[discord.Message]:
         async with ctx.typing(ephemeral=True):
             return await self._warnings(ctx, member)
 
-    @warning.command(name="remove", help="Removes selected warnings.", with_app_command=True)
+    @warning.command(name="remove", aliases=['delete'], help="Removes selected warnings.", with_app_command=True)
     @commands.has_permissions(moderate_members=True)
-    async def remove_warn(self, ctx: Context, member: Member, warning: str) -> Optional[discord.Message]:
+    async def hybrid_unwarn(self, ctx: Context, member: discord.Member, warning: str) -> Optional[discord.Message]:
         async with ctx.typing(ephemeral=True):
-            async with self.bot.pool.acquire() as conn:
-                conn: asyncpg.Connection
-                async with conn.transaction():
-                    if member == ctx.author:
-                        return await ctx.reply(
-                            embed=Embed(
-                                title="Permission Denied.",
-                                description="**Do. Not. Attempt.**",
-                                color=cs.WARNING_COLOR,
-                            ),
-                            user_mistake=True,
-                        )
+            if not warning.isdigit() and warning != 'all':
+                return await ctx.reply("Please provide a valid ID.", user_mistake=True)
+            return await self._unwarn(ctx, member, warning)
 
-                    if not await member_check(ctx, member, self.bot):
-                        return
-
-                    """
-                    records = await conn.fetch("SELECT * FROM warnings WHERE guild_id = $1 AND user_id = $2", ctx.guild.id, member.id)
-
-                    warnings = await conn.fetch("SELECT COUNT(*) FROM warnings WHERE guild_id = $1 AND user_id = $2", ctx.guild.id, member.id)
-                    warns = 0
-                    for result in records:
-                        if result["warn_text"]:
-                            warns += 1
-
-                    if warning == "all":
-                        warnings = await conn.fetch("SELECT COUNT(*) FROM warnings WHERE guild_id = $1 AND user_id = $2", ctx.guild.id, member.id)
-                        await conn.execute("DELETE FROM warnings WHERE warn_text IS NOT NULL AND guild_id = $1 AND user_id = $2", ctx.guild.id, member.id)
-
-                    else:
-                        await conn.execute("DELETE FROM warnings WHERE warn_text = $1 AND guild_id = $2 AND user_id = $3", warning, ctx.guild.id, member.id)
-                        warnings += 1"""  # noqa: E501
-
-                    if warning == "all":
-                        warnings = await conn.fetchval(
-                            "DELETE FROM warnings WHERE warn_text IS NOT NULL AND guild_id = $1 AND user_id = $2 RETURNING COUNT(*)",  # noqa: E501
-                            ctx.guild.id,
-                            member.id,
-                        )
-
-                    else:
-                        await conn.execute(
-                            "DELETE FROM warnings WHERE warn_text = $1 AND guild_id = $2 AND user_id = $3",
-                            warning,
-                            ctx.guild.id,
-                            member.id,
-                        )
-                        warnings = 1
-
-            embed: Embed = Embed(
-                title="Removed",
-                description=(
-                    f"*Removed by:* {ctx.author.mention} \n \nSuccessfully removed *{warnings}* warning(s) from {member}."
-                ),
-                timestamp=discord.utils.utcnow(),
-            )
-            return await ctx.reply(embed=embed, permission_cmd=True)
-
-    @remove_warn.autocomplete("warning")
+    # temp cache maybe
+    @hybrid_unwarn.autocomplete("warning")
     async def autocomplete_callback(self, interaction: discord.Interaction, current: str) -> List[Choice]:
-        async with self.bot.pool.acquire() as conn:
-            conn: asyncpg.Connection
-            async with conn.transaction():  # REDO: DONT FETCH ON AUTOCOMPLETE
-                member = interaction.namespace["member"]
-                # member = interaction.guild.get_member(int(member.id))
+        # REDO: DONT FETCH ON AUTOCOMPLETE
+        # FOLLOWUP: OR DO
 
-                member = discord.Object(member.id)
-
-                # temporary
-                results = await conn.fetch(
-                    "SELECT * FROM warnings WHERE guild_id = $1 AND user_id = $2",
-                    interaction.guild.id,
-                    member.id,
-                )
-
-                item = len(current)
-                choices = [Choice(name="all", value="all")]
-
-                for result in results:
-                    text = result["warn_text"]
-                    date = result["created_at"]
-
-                    if text is None and date is None:
-                        continue
-
-                    name = str(text)  # {str(date)[:10]}
-
-                    if current.startswith(str(text).lower()[:item]):  # noqa: SIM114
-                        choices.append(Choice(name=name, value=name))
-                    elif current.startswith(str(date)[:item]):
-                        choices.append(Choice(name=name, value=name))
-                if len(choices) > 5:
-                    return choices[:5]
+        item = len(current)
+        warnings: List[Warning] = await self.bot.db.get_warnings(interaction.namespace["member"].id, interaction.guild)
+        choices: List[Choice[str]] = [Choice(name="all", value="all")] + [
+            Choice(
+                name=f"ID {warning.id}: {str(warning.reason)[:20]} | {str(warning.created_at)[:-7]}",
+                value=str(warning.id)
+            )
+            for warning in warnings
+            if (
+                current.startswith(str(warning.reason).lower()[:item])
+                or current.startswith(str(warning.created_at)[:item])
+                or current.startswith(str(warning.id)[:item])
+            )
+        ]
+                
+        if len(choices) > 10:
+            return choices[:10]
 
         return choices
