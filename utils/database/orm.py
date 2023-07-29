@@ -1,17 +1,18 @@
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Optional
-
-import discord
+from typing import TYPE_CHECKING, List, TypeVar, Optional
 
 if TYPE_CHECKING:
     from core import Dwello
     from asyncpg import Record
     from datetime import datetime
 
+W = TypeVar('W', bound='Warning')
+
 
 class User:
     __slots__ = (
+        'bot',
         'id',
         'guild_id',
         'xp',
@@ -39,7 +40,7 @@ class User:
 
 
 class TwitchUser:
-    __slots__ = ('username', 'user_id', 'guild_id')
+    __slots__ = ('bot', 'username', 'user_id', 'guild_id')
 
     def __init__(self, record: Record, bot: Dwello) -> None:
         self.bot: Dwello = bot
@@ -58,7 +59,7 @@ class Warning:
         'warned_by',
         'created_at',
     )
-    
+
     def __init__(self, record: Record, bot: Dwello) -> None:
         self.bot: Dwello = bot
         self.id: int = record['warn_id']
@@ -67,18 +68,22 @@ class Warning:
         self.guild_id: Optional[int] = record['guild_id']
         self.warned_by: Optional[int] = record['warned_by']
         self.created_at: Optional[datetime] = record['created_at']
-        
-    async def remove(self, guild: discord.Guild, member: discord.Member) -> None:
+
+    async def remove(self) -> List[Record]:
         async with self.bot.safe_connection() as conn:
-            await conn.execute(
-                "DELETE FROM warnings WHERE warn_text = $1 AND guild_id = $2 AND user_id = $3",
-                self.reason, guild.id, member.id, # should be removed based on warn_id, not reason
-            )                                     # do when member is fixed
-        return
-        
-        
+            return await conn.fetch(
+                "DELETE FROM warnings "
+                "WHERE (warn_id, guild_id, user_id) IN (($1, $2, $3)) "
+                "RETURNING *",
+                self.id,
+                self.guild_id,
+                self.user_id,
+            )
+
+
 class ServerData:
     __slots__ = (
+        'bot',
         'guild_id',
         'message_text',
         'channel_id',
@@ -98,16 +103,30 @@ class ServerData:
         
         
 class Prefix:
-    __slots__ = ('guild_id', 'prefix')
+    __slots__ = ('bot', 'guild_id', 'prefix')
 
     def __init__(self, record: Record, bot: Dwello) -> None:
         self.bot: Dwello = bot
         self.guild_id: int = record['guild_id']
         self.prefix: str = record['prefix'] # VARCHAR
+
+    @property
+    def name(self) -> str:
+        return self.prefix
+    
+    async def remove(self) -> List[Record]:
+        async with self.bot.safe_connection() as conn:
+            return await conn.fetch(
+                "DELETE FROM prefixes "
+                "WHERE (prefix, guild_id) IN (($1, $2)) "
+                "RETURNING *",
+                self.prefix,
+                self.guild_id,
+            )
         
 
 class Job:
-    __slots__ = ('guild_id', 'name', 'id', 'salary', 'description')
+    __slots__ = ('bot', 'guild_id', 'name', 'id', 'salary', 'description')
 
     def __init__(self, record: Record, bot: Dwello) -> None:
         self.bot: Dwello = bot
@@ -119,7 +138,7 @@ class Job:
 
 
 class News:
-    __slots__ = ('title', 'message_id', 'channel_id', 'id')
+    __slots__ = ('bot', 'title', 'message_id', 'channel_id', 'id')
 
     def __init__(self, record: Record, bot: Dwello) -> None:
         self.bot: Dwello = bot
@@ -130,7 +149,7 @@ class News:
 
 
 class Blacklist:
-    __slots__ = ('user_id', 'reason')
+    __slots__ = ('bot', 'user_id', 'reason')
 
     def __init__(self, record: Record, bot: Dwello) -> None:
         self.bot: Dwello = bot

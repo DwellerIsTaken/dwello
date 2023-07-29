@@ -3,7 +3,7 @@
 
 from __future__ import annotations
 
-from typing import Any, Set, List, Literal, Optional
+from typing import Set, Literal, Optional
 
 import asyncpg
 import discord
@@ -58,22 +58,18 @@ class Owner(commands.Cog):
         *,
         reason: str = None,
     ) -> discord.Message:
-        if isinstance(user, int):
-            user = self.bot.get_user(user)
-            if not user:
-                return await ctx.reply("Couldn't find the user.")
-        user_id = user.id
         try:
             async with self.bot.safe_connection() as conn:
                 await conn.execute(
                     "INSERT INTO blacklist(user_id, reason) VALUES($1, $2)",
-                    user_id,
+                    user.id,
                     reason,
                 )
         except asyncpg.exceptions.UniqueViolationError:
             return await ctx.reply("Already blacklisted.")
 
-        self.bot.blacklisted_users[user_id] = reason
+        # store as orm in dict instead?
+        self.bot.blacklisted_users[user.id] = reason
         return await ctx.reply(f"Blacklisted **{mk(user.name, as_needed=False)}** successfully.")
 
     @commands.is_owner()
@@ -99,16 +95,15 @@ class Owner(commands.Cog):
     @commands.is_owner()
     @blacklist_group.command(name="remove", hidden=True)
     async def remove(self, ctx: Context, user: discord.User) -> discord.Message:
-        user_id = user if isinstance(user, int) else user.id
         async with ctx.bot.safe_connection() as conn:
             query = """
             WITH deleted AS (
                 DELETE FROM blacklist WHERE user_id = $1 RETURNING *
             ) SELECT COUNT(*) FROM deleted
             """
-            await conn.execute(query, user_id)
+            await conn.execute(query, user.id)
 
-        del self.bot.blacklisted_users[user_id]
+        del self.bot.blacklisted_users[user.id]
         return await ctx.reply(
             f"**{mk(self.bot.get_user(user).name if isinstance(user, int) else user.name)}**"
             f" is removed from the blacklist."
@@ -117,8 +112,7 @@ class Owner(commands.Cog):
     @commands.command()
     @commands.is_owner()
     async def sync(self, ctx: Context) -> Optional[discord.Message]:
-        commands: List[Any] = await self.bot.tree.sync()
-        return await ctx.send(f"Synced {len(commands)} global commands")
+        return await ctx.send(f"Synced {len(await self.bot.tree.sync())} global commands")
 
     @commands.command()
     @commands.is_owner()

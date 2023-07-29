@@ -8,87 +8,45 @@ from discord.ext import commands
 
 import constants as cs
 from core import BaseCog, Context, Dwello, Embed
-
+from utils import Prefix
 
 class PrefixConfig:
     def __init__(self, bot: Dwello) -> None:
         self.bot = bot
+        self.db = bot.db
 
-    async def set_prefix(self, ctx: Context, prefix: str) -> Optional[discord.Message]:
-        async with self.bot.pool.acquire() as conn:
-            conn: asyncpg.Connection
-            async with conn.transaction():
-                try:
-                    await conn.execute(
-                        "INSERT INTO prefixes(prefix, guild_id) VALUES($1, $2)",
-                        prefix,
-                        ctx.guild.id,
-                    )
-
-                except asyncpg.exceptions.StringDataRightTruncationError:
-                    return await ctx.reply("This prefix is too long!", user_mistake=True)  # add allowed prefix length
-
-                except asyncpg.exceptions.UniqueViolationError:
-                    return await ctx.reply("This prefix is already added!", user_mistake=True)
-
-        # await self.bot.db.fetch_table_data("prefixes")
-        self.bot.guild_prefixes[ctx.guild.id].append(prefix)
-        return await ctx.reply(
-            embed=Embed(description=f"The prefix is set to `{prefix}`"),
-            permission_cmd=True,
-        )
+    async def set_prefix(self, ctx: Context, _prefix: str) -> Optional[discord.Message]:
+        if not isinstance(prefix:= await self.db.add_prefix(ctx.guild, _prefix, context=ctx), Prefix):
+            return
+        self.bot.guild_prefixes[ctx.guild.id].append(prefix.name)
+        return await ctx.reply(embed=Embed(description=f"The prefix is set to `{prefix.name}`"), permission_cmd=True)
 
     async def display_prefixes(self, ctx: Context) -> Optional[discord.Message]:
-        async with self.bot.pool.acquire() as conn:
-            conn: asyncpg.Connection
-            async with conn.transaction():
-                prefixes = await conn.fetch("SELECT prefix FROM prefixes WHERE guild_id = $1", ctx.guild.id)
-                default_prefixes: List[str] = self.bot.DEFAULT_PREFIXES + [f"<@!{self.bot.user.id}>"]
+        default_prefixes: List[str] = self.bot.DEFAULT_PREFIXES + [f"<@!{self.bot.user.id}>"]
+        prefixes = await self.db.get_prefixes(ctx.guild)
 
-                embed: Embed = Embed(title="Prefixes")
+        embed: Embed = Embed(title="Prefixes").set_footer(text=None)
 
-                if ctx.guild:
-                    embed.add_field(
-                        name="Guild's prefix(es)",
-                        value=(
-                            ", ".join(f"`{p['prefix']}`" for p in prefixes) if prefixes else "`None` -> `dw.help prefix`"
-                        ),
-                        inline=False,
-                    )
-                embed.add_field(
-                    name="Default prefixes",
-                    value=", ".join(p if str(self.bot.user.id) in p else f"`{p}`" for p in default_prefixes),
-                    inline=False,
-                )
-                embed.set_footer(text=None)
-
+        if ctx.guild:
+            embed.add_field(
+                name="Guild's prefix(es)",
+                value=", ".join(f"`{p.prefix}`" for p in prefixes) if prefixes else "`None` -> `dw.help prefix`",
+                inline=False,
+            )
+        embed.add_field(
+            name="Default prefixes",
+            value=", ".join(p if str(self.bot.user.id) in p else f"`{p}`" for p in default_prefixes),
+            inline=False,
+        )
         return await ctx.reply(embed=embed, mention_author=False, ephemeral=False)
 
     async def remove_prefix(self, ctx: Context, prefix: Union[str, Literal["all"]]) -> Optional[discord.Message]:
-        async with self.bot.pool.acquire() as conn:
-            conn: asyncpg.Connection
-            async with conn.transaction():
-                prefixes = await conn.fetch("SELECT prefix FROM prefixes WHERE guild_id = $1", ctx.guild.id)
-
-                if not (prefixes[0] if prefixes else None):
-                    return await ctx.reply(
-                        "Prefix isn't yet set. \n```/prefix add [prefix]```",
-                        user_mistake=True,
-                    )
-
-                count = len(prefixes)
-                if prefix == "all":
-                    await conn.execute("DELETE FROM prefixes WHERE guild_id = $1", ctx.guild.id)
-
-                elif isinstance(prefix, str):
-                    await conn.execute(
-                        "DELETE FROM prefixes WHERE prefix = $1 AND guild_id = $2",
-                        prefix,
-                        ctx.guild.id,
-                    )
-                    count = 1
-
-        # await self.bot.db.fetch_table_data("prefixes")
+        if not (await self.db.get_prefixes(ctx.guild)):
+            return await ctx.reply(
+                "Prefix isn't yet set. \n```/prefix add [prefix]```",
+                user_mistake=True,
+            )
+        count = len(await self.db.remove_prefix(prefix, ctx.guild, all=prefix=='all'))
         self.bot.guild_prefixes[ctx.guild.id].remove(prefix)
         return await ctx.reply(
             embed=Embed(
@@ -97,7 +55,7 @@ class PrefixConfig:
             permission_cmd=True,
         )
 
-
+# counter class (?)
 class ChannelConfig:
     def __init__(self, bot: Dwello) -> None:
         self.bot: Dwello = bot
@@ -283,7 +241,7 @@ class Config(BaseCog):
     async def cog_check(self, ctx: Context) -> bool:
         return ctx.guild is not None
 
-    @commands.hybrid_group(aliases=["prefixes"], invoke_without_command=True, with_app_command=False)
+    @commands.hybrid_group(aliases=["prefixes"], invoke_without_command=True, with_app_command=True)
     async def prefix(self, ctx: Context):
         async with ctx.typing():
             return await self._prefix.display_prefixes(ctx)

@@ -140,6 +140,7 @@ class ContextManager(Generic[DBT]):
 class Dwello(commands.AutoShardedBot):
     user: discord.ClientUser
     DEFAULT_PREFIXES: ClassVar[List[str]] = ["dw.", "Dw.", "dwello.", "Dwello."]
+    # extend by [f"<@!{self.bot.user.id}>"] ?
 
     logger = logging.getLogger("logging")
     _ext_log = logging.getLogger("extensions")

@@ -719,7 +719,7 @@ class About(commands.Cog):
         content: str = f"Hello there! I'm {self.bot.user.name}. Use `{prefix}help` for more."  # {self.bot.help_command}?
         return await ctx.send(content=content)  # display more info about bot
 
-    @commands.hybrid_command(name="about", aliases=["botinfo", "info", "bi"], with_app_command=True)
+    @commands.hybrid_command(name="about", help="About me.", aliases=["botinfo", "info", "bi"], with_app_command=True)
     async def about(self, ctx: Context) -> Optional[discord.Message]:
 
         #information: discord.AppInfo = await self.bot.application_info()

@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from typing import List, Optional
+from typing import List, Literal, Optional, Union
 
 import discord
 import contextlib
@@ -99,7 +99,9 @@ class Warnings(BaseCog):
             .set_footer(text=f"Amount of warnings: {warns}"),
         )
         
-    async def _unwarn(self, ctx: Context, member: discord.Member, warn_id: str) -> Optional[discord.Message]:
+    async def _unwarn(
+        self, ctx: Context, member: discord.Member, warn_id: Union[str, Literal["all"]],
+    ) -> Optional[discord.Message]:
         if not await member_check(ctx, member, self.bot):
             return
         

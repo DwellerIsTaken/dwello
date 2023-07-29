@@ -1,16 +1,15 @@
 from __future__ import annotations
 
 import re
-from typing import TYPE_CHECKING, Any, Dict, List, Optional, Union
+from typing import TYPE_CHECKING, Any, Dict, List, Optional, Union, overload
 
-#import asyncpg
+import asyncpg
 import discord
-from typing_extensions import Self
 
-from .orm import Warning
+from .orm import Prefix, Warning
 
 if TYPE_CHECKING:
-    from core import Dwello
+    from core import Context, Dwello
     from asyncpg import Record
 
 
@@ -19,7 +18,7 @@ class DataBaseOperations:
         self.bot = bot
         self.pool = bot.pool
 
-    async def create_tables(self: Self) -> List[str]:
+    async def create_tables(self) -> List[str]:
         async with self.bot.safe_connection() as conn:
             with open("schema.sql", "r") as f:
                 tables = f.read()
@@ -111,39 +110,77 @@ class DataBaseOperations:
                 user_id,
             )
         return Warning(record, self.bot) if record is not None else None
+    
+    @overload
+    async def add_prefix(
+        self,
+        guild: discord.Guild,
+        prefix: str,
+        *,
+        context: None,
+    ) -> Optional[Prefix]:
+        ...
 
-    '''async def fetch_job_data(self: Self) -> dict:  # remove later
-        async with self.bot.pool.acquire() as conn:
-            conn: asyncpg.Connection
-            async with conn.transaction():
-                job_dict = {}
-                guild_check_list = []
+    @overload
+    async def add_prefix(
+        self,
+        guild: discord.Guild,
+        prefix: str,
+        *,
+        context: Context,
+    ) -> Union[Prefix, discord.Message]:
+        ...
 
-                data = await conn.fetch("SELECT guild_id, name, id, salary, description FROM jobs")
+    async def add_prefix(
+        self,
+        guild: discord.Guild,
+        prefix: str,
+        *,
+        context: Optional[Context] = None,
+    ) -> Union[Prefix, discord.Message]:
+        async with self.bot.safe_connection() as conn:
+            try:
+                record: Optional[Record] = await conn.fetchrow(
+                    "INSERT INTO prefixes(prefix, guild_id) VALUES($1, $2) "
+                    "RETURNING *",
+                    prefix,
+                    guild.id,
+                )
+            except asyncpg.exceptions.StringDataRightTruncationError:
+                if context:
+                    return await context.reply("This prefix is too long!", user_mistake=True)
+                raise
+            except asyncpg.exceptions.UniqueViolationError:
+                if context:
+                    return await context.reply("This prefix is already added!", user_mistake=True)
+                raise
 
-                for record in data:
-                    guild_id, name, id, salary, description = (
-                        record["guild_id"],
-                        record["name"],
-                        record["id"],
-                        record["salary"],
-                        record["description"],
-                    )
-
-                    if int(guild_id) in guild_check_list:
-                        v = job_dict.get(int(guild_id))
-                        v["name"] += [str(name)]
-                        v["id"] += [int(id)]
-                        v["salary"] += [int(salary)]
-                        v["description"] += [str(description)]
-                        break
-
-                    job_dict[int(guild_id)] = {
-                        "name": [str(name)],
-                        "id": [int(id)],
-                        "salary": [int(salary)],
-                        "description": [str(description)],
-                    }
-                    guild_check_list.append(int(guild_id))
-
-                return job_dict'''
+        return Prefix(record, self.bot)
+    
+    async def remove_prefix(self, prefix: str, guild: discord.Guild, *, all=False) -> List[Prefix]:
+        async with self.bot.safe_connection() as conn:
+            records: List[Record]
+            if all:
+                records = await conn.fetch(
+                    "DELETE FROM prefixes "
+                    "WHERE guild_id = $1 "
+                    "RETURNING *",
+                    guild.id,
+                )
+            else:
+                records = await conn.fetch(
+                    "DELETE FROM prefixes "
+                    "WHERE (prefix, guild_id) IN (($1, $2)) "
+                    "RETURNING *",
+                    prefix,
+                    guild.id,
+                )
+        return [Prefix(record, self.bot) for record in records]
+    
+    async def get_prefixes(self, guild: discord.Message) -> List[Prefix]:
+        async with self.bot.safe_connection() as conn:
+            records: List[Record] = await conn.fetch(
+                "SELECT * FROM prefixes WHERE guild_id = $1",
+                guild.id,
+            )
+        return [Prefix(record, self.bot) for record in records]
