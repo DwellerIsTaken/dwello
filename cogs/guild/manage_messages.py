@@ -11,6 +11,8 @@ from core import BaseCog, Context, Dwello
 class Messages(BaseCog):  # RENAME CLASS
     def __init__(self, bot: Dwello) -> None:
         self.bot = bot
+        print(4)
+        super().__init__(self.bot)
 
     @commands.hybrid_command(
         name="clear",

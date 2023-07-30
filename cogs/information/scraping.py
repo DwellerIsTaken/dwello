@@ -32,7 +32,7 @@ UNSPLASH_DEMO_ACCESS_KEY = ENV["UNSPLASH_DEMO_ACCESS_KEY"]
 
 # create simple response handler class
 
-
+# not sure what this is
 class OptionSelectView(discord.ui.View):
     def __init__(
         self,

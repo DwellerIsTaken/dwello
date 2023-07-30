@@ -200,6 +200,8 @@ class Channels(BaseCog):
     def __init__(self, bot: Dwello):
         self.bot: Dwello = bot
         self.cf: ChannelsFunctions = ChannelsFunctions(self.bot)
+        super().__init__(self.bot)
+        print(22)
 
     @commands.hybrid_group(
         name="counter",
