@@ -216,9 +216,9 @@ class Dwello(commands.AutoShardedBot):
 
         self.tables = await self.db.create_tables()
         self.db_data = await self.db.fetch_table_data()
-        records: list[Any] = await self.pool.fetch("SELECT guild_id, array_agg(prefix) FROM prefixes GROUP BY guild_id")
-        self.guild_prefixes = dict(records)
-
+        self.guild_prefixes = dict(
+            await self.pool.fetch("SELECT guild_id, array_agg(prefix) FROM prefixes GROUP BY guild_id")
+        )
         blacklist: list[asyncpg.Record] = await self.pool.fetch("SELECT * FROM blacklist")
         self.twitch = await Twitch.create_access_token(self)
         for record in blacklist:

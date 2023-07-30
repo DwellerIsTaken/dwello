@@ -4,6 +4,7 @@ from typing import List, Literal, Optional, Union
 
 import discord
 import contextlib
+import functools
 from discord.ext import commands
 from discord.ui import Button, button
 from discord.app_commands import Choice
@@ -215,7 +216,7 @@ class Warnings(BaseCog):
                 return await ctx.reply("Please provide a valid ID.", user_mistake=True)
             return await self._unwarn(ctx, member, warning)
 
-    # temp cache maybe
+    @functools.lru_cache(maxsize=1)
     @hybrid_unwarn.autocomplete("warning")
     async def autocomplete_callback(self, interaction: discord.Interaction, current: str) -> List[Choice]:
         # REDO: DONT FETCH ON AUTOCOMPLETE
@@ -235,8 +236,6 @@ class Warnings(BaseCog):
                 or current.startswith(str(warning.id)[:item])
             )
         ]
-                
         if len(choices) > 10:
             return choices[:10]
-
         return choices

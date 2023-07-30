@@ -186,6 +186,34 @@ class LevellingUtils:
         return rank
 
 
+'''class AutoCompleteWithFetch:
+    def __init__(self, bot: Dwello):
+        self.bot = bot
+
+    async def choice_autocomplete_with_fetch(
+        self,
+        interaction: discord.Interaction,
+
+    ) -> list[Choice]:
+    item = len(current)
+    warnings: List[Warning] = await self.bot.db.get_warnings(interaction.namespace["member"].id, interaction.guild)
+    choices: List[Choice[str]] = [Choice(name="all", value="all")] + [
+        Choice(
+            name=f"ID {warning.id}: {str(warning.reason)[:20]} | {str(warning.created_at)[:-7]}",
+            value=str(warning.id)
+        )
+        for warning in warnings
+        if (
+            current.startswith(str(warning.reason).lower()[:item])
+            or current.startswith(str(warning.created_at)[:item])
+            or current.startswith(str(warning.id)[:item])
+        )
+    ]
+    if len(choices) > 10:
+        return choices[:10]
+    return choices'''
+
+
 # ahahahh redo again
 class AutoComplete:
     def __init__(self, bot: Dwello):

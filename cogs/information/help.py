@@ -719,7 +719,7 @@ class About(commands.Cog):
         content: str = f"Hello there! I'm {self.bot.user.name}. Use `{prefix}help` for more."  # {self.bot.help_command}?
         return await ctx.send(content=content)  # display more info about bot
 
-    @commands.hybrid_command(name="about", help="About me.", aliases=["botinfo", "info", "bi"], with_app_command=True)
+    @commands.hybrid_command(name="about", help="About me.", aliases=["botinfo", "bi"], with_app_command=True)
     async def about(self, ctx: Context) -> Optional[discord.Message]:
 
         #information: discord.AppInfo = await self.bot.application_info()
@@ -781,6 +781,73 @@ class About(commands.Cog):
         # f"{constants.BOTS_GG} [bots.gg]({self.bot.vote_bots_gg})"
 
         return await ctx.send(embed=embed)
+    
+    @commands.hybrid_command(name='info', help="Shows info on a member.")
+    async def info(self, ctx: Context, member: discord.Member=commands.Author) -> Optional[discord.Message]:
+
+        #embed.add_field(name="Display Name", value=member.display_name) if member.display_name != member.name else None
+        #embed.add_field(name="Discriminator", value=member.discriminator) get initial discriminator and not 0
+
+        return await ctx.reply(
+            embed=Embed(
+                title=f"Info on {member.name}",
+                description="",
+                timestamp=discord.utils.utcnow(),
+                color=member.accent_color if member.accent_color else member.color,
+            )
+            .set_footer(text=f"ID: {member.id}", icon_url=member.display_icon.url if member.display_icon else None)
+            .set_author(name=member.name, icon_url=member.display_avatar.url)
+            .set_thumbnail(url=member.display_avatar.url)
+            
+            .add_field(name="Name", value=member.name)
+            .add_field(name="Created", value=discord.utils.format_dt(member.created_at, style='D'))
+            .add_field(name="Joined", value=discord.utils.format_dt(member.joined_at, style='D'))
+            .add_field(name="Flags", value=member.public_flags.value)
+            .add_field(name="Status", value=member.status)
+            .add_field(
+                name="Assets",
+                value=(
+                    f"{f'[Avatar]({member.avatar.url})' if member.avatar else ''}"
+                    f"{f'[Banner]({member.banner.url})' if member.banner else ''}"
+                    f"{f'[Guild Avatar]({member.guild_avatar.url})' if member.guild_avatar else ''}"
+                ),
+            )
+            .add_field(
+                name="Activities",
+                value=(
+                    "\n".join(
+                        [
+                            f"Gaming: {game.name[:15] + '...' if game and len(game.name) > 15 else game.name}"
+                            if (
+                                game := discord.utils.find(
+                                    lambda activity: isinstance(activity, discord.Game), member.activities,
+                                )
+                            ) else "",
+                            (
+                                f"Listening: "
+                                f"[{spotify.title[:15] + '...' if spotify and len(spotify.title) > 15 else spotify.title}]"
+                                f"({spotify.track_url})"
+                            )
+                            if (
+                                spotify := discord.utils.find(
+                                    lambda activity: isinstance(activity, discord.Spotify), member.activities,
+                                )
+                            ) else "",
+                            (
+                                f"Streaming: "
+                                f"[{streaming.twitch_name or (streaming.name[:15] + '...' if len(streaming.name) > 15 else streaming.name)}]"  # noqa: E501
+                                f"({streaming.url})"
+                            )
+                            if (
+                                streaming := discord.utils.find(
+                                    lambda activity: isinstance(activity, discord.Streaming), member.activities,
+                                )
+                            ) else "",
+                        ]
+                    ).strip('\n') or None
+                ),
+            ),
+        )
 
     @commands.hybrid_command(name="uptime", help="Returns bot's uptime.", with_app_command=True)
     async def uptime(self, ctx: Context) -> Optional[discord.Message]:
@@ -790,6 +857,7 @@ class About(commands.Cog):
             title="Current Uptime",
             description=f"**{self.get_uptime(complete=True)}**",
         )
+
         embed.add_field(name="Startup Time", value=timestamp, inline=False)
         return await ctx.reply(embed=embed)
 

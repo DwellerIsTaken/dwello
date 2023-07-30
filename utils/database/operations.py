@@ -5,6 +5,7 @@ from typing import TYPE_CHECKING, Any, Dict, List, Optional, Union, overload
 
 import asyncpg
 import discord
+#import functools
 
 from .orm import Prefix, Warning
 
@@ -92,6 +93,7 @@ class DataBaseOperations:
                 )
         return [Warning(record, self.bot) for record in records]
     
+    #@functools.lru_cache(maxsize=1)
     async def get_warnings(self, user_id: int, guild: discord.Guild) -> List[Warning]:
         async with self.bot.safe_connection() as conn:
             records: List[Record] = await conn.fetch(
@@ -177,7 +179,8 @@ class DataBaseOperations:
                 )
         return [Prefix(record, self.bot) for record in records]
     
-    async def get_prefixes(self, guild: discord.Message) -> List[Prefix]:
+    #@functools.lru_cache(maxsize=1)
+    async def get_prefixes(self, guild: discord.Guild) -> List[Prefix]:
         async with self.bot.safe_connection() as conn:
             records: List[Record] = await conn.fetch(
                 "SELECT * FROM prefixes WHERE guild_id = $1",

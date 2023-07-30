@@ -222,13 +222,8 @@ class NewsViewer(discord.ui.View):
 
         time: datetime.datetime = message.created_at
 
-        embed = Embed(
-            title=f"\N{NEWSPAPER} {fm_dt(time)} ({fm_dt(time, 'R')})",
-        )
+        embed = Embed(title=f"\N{NEWSPAPER} {fm_dt(time)} ({fm_dt(time, 'R')})")
         embed.add_field(name=page.title, value=message.content)
-
-        # author = self.bot.get_user(page.author_id)
-        # if author:
         embed.set_footer(
             text=f"ID: {page.news_id} - Authored by {message.author.name}",
             icon_url=message.author.display_avatar.url,
@@ -275,10 +270,9 @@ class NewsViewer(discord.ui.View):
             )
         else:
             new.update_labels()
-            _embed: Embed = await new.get_embed(new.news.news[new.news.current_index])
+            _embed: Embed = await new.get_embed(new.news.current) #news[new.news.current_index]
 
         new.message = await ctx.send(embed=_embed, view=new)
-        # new.bot.views.add(new)
         await new.wait()
         return new
 
@@ -306,7 +300,6 @@ class NewsViewer(discord.ui.View):
         else:
             await interaction.response.send_message(embed=_embed, view=new)
         new.message = await interaction.original_response()
-        # new.bot.views.add(new)
         await new.wait()
         return new
 
@@ -383,7 +376,6 @@ class News(BaseCog):
                 DELETE FROM news WHERE news_id = $1 RETURNING *
             ) SELECT COUNT(*) FROM deleted
             """
-            # removed = await conn.fetchval(query, news_id)
             await conn.execute(query, news_id)
 
         return await ctx.reply(

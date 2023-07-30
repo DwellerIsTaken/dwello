@@ -5,6 +5,7 @@ from typing import Dict, List, Literal, Optional, Union
 import asyncpg
 import discord
 from discord.ext import commands
+from discord.app_commands import Choice
 
 import constants as cs
 from core import BaseCog, Context, Dwello, Embed
@@ -18,7 +19,10 @@ class PrefixConfig:
     async def set_prefix(self, ctx: Context, _prefix: str) -> Optional[discord.Message]:
         if not isinstance(prefix:= await self.db.add_prefix(ctx.guild, _prefix, context=ctx), Prefix):
             return
-        self.bot.guild_prefixes[ctx.guild.id].append(prefix.name)
+        try:
+            self.bot.guild_prefixes[ctx.guild.id].append(prefix.name)
+        except KeyError:
+            self.bot.guild_prefixes[ctx.guild.id] = [prefix.name]
         return await ctx.reply(embed=Embed(description=f"The prefix is set to `{prefix.name}`"), permission_cmd=True)
 
     async def display_prefixes(self, ctx: Context) -> Optional[discord.Message]:
@@ -265,8 +269,17 @@ class Config(BaseCog):
         return await self._prefix.remove_prefix(ctx, prefix)
 
     @delete_prefix.autocomplete("prefix")
-    async def autocomplete_callback(self, interaction: discord.Interaction, current: str):
-        return await self.bot.autocomplete.choice_autocomplete(interaction, current, "prefixes", "prefix", None, True)
+    async def autocomplete_callback_prefix(self, interaction: discord.Interaction, current: str):
+        item = len(current)
+        prefixes: List[Prefix] = await self.bot.db.get_prefixes(interaction.guild)
+        choices: List[Choice[str]] = [Choice(name="all", value="all")] + [
+            Choice(name=prefix.name, value=prefix.name)
+            for prefix in prefixes
+            if current.startswith(prefix.name.lower()[:item])
+        ]
+        if len(choices) > 10:
+            return choices[:10]
+        return choices
 
     @commands.hybrid_group(invoke_without_command=True, with_app_command=True)
     @commands.has_permissions(manage_channels=True, manage_messages=True)
