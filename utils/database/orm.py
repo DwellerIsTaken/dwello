@@ -155,3 +155,22 @@ class Blacklist:
         self.bot: Dwello = bot
         self.user_id: int = record['user_id']
         self.reason: Optional[str] = record.get('reason')
+
+
+class Idea:
+    __slots__ = ('bot', 'id', 'votes', 'content')
+
+    def __init__(self, record: Record, bot: Dwello) -> None:
+        self.bot: Dwello = bot
+        self.id: int = record['id']
+        self.votes: int = record['votes']
+        self.content: Optional[str] = record.get('content')
+        self.title: Optional[str] = record.get('title')
+
+    @property
+    def name(self) -> str:
+        return self.title
+    
+    @property
+    def text(self) -> str:
+        return self.content

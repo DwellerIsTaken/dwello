@@ -78,6 +78,13 @@ CREATE TABLE IF NOT EXISTS todo(
     cached_content TEXT
 );
 
+CREATE TABLE IF NOT EXISTS ideas(
+    id SERIAL PRIMARY KEY,
+    votes BIGINT DEFAULT 0,
+    content TEXT,
+    title TEXT
+);
+
 ALTER SEQUENCE jobs_id_seq START 10000000 INCREMENT BY 1;
 ALTER SEQUENCE warnings_warn_id_seq START 10000000 INCREMENT BY 1;
 
