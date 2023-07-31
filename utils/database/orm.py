@@ -36,7 +36,7 @@ class User:
         self.money: int = record['money']
         self.worked: int = record['worked'] # BIT
         self.event_type: str = record['event_type']
-        self.job_id: Optional[int] = record['job_id']
+        self.job_id: Optional[int] = record.get('job_id')
 
 
 class TwitchUser:
@@ -63,11 +63,11 @@ class Warning:
     def __init__(self, record: Record, bot: Dwello) -> None:
         self.bot: Dwello = bot
         self.id: int = record['warn_id']
-        self.user_id: Optional[int] = record['user_id']
-        self.reason: Optional[str] = record['warn_text']
-        self.guild_id: Optional[int] = record['guild_id']
-        self.warned_by: Optional[int] = record['warned_by']
-        self.created_at: Optional[datetime] = record['created_at']
+        self.user_id: Optional[int] = record.get('user_id')
+        self.reason: Optional[str] = record.get('warn_text')
+        self.guild_id: Optional[int] = record.get('guild_id')
+        self.warned_by: Optional[int] = record.get('warned_by')
+        self.created_at: Optional[datetime] = record.get('created_at')
 
     async def remove(self) -> List[Record]:
         async with self.bot.safe_connection() as conn:
@@ -97,9 +97,9 @@ class ServerData:
         self.guild_id: int = record['guild_id']
         self.event_type: str = record['event_type']
         self.counter_name: str = record['counter_name']
-        self.message_text: Optional[str] = record['message_text']
-        self.channel_id: Optional[int] = record['channel_id']
-        self.deny_clicked: Optional[int] = record['deny_clicked'] # BIT
+        self.message_text: Optional[str] = record.get('message_text')
+        self.channel_id: Optional[int] = record.get('channel_id')
+        self.deny_clicked: Optional[int] = record.get('deny_clicked') # BIT
         
         
 class Prefix:
@@ -132,9 +132,9 @@ class Job:
         self.bot: Dwello = bot
         self.id: int = record['id']
         self.guild_id: int = record['guild_id']
-        self.name: Optional[str] = record['name']
-        self.salary: Optional[int] = record['salary']
-        self.description: Optional[str] = record['description']
+        self.name: Optional[str] = record.get('name')
+        self.salary: Optional[int] = record.get('salary')
+        self.description: Optional[str] = record.get('description')
 
 
 class News:
@@ -143,9 +143,9 @@ class News:
     def __init__(self, record: Record, bot: Dwello) -> None:
         self.bot: Dwello = bot
         self.id: int = record['news_id']
-        self.title: Optional[str] = record['title']
-        self.message_id: Optional[int] = record['message_id']
-        self.channel_id: Optional[int] = record['channel_id']
+        self.title: Optional[str] = record.get('title')
+        self.message_id: Optional[int] = record.get('message_id')
+        self.channel_id: Optional[int] = record.get('channel_id')
 
 
 class Blacklist:
@@ -154,4 +154,4 @@ class Blacklist:
     def __init__(self, record: Record, bot: Dwello) -> None:
         self.bot: Dwello = bot
         self.user_id: int = record['user_id']
-        self.reason: Optional[str] = record['reason']
+        self.reason: Optional[str] = record.get('reason')
