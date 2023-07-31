@@ -827,7 +827,7 @@ class About(commands.Cog):
                     " ".join(
                         emoji for f in member.public_flags.all()
                         if (emoji := cs.PUBLIC_USER_FLAGS_EMOJI_DICT.get(f.name))
-                    )
+                    ).split() or None
                 )
             )
             .add_field(
