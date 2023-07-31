@@ -534,6 +534,26 @@ class Todo(BaseCog):
         
         await todo.delete()
         await ctx.send(f"Successfully deleted `Todo #{todo.id}`")
+    
+    @todo.command(description="Clears all of your todos", aliases=["wipe"])
+    async def clear(self, ctx: Context):
+        if await self.get_todos(ctx.author.id) is None:
+            return await ctx.send("You don't have any todos...")
+
+        view = View()
+        button = Button(label="Confirm", style=discord.ButtonStyle.red)
+        view.add_item(button)
+        async def callback(interaction: Interaction):
+            await self.bot.pool.execute("DELETE FROM todo WHERE user_id = $1", ctx.author.id)
+            button.disabled = True
+            await interaction.response.edit_message(content="Successfully deleted all of your todos.", view=view)
+        
+        async def interaction_check(interaction: Interaction) -> bool:
+            return interaction.user == ctx.author        
+        
+        button.callback = callback
+        view.interaction_check = interaction_check
+        await ctx.send("Are you sure you want to clear all of your todos? This **cannot** be undone.", view=view)
 
     @todo.command(description="Shows one of your Todos' by it's ID")
     async def show(self, ctx: Context, id: int):
