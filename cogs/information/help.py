@@ -15,6 +15,7 @@ import traceback
 from typing import Any, Dict, List, Optional, Tuple, Type, TypeVar, Union
 
 import discord
+from discord.http import Route
 from discord import app_commands
 from discord import Interaction
 from discord.ext import commands
@@ -719,7 +720,7 @@ class About(commands.Cog):
         content: str = f"Hello there! I'm {self.bot.user.name}. Use `{prefix}help` for more."  # {self.bot.help_command}?
         return await ctx.send(content=content)  # display more info about bot
 
-    @commands.hybrid_command(name="about", help="About me.", aliases=["botinfo", "bi"], with_app_command=True)
+    @commands.hybrid_command(name="about", help="About me.", aliases=["botinfo", "info", "bi"], with_app_command=True)
     async def about(self, ctx: Context) -> Optional[discord.Message]:
 
         #information: discord.AppInfo = await self.bot.application_info()
@@ -782,8 +783,8 @@ class About(commands.Cog):
 
         return await ctx.send(embed=embed)
     
-    @commands.hybrid_command(name='info', help="Shows info on a member.")
-    async def info(self, ctx: Context, member: discord.Member=commands.Author) -> Optional[discord.Message]:
+    @commands.hybrid_command(name='whois', help="Shows who the member is.")
+    async def whois(self, ctx: Context, member: discord.Member=commands.Author) -> Optional[discord.Message]:
 
         #embed.add_field(name="Display Name", value=member.display_name) if member.display_name != member.name else None
         #embed.add_field(name="Discriminator", value=member.discriminator) get initial discriminator and not 0
@@ -798,12 +799,30 @@ class About(commands.Cog):
             .set_footer(text=f"ID: {member.id}", icon_url=member.display_icon.url if member.display_icon else None)
             .set_author(name=member.name, icon_url=member.display_avatar.url)
             .set_thumbnail(url=member.display_avatar.url)
-            
+            .set_image(
+                url=f"https://cdn.discordapp.com/banners/{member.id}/{r['banner']}?size=1024"
+                if (
+                    r:=await self.bot.http.request(Route('GET', '/users/{uid}', uid=member.id))
+                ) else None
+            )
             .add_field(name="Name", value=member.name)
             .add_field(name="Created", value=discord.utils.format_dt(member.created_at, style='D'))
             .add_field(name="Joined", value=discord.utils.format_dt(member.joined_at, style='D'))
-            .add_field(name="Flags", value=member.public_flags.value)
+            .add_field(
+                name="Top Role",
+                value=member.top_role.mention if member.top_role.name != '@everyone' else member.top_role.name,
+            )
+            .add_field(name="Device", value="Desktop" if member.desktop_status else "Mobile")
             .add_field(name="Status", value=member.status)
+            .add_field(
+                name="Flags",
+                value=(
+                    " ".join(
+                        emoji for f in member.public_flags.all()
+                        if (emoji := cs.PUBLIC_USER_FLAGS_EMOJI_DICT.get(f.name))
+                    )
+                )
+            )
             .add_field(
                 name="Assets",
                 value=(
@@ -812,6 +831,7 @@ class About(commands.Cog):
                     f"{f'[Guild Avatar]({member.guild_avatar.url})' if member.guild_avatar else ''}"
                 ),
             )
+            .add_field(name="Custom Status", value=f"{member.activity.name}" if member.activity is not None else None)
             .add_field(
                 name="Activities",
                 value=(
@@ -860,6 +880,10 @@ class About(commands.Cog):
 
         embed.add_field(name="Startup Time", value=timestamp, inline=False)
         return await ctx.reply(embed=embed)
+    
+    @commands.hybrid_command(name="contribute", help="Please do.", with_app_command=True)
+    async def contribute(self, ctx: Context) -> Optional[discord.Message]:
+        return await ctx.reply(f"{cs.GITHUB_EMOJI} {cs.GITHUB}\nJoin my [guild](<{cs.DISCORD}>) for more.")
 
     @commands.hybrid_command(
         name="ping",
