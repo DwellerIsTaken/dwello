@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from typing import List, Literal, Optional, Union
+from typing import Any, List, Literal, Optional, Union
 
 import discord
 from discord.ext import commands
@@ -10,18 +10,12 @@ from core import BaseCog, Context, Dwello, Embed
 from utils import Prefix
 
 class Customisation(BaseCog):
-    def __init__(self, bot: Dwello) -> None:
-        self.bot: Dwello = bot
+    def __init__(self, bot: Dwello, *args: Any, **kwargs: Any) -> None:
+        super().__init__(bot, *args, **kwargs)
         self._prefix: PrefixConfig = PrefixConfig(self.bot)
-        print(3)
-        super().__init__(self.bot)
 
     async def cog_check(self, ctx: Context) -> bool:
         return ctx.guild is not None
-
-    @commands.command(name='test')
-    async def bla(self, ctx: Context):
-        return await ctx.send('bleh')
     
     @commands.hybrid_group(aliases=["prefixes"], invoke_without_command=True, with_app_command=True)
     async def prefix(self, ctx: Context):

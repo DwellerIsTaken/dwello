@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from typing import Optional, Union
+from typing import Any, Optional, Union
 
 import discord
 from discord.app_commands import Choice
@@ -12,8 +12,8 @@ from utils import HandleHTTPException, member_check
 
 
 class StandardModeration(BaseCog):
-    def __init__(self, bot: Dwello) -> None:
-        self.bot = bot
+    def __init__(self, bot: Dwello, *args: Any, **kwargs: Any) -> None:
+        super().__init__(bot, *args, **kwargs)
 
     async def cog_check(self, ctx: Context) -> bool:
         return ctx.guild is not None

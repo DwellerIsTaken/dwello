@@ -45,7 +45,7 @@ class AiohttpWeb:
             print(f"Failed to start web server: {e}")
 
 
-class LevellingUtils:
+class LevellingUtils: # add to db_ops instead next
     def __init__(self, bot: Dwello):
         self.bot = bot
 

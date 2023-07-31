@@ -711,6 +711,10 @@ class About(commands.Cog):
     def get_last_commits(self, count=3):
         commits = list(itertools.islice(self.repo.walk(self.repo.head.target, pygit2.GIT_SORT_TOPOLOGICAL), count))
         return '\n'.join(self.format_commit(c) for c in commits)
+    
+    @commands.command(name='test')
+    async def bla(self, ctx: Context) -> Optional[discord.Message]:
+        return await ctx.send('bleh')
 
     # make uptime: add here -> trigger on mention in on_message
     @commands.hybrid_command(name="hello", aliases=cs.HELLO_ALIASES, with_app_command=True)
@@ -794,17 +798,20 @@ class About(commands.Cog):
                 title=f"Info on {member.name}",
                 description="",
                 timestamp=discord.utils.utcnow(),
-                color=member.accent_color if member.accent_color else member.color,
+                color=(
+                    (
+                        r['accent_color']
+                        if (
+                            r:=await self.bot.http.request(Route('GET', '/users/{uid}', uid=member.id))
+                        ) else None
+                    ) or member.color
+                )
             )
+            .set_image(url=f"https://cdn.discordapp.com/banners/{member.id}/{r['banner']}?size=1024" if r else None)
             .set_footer(text=f"ID: {member.id}", icon_url=member.display_icon.url if member.display_icon else None)
             .set_author(name=member.name, icon_url=member.display_avatar.url)
             .set_thumbnail(url=member.display_avatar.url)
-            .set_image(
-                url=f"https://cdn.discordapp.com/banners/{member.id}/{r['banner']}?size=1024"
-                if (
-                    r:=await self.bot.http.request(Route('GET', '/users/{uid}', uid=member.id))
-                ) else None
-            )
+
             .add_field(name="Name", value=member.name)
             .add_field(name="Created", value=discord.utils.format_dt(member.created_at, style='D'))
             .add_field(name="Joined", value=discord.utils.format_dt(member.joined_at, style='D'))

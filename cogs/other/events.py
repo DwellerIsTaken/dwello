@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+from typing import Any
+
 import asyncpg
 import discord
 
@@ -9,8 +11,8 @@ from core import BaseCog, Context, Dwello
 
 
 class Events(BaseCog):
-    def __init__(self, bot: Dwello):
-        self.bot = bot
+    def __init__(self, bot: Dwello, *args: Any, **kwargs: Any) -> None:
+        super().__init__(bot, *args, **kwargs)
 
     '''@commands.hybrid_command(name="table", with_app_command=False)
     async def test(self, ctx: Context):

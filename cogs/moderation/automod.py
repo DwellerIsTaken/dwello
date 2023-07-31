@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+from typing import Any
+
 import discord
 import contextlib
 from discord.ext import commands
@@ -11,8 +13,8 @@ from core import BaseCog, Dwello
 
 class AutoMod(BaseCog):
 
-    def __init__(self, bot: Dwello):
-        self.bot = bot
+    def __init__(self, bot: Dwello, *args: Any, **kwargs: Any) -> None:
+        super().__init__(bot, *args, **kwargs)
         self._spam_check: defaultdict[int, SpamChecker] = defaultdict(SpamChecker)
 
     # add events here?

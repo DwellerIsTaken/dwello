@@ -426,7 +426,9 @@ class EditTodoModal(Modal, title="Edit Todo"):
 
 
 class Todo(BaseCog):
-    bot: Dwello
+    def __init__(self, bot: Dwello, *args: Any, **kwargs: Any) -> None:
+        super().__init__(bot, *args, **kwargs)
+
     message_cache: Dict[int, discord.Message]
 
     def cog_load(self) -> None:

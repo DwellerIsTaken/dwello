@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from typing import Dict, Optional
+from typing import Any, Dict, Optional
 
 import asyncpg
 import discord
@@ -12,13 +12,12 @@ from core import BaseCog, Context, Dwello, Embed
 
 
 class Config(BaseCog):
-    def __init__(self, bot: Dwello) -> None:
-        self.bot: Dwello = bot
+    def __init__(self, bot: Dwello, *args: Any, **kwargs: Any) -> None:
+        super().__init__(bot, *args, **kwargs)
+
         self._channel: ChannelConfig = ChannelConfig(bot)
 
         self.extra_help: Dict[str, str] = {}  # add later for each group
-        
-        super().__init__(self.bot)
 
     async def cog_check(self, ctx: Context) -> bool:
         return ctx.guild is not None
@@ -32,22 +31,10 @@ class Config(BaseCog):
     @welcome.group(invoke_without_command=True, with_app_command=True, name="message")
     async def welcome_mesage(self, ctx: Context):
         return ctx.send_help(ctx.command)
-        '''async with ctx.typing(ephemeral=True):
-            embed = Embed(
-                description="```$welcome message [command name]```",
-                color=cs.WARNING_COLOR,
-            )
-            return await ctx.reply(embed=embed, user_mistake=True)'''
 
     @welcome.group(invoke_without_command=True, with_app_command=True, name="channel")
     async def welcome_channel(self, ctx: Context):
         return ctx.send_help(ctx.command)
-        '''async with ctx.typing(ephemeral=True):
-            embed = Embed(
-                description="```$welcome channel [command name]```",
-                color=cs.WARNING_COLOR,
-            )
-            return await ctx.reply(embed=embed, user_mistake=True)'''
 
     @welcome_channel.command(name="set", description="Sets chosen channel as a welcome channel.")
     async def welcome_channel_set(
@@ -93,6 +80,7 @@ class Config(BaseCog):
             help_welcome_help_embed.set_footer(text=cs.FOOTER)
 
             return await ctx.reply(embed=help_welcome_help_embed)  # add to help cmd instead"""  # noqa: E501
+    # again: add some big descriptions to help cmd, but how tho
 
     @commands.hybrid_group(invoke_without_command=True, with_app_command=True)
     @commands.has_permissions(manage_channels=True, manage_messages=True)  # REDO PERMS
@@ -103,22 +91,10 @@ class Config(BaseCog):
     @leave.group(invoke_without_command=True, with_app_command=True, name="message")
     async def leave_message(self, ctx: Context):
         return ctx.send_help(ctx.command)
-        '''async with ctx.typing(ephemeral=True):
-            embed = Embed(
-                description="```$leave message [command name]```",
-                color=cs.WARNING_COLOR,
-            )
-            return await ctx.reply(embed=embed, user_mistake=True)'''
 
     @leave.group(invoke_without_command=True, with_app_command=True, name="channel")
     async def leave_channel(self, ctx: Context):
         return ctx.send_help(ctx.command)
-        '''async with ctx.typing(ephemeral=True):
-            embed = Embed(
-                description="```$leave channel [command name]```",
-                color=cs.WARNING_COLOR,
-            )
-            return await ctx.reply(embed=embed, user_mistake=True)'''
 
     @leave_channel.command(name="set", description="Sets chosen channel as a leave channel.")
     async def leave_channel_set(
@@ -159,27 +135,10 @@ class Config(BaseCog):
     @twitch.group(invoke_without_command=True, with_app_command=True, name="message")
     async def twitch_message(self, ctx: Context):
         return ctx.send_help(ctx.command)
-        '''async with ctx.typing(ephemeral=True):
-            embed = Embed(
-                description="```$twitch message [command_name]```",
-                color=cs.WARNING_COLOR,
-            )
-            return await ctx.reply(embed=embed, user_mistake=True)'''
-
-            # return await ConfigFunctions.add_message(ctx, "twitch", text)
-            # invoke some func if no arguments provided ?
 
     @twitch.group(invoke_without_command=True, with_app_command=True, name="channel")
     async def twitch_channel(self, ctx: Context):
         return ctx.send_help(ctx.command)
-        '''async with ctx.typing(ephemeral=True):
-            embed = Embed(
-                description="```$twitch channel [command_name]```",
-                color=cs.WARNING_COLOR,
-            )
-            return await ctx.reply(embed=embed, user_mistake=True)'''
-
-            # return await ConfigFunctions.add_channel(ctx, "twitch", channel) # SET CHANNEL WHEN ON invoke_without_command
 
     @twitch_channel.command(
         name="set",

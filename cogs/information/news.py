@@ -4,7 +4,7 @@ import contextlib
 import datetime
 import re
 from dataclasses import dataclass
-from typing import TYPE_CHECKING, List, Optional, Tuple, Type, TypeVar, Union
+from typing import TYPE_CHECKING, Any, List, Optional, Tuple, Type, TypeVar, Union
 
 import asyncpg
 import discord
@@ -305,8 +305,8 @@ class NewsViewer(discord.ui.View):
 
 
 class News(BaseCog):
-    def __init__(self, bot: Dwello) -> None:
-        self.bot = bot
+    def __init__(self, bot: Dwello, *args: Any, **kwargs: Any) -> None:
+        super().__init__(bot, *args, **kwargs)
 
     @app_commands.command(name="news", description="Displays latest news on the bot.")
     async def app_news(self, interaction: discord.Interaction) -> NewsViewer:

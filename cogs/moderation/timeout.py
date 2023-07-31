@@ -72,8 +72,8 @@ async def tempmute(
     # interaction.response.send_message
 
 class Timeout(BaseCog):
-    def __init__(self, bot: Dwello) -> None:
-        self.bot = bot
+    def __init__(self, bot: Dwello, *args: Any, **kwargs: Any) -> None:
+        super().__init__(bot, *args, **kwargs)
 
     # should be an app cmd and prefix cmd
     # and duration and period should be one whole (and two) (optional thus) in prefix cmd

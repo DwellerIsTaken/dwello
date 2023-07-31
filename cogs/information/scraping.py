@@ -73,9 +73,8 @@ class OptionSelectView(discord.ui.View):
 
 
 class Scraping(BaseCog):
-    def __init__(self, bot: Dwello, *args: Any, **kwargs: Any):
+    def __init__(self, bot: Dwello, *args: Any, **kwargs: Any) -> None:
         super().__init__(bot, *args, **kwargs)
-        self.bot = bot
 
         self.spotify_client: SpotifyClient = SpotifyClient(
             SPOTIFY_CLIENT_ID,

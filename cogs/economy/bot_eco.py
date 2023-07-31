@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from typing import Optional
+from typing import Any, Optional
 
 import asyncpg
 from discord.ext import commands
@@ -39,8 +39,8 @@ class BotEcoUtils:
 
 
 class Bot_Economy(BaseCog):
-    def __init__(self, bot: Dwello):
-        self.bot = bot
+    def __init__(self, bot: Dwello, *args: Any, **kwargs: Any) -> None:
+        super().__init__(bot, *args, **kwargs)
         self.be: BotEcoUtils = BotEcoUtils(self.bot)
         self.se: SharedEcoUtils = SharedEcoUtils(self.bot)
 

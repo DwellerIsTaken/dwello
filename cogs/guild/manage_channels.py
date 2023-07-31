@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from typing import Literal, Optional, Union
+from typing import Any, Literal, Optional, Union
 
 import asyncpg
 import discord
@@ -197,11 +197,9 @@ class Stats_View(View):
 
 
 class Channels(BaseCog):
-    def __init__(self, bot: Dwello):
-        self.bot: Dwello = bot
+    def __init__(self, bot: Dwello, *args: Any, **kwargs: Any) -> None:
+        super().__init__(bot, *args, **kwargs)
         self.cf: ChannelsFunctions = ChannelsFunctions(self.bot)
-        super().__init__(self.bot)
-        print(22)
 
     @commands.hybrid_group(
         name="counter",

@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+from typing import Any
+
 from core import BaseCog, Dwello, Context  # noqa: F401
 
 # from colorthief import ColorThief
@@ -14,8 +16,11 @@ from core import BaseCog, Dwello, Context  # noqa: F401
 
 
 class UserInfo(BaseCog):
-    def __init__(self, bot: Dwello) -> None:
-        self.bot = bot
+    def __init__(self, bot: Dwello, *args: Any, **kwargs: Any) -> None:
+        super().__init__(bot, *args, **kwargs)
+        # dont forget member.color exists
+        # nvm
+
         # self.levelling = LevellingUtils(bot)
         # self.eco = GuildEcoUtils(bot)
 

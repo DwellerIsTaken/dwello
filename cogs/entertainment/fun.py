@@ -14,8 +14,8 @@ from core import BaseCog, Context, Dwello, Embed
 
 
 class Fun(BaseCog):
-    def __init__(self, bot: Dwello) -> None:
-        self.bot = bot
+    def __init__(self, bot: Dwello, *args: Any, **kwargs: Any) -> None:
+        super().__init__(bot, *args, **kwargs)
 
     # https://developer.spotify.com/dashboard
 

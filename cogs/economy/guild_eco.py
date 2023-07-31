@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from typing import Literal, Optional, Tuple, Union
+from typing import Any, Literal, Optional, Tuple, Union
 
 import asyncpg
 import discord
@@ -233,8 +233,8 @@ class GuildEcoUtils:
 
 
 class Guild_Economy(BaseCog): # REDO
-    def __init__(self, bot: Dwello) -> None:
-        self.bot: Dwello = bot
+    def __init__(self, bot: Dwello, *args: Any, **kwargs: Any) -> None:
+        super().__init__(bot, *args, **kwargs)
         self.ge: GuildEcoUtils = GuildEcoUtils(self.bot)
         self.se: SharedEcoUtils = SharedEcoUtils(self.bot)
 

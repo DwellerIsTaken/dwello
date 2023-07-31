@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from typing import List, Literal, Optional, Union
+from typing import Any, List, Literal, Optional, Union
 
 import discord
 import contextlib
@@ -51,8 +51,8 @@ class TimeoutSuggestion(View):
 
 
 class Warnings(BaseCog):
-    def __init__(self, bot: Dwello) -> None:
-        self.bot = bot
+    def __init__(self, bot: Dwello, *args: Any, **kwargs: Any) -> None:
+        super().__init__(bot, *args, **kwargs)
         
     async def cog_check(self, ctx: Context) -> bool:
         return ctx.guild is not None

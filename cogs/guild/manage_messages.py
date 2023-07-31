@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from typing import Optional
+from typing import Any, Optional
 
 import discord
 from discord.ext import commands
@@ -9,10 +9,8 @@ from core import BaseCog, Context, Dwello
 
 
 class Messages(BaseCog):  # RENAME CLASS
-    def __init__(self, bot: Dwello) -> None:
-        self.bot = bot
-        print(4)
-        super().__init__(self.bot)
+    def __init__(self, bot: Dwello, *args: Any, **kwargs: Any) -> None:
+        super().__init__(bot, *args, **kwargs)
 
     @commands.hybrid_command(
         name="clear",

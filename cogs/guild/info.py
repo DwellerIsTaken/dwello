@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from typing import List, Literal, Optional, Union  # noqa: F401
+from typing import Any, List, Literal, Optional, Union  # noqa: F401
 
 import contextlib
 
@@ -10,9 +10,8 @@ from discord.ext import commands
 from core import BaseCog, Context, Dwello, Embed  # noqa: F401
 
 class Info(BaseCog):
-    def __init__(self, bot: Dwello) -> None:
-        self.bot: Dwello = bot
-        super().__init__(self.bot)
+    def __init__(self, bot: Dwello, *args: Any, **kwargs: Any):
+        super().__init__(bot, *args, **kwargs)
 
     async def cog_check(self, ctx: Context) -> bool:
         return ctx.guild is not None
@@ -43,15 +42,15 @@ class Info(BaseCog):
         embed.add_field(name="Owner", value=guild.owner.name)
         embed.add_field(name="Created at", value=discord.utils.format_dt(guild.created_at, style='D'))
         embed.add_field(name="Total Members", value=guild.member_count if guild.member_count else len(guild.members))
-        embed.add_field(name="MFA Level", value=str(guild.mfa_level)[:-9])
-        embed.add_field(name="NSFW Level", value=str(guild.nsfw_level)[:-10])
+        embed.add_field(name="MFA Level", value=str(guild.mfa_level)[9:])
+        embed.add_field(name="NSFW Level", value=str(guild.nsfw_level)[10:])
         embed.add_field(name="Nitro Level", value=guild.premium_tier)
         embed.add_field(name="Text Channels", value=len(guild.text_channels))
         embed.add_field(name="Voice Channels", value=len(guild.voice_channels))
         embed.add_field(name="Public Threads", value=len(guild.threads))
         if guild.rules_channel:
             embed.add_field(name="Rules", value=guild.rules_channel.mention)
-        embed.add_field(name="Sticker Limit", value=guild.sticker_limit)
+        embed.add_field(name="Emoji Limit", value=guild.emoji_limit)
         embed.add_field(name="Verification Level", value=guild.verification_level)
         if guild.scheduled_events:
             embed.add_field(
