@@ -1,23 +1,31 @@
 from __future__ import annotations
 
+import contextlib
+from typing import (
+    TYPE_CHECKING,
+    Any,
+    List,
+    Optional,
+    Type,
+    TypeVar,
+    Union,
+)
+
 import discord
 from discord import Interaction
 from discord.emoji import Emoji
-from discord.ui import Button, View
 from discord.enums import ButtonStyle
+from discord.ext.commands.context import Context as CommandsContext
 from discord.partial_emoji import PartialEmoji
-from discord.ext.commands.context import Context as _Context
-
-from typing import (
-    TYPE_CHECKING, Any, List, Optional, Type, TypeVar, Union,
-)
-
-import contextlib
+from discord.ui import Button, View
 
 if TYPE_CHECKING:
     from core import Context, Dwello, Embed
+    from typing_extensions import Self
 
 DPT = TypeVar("DPT", bound="DefaultPaginator")
+
+INTERACTION_CHECK_GIF = "https://media.tenor.com/jTKDchcLtrcAAAAd/walter-white-walter-crying.gif"
 
 
 class PreviousPageButton(Button["DefaultPaginator"]):
@@ -43,7 +51,7 @@ class StopViewButton(Button["DefaultPaginator"]):
         self,
         *,
         style: ButtonStyle = ButtonStyle.red,
-        emoji: Optional[Union[str, Emoji, PartialEmoji]] = "🗑",
+        emoji: Optional[Union[str, Emoji, PartialEmoji]] = discord.PartialEmoji(name="\N{WASTEBASKET}"),
         **kwargs,
     ):
         super().__init__(style=style, emoji=emoji, **kwargs)
@@ -53,14 +61,15 @@ class StopViewButton(Button["DefaultPaginator"]):
         return await self._end(interaction)
 
     async def _end(self, interaction: Interaction):
-        return await interaction.message.delete(delay=0)
-    
+        if interaction.message:
+            return await interaction.message.delete(delay=0)
+
 
 class NextPageButton(Button["DefaultPaginator"]):
     def __init__(
         self,
         *,
-        label: Optional[str] = ">", # use emoji instead
+        label: Optional[str] = ">",  # use emoji instead
         **kwargs,
     ):
         super().__init__(label=label, **kwargs)
@@ -72,7 +81,7 @@ class NextPageButton(Button["DefaultPaginator"]):
         view.current_page += 1
         view._update_buttons()
         await interaction.response.edit_message(embed=view.embeds[view.current_page], view=view)
-    
+
 
 class GoBackButton(Button["DefaultPaginator"]):
     def __init__(self, **kwargs):
@@ -94,6 +103,8 @@ class DefaultPaginator(View):
         If you have another view or content you want to switch to you can pass that to the class and it'll be passed onto
         ``interaction.response.edit_message()``.
     """
+    message: discord.Message
+
     # embeds and values should be in the corresponding positions in their lists
     def __init__(
         self,
@@ -102,13 +113,11 @@ class DefaultPaginator(View):
         /,
         values: Optional[List[Any]] = None,
         delete_button: Optional[bool] = False,
-        **kwargs, # eh, redo?
+        **kwargs,  # eh, redo?
     ):
-        super().__init__()
+        super().__init__(timeout=kwargs.pop("timeout", None))
 
-        if any(
-            (issubclass(obj.__class__, _Context), isinstance(obj, _Context)),
-        ):
+        if isinstance(obj, CommandsContext):
             self.bot: Dwello = obj.bot
             self.author = obj.author
             self.ctx: Context = obj
@@ -134,10 +143,9 @@ class DefaultPaginator(View):
             self.add_item(StopViewButton())
 
         if any(self.kwargs):
-            self.add_item(GoBackButton(emoji="🏠", style=ButtonStyle.blurple))
+            self.add_item(GoBackButton(emoji=discord.PartialEmoji(name="\N{HOUSE BUILDING}"), style=ButtonStyle.blurple))
 
         self.current_page = 0
-        self.message: discord.Message = None
 
     def _reconstruct_embeds(self, embeds: List[Embed]) -> List[Embed]:
         _embeds: List[Embed] = []
@@ -146,42 +154,46 @@ class DefaultPaginator(View):
                 embed.set_footer(text=f"Page: {i+1}")
             _embeds.append(embed)
         return _embeds
+    
+    btn_styles = {True: ButtonStyle.gray, False: ButtonStyle.blurple}
 
     def _update_buttons(self) -> None:
-        styles = {True: ButtonStyle.gray, False: ButtonStyle.blurple}
         page = self.current_page
         total = len(self.embeds) - 1
         self.next.disabled = page == total
         self.previous.disabled = page == 0
-        self.next.style = styles[page == total]
-        self.previous.style = styles[page == 0]
+        self.next.style = self.btn_styles[page == total]
+        self.previous.style = self.btn_styles[page == 0]
 
-    async def interaction_check(self, interaction: Interaction[Dwello]) -> Optional[bool]:
-        if val := interaction.user == self.author:
-            return val
-        else:
-            return await interaction.response.send_message(
+    async def interaction_check(self, interaction: Interaction[Dwello]) -> bool:
+        if interaction.user == self.author:
+            return True
+
+        await interaction.response.send_message(
                 embed=(
                     Embed(
                         title="Failed to interact with the view",
                         description="Hey there! Sorry, but you can't interact with someone else's view.\n",
                         timestamp=discord.utils.utcnow(),
-                    )
-                    .set_image(url="https://media.tenor.com/jTKDchcLtrcAAAAd/walter-white-walter-crying.gif")
+                    ).set_image(url=INTERACTION_CHECK_GIF)
                 ),
                 ephemeral=True,
             )
+        return False
 
     async def on_timeout(self) -> None:
+        if not hasattr(self, "message"):
+            return
+
         self.clear_items()
         with contextlib.suppress(discord.errors.NotFound):
             await self.message.edit(view=self)
 
-    async def _start(self) -> DefaultPaginator:
+    async def _start(self) -> Self:  # Here's Self is needed
         self._update_buttons()
         embed = self.embeds[0]
         if self.ctx:
-            self.message = await self.ctx.send(embed=embed, view=self)
+            self.message = await self.ctx.send(embed=embed, view=self)  # type: ignore  # message could be None
         else:
             obj = self.interaction
             send = obj.response.send_message
@@ -205,5 +217,5 @@ class DefaultPaginator(View):
         delete_button: Optional[bool] = False,
         **kwargs,
     ) -> DPT:
-        new = cls(obj, embeds, delete_button, **kwargs)
+        new = cls(obj, embeds, delete_button=delete_button, **kwargs)
         return await new._start()
