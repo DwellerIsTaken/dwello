@@ -7,7 +7,7 @@ import asyncpg
 import discord
 #import functools
 
-from .orm import Prefix, Warning
+from .orm import Idea, Prefix, Warning
 
 if TYPE_CHECKING:
     from core import Context, Dwello
@@ -187,3 +187,16 @@ class DataBaseOperations:
                 guild.id,
             )
         return [Prefix(record, self.bot) for record in records]
+    
+    async def suggest_idea(
+        self,
+        title: str,
+        content: str,
+        author: Union[discord.User, discord.Member],
+    ) -> Idea:
+        return await Idea.suggest(self.bot, title, content, author.id)
+    
+    async def get_ideas(self) -> List[Idea]:
+        async with self.bot.safe_connection() as conn:
+            records: List[Record] = await conn.fetch("SELECT * FROM ideas")
+        return [Idea(record, self.bot) for record in records]

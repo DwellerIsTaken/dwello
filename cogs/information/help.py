@@ -19,11 +19,12 @@ from discord.http import Route
 from discord import app_commands
 from discord import Interaction
 from discord.ext import commands
+from discord.enums import ButtonStyle
 from discord.ui import Select, button, select
 from typing_extensions import override
 
 import constants as cs
-from utils import create_codeblock
+from utils import create_codeblock, DefaultPaginator, Idea
 from core import Context, Dwello, Embed
 
 from .news import NewsViewer
@@ -875,6 +876,50 @@ class About(commands.Cog):
                 ),
             ),
         )
+    
+    async def _suggest_idea(self, ctx: Context, title: str, content: str) -> Optional[discord.Message]:
+        idea = await self.bot.db.suggest_idea(title, content, ctx.author)
+        # also somehow check if the ideas are similair
+
+        return await ctx.reply(
+            embed=Embed(
+                title="Successfully suggested",
+                description=(
+                    f"Title: {idea.title}\n"
+                    f"Description: {idea.content}"
+                )
+            ).set_author(name=ctx.author.name, icon_url=ctx.author.display_avatar.url)
+        )
+    
+    async def _ideas_show(self, ctx: Context) -> Union[DefaultPaginator, discord.Message]:
+        if not (ideas:= await self.bot.db.get_ideas()):
+            return await ctx.reply(
+                embed=Embed(description="No ideas yet.")
+            )
+        return await IdeaPaginator(ctx, ideas)._start()
+    
+    @commands.hybrid_command(name="ideas", help="Shows the list of suggested ideas.",with_app_command=True)
+    async def ideas(self, ctx: Context) -> Optional[discord.Message]:
+        return await self._ideas_show(ctx)
+  
+    # somehow check if ideas is bullshit or not
+    # maybe ai or smh
+    # or a dict of 'bad' words instead
+    @commands.hybrid_command(name='suggest', help="Suggest an idea for bot improvement.") # call a modal here
+    async def suggest(self, ctx: Context, title: str, *, content: str) -> Optional[discord.Message]:
+        return await self._suggest_idea(ctx, title, content)
+        
+    @commands.hybrid_group(name='idea', invoke_without_command=True, with_app_command=True)
+    async def idea(self, ctx: Context):
+        return await ctx.send_help(ctx.command)
+    
+    @idea.command(name='suggest', help="Suggest an idea for bot improvement.")
+    async def hybrid_suggest(self, ctx: Context, title: str, *, content: str) -> Optional[discord.Message]:
+        return await self._suggest_idea(ctx, title, content)
+    
+    @idea.command(name='show', aliases=['display'], help="Shows the list of suggested ideas.")
+    async def hybrid_show_idea(self, ctx: Context) -> Optional[discord.Message]:
+        return await self._ideas_show(ctx)
 
     @commands.hybrid_command(name="uptime", help="Returns bot's uptime.", with_app_command=True)
     async def uptime(self, ctx: Context) -> Optional[discord.Message]:
@@ -1081,6 +1126,83 @@ class About(commands.Cog):
         )
 
         return await SourceView.start(ctx, embed, lines, filename=f"{command_name}.py")
+
+
+class IdeaPaginator(DefaultPaginator):
+    def __init__(
+        self,
+        obj: Union[Context, Interaction[Dwello]],
+        ideas: List[Idea],
+        **kwargs,
+    ) -> None:
+        self.ideas = ideas
+        try:
+            bot = obj.bot
+        except AttributeError:
+            bot = obj.client
+        self._embeds = self._construct_embeds(bot) # dont override the parent class' embeds
+        super().__init__(obj, self._embeds, values=self.ideas, **kwargs)
+
+        self.voted = [(embed, False) for embed in self.embeds]
+
+        self.upvote = UpvoteIdeaButton(row=1)
+        self.add_item(self.upvote)
+        self.previous.row = 0
+        self.next.row = 2
+
+    def _construct_embeds(self, bot: Dwello) -> List[Embed]:
+        embeds: List[Embed] = []
+        for idea in self.ideas:
+            author: Optional[discord.User] = bot.get_user(idea.author_id)
+            embed = Embed(
+                title=idea.title,
+                description=idea.content,
+                timestamp=idea.created_at,
+            )
+            embed.set_footer(text=f"Votes: {idea.votes}")
+            if author:
+                embed.set_author(name=author.name, icon_url=author.display_avatar.url)
+            embeds.append(embed)
+        return embeds
+    
+    def _update_buttons(self) -> None:
+        styles = {True: ButtonStyle.gray, False: ButtonStyle.blurple}
+        page = self.current_page
+        total = len(self.embeds) - 1
+        self.next.disabled = page == total
+        self.previous.disabled = page == 0
+        self.next.style = styles[page == total]
+        self.previous.style = styles[page == 0]
+        self.upvote.disabled = self.voted[page][1]
+
+
+class UpvoteIdeaButton(discord.ui.Button["IdeaPaginator"]):
+    def __init__(
+        self,
+        *,
+        style: Optional[ButtonStyle] = ButtonStyle.green,
+        label: Optional[str] = "Upvote",
+        **kwargs,
+    ):
+        super().__init__(style=style, label=label, **kwargs)
+        
+    async def callback(self, interaction: Interaction):
+        assert self.view is not None
+        view: IdeaPaginator = self.view
+
+        page = view.current_page
+        embed = view.embeds[page]
+        idea: Idea = view.ideas[page]
+
+        await idea.upvote()
+
+        embed.set_footer(text=f"Votes: {idea.votes}")
+        view.voted[page] = (embed, True)
+        self.disabled = True
+
+        # works | you should add somewhere the people who already voted, so they wont twice
+
+        await interaction.response.edit_message(view=view)
 
 
 class ShowCodeButton(discord.ui.Button["SourceView"]):

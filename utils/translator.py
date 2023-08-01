@@ -4,7 +4,7 @@ import discord
 from discord.app_commands import (
     locale_str, Translator, TranslationContext, TranslationContextLocation,
 )
-
+# just copy danny's
 # TRANSLATOR
 class NewTranslator(Translator):
     """

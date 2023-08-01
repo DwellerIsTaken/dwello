@@ -1,14 +1,16 @@
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, List, TypeVar, Optional
+from typing import TYPE_CHECKING, List, Type, TypeVar, Optional
+
+import discord
 
 if TYPE_CHECKING:
     from core import Dwello
     from asyncpg import Record
     from datetime import datetime
 
-W = TypeVar('W', bound='Warning')
-
+WT = TypeVar('WT', bound='Warning')
+IT = TypeVar('IT', bound='Idea')
 
 class User:
     __slots__ = (
@@ -158,12 +160,14 @@ class Blacklist:
 
 
 class Idea:
-    __slots__ = ('bot', 'id', 'votes', 'content')
+    __slots__ = ('bot', 'id', 'author_id', 'votes', 'created_at', 'content', 'title')
 
     def __init__(self, record: Record, bot: Dwello) -> None:
         self.bot: Dwello = bot
         self.id: int = record['id']
+        self.author_id: int = record['author_id']
         self.votes: int = record['votes']
+        self.created_at: Optional[datetime] = record.get('created_at')
         self.content: Optional[str] = record.get('content')
         self.title: Optional[str] = record.get('title')
 
@@ -174,3 +178,41 @@ class Idea:
     @property
     def text(self) -> str:
         return self.content
+    
+    async def remove(self) -> None:
+        async with self.bot.safe_connection() as conn:
+            return await conn.execute(
+                "DELETE FROM ideas "
+                "WHERE id = $1",
+                self.id,
+            )
+        
+    async def upvote(self) -> None:
+        async with self.bot.safe_connection() as conn:
+            await conn.execute(
+                "UPDATE ideas SET votes = $1 WHERE id = $2",
+                self.votes+1,
+                self.id,
+            )
+        self.votes += 1
+        return
+    
+    @classmethod
+    async def suggest(
+        cls: Type[IT],
+        bot: Dwello,
+        title: str,
+        content: str,
+        author_id: int,
+    ) -> IT:
+        async with bot.safe_connection() as conn:
+            record: Record = await conn.fetchrow(
+                "INSERT INTO ideas(created_at, author_id, content, title) "
+                "VALUES($1, $2, $3, $4) "
+                "RETURNING *",
+                discord.utils.utcnow().replace(tzinfo=None),
+                author_id,
+                content,
+                title,
+            )
+        return cls(record, bot)

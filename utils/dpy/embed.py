@@ -30,9 +30,12 @@ class NewEmbed(discord.Embed):
             self.colour = self.bot_dominant_colour
         else: # db guild config color check
             self.colour = colour if colour is not None else color
-
-        locals_copy = locals().copy()
-        del locals_copy['__class__']
-        del locals_copy['self']
         
-        super().__init__(**locals_copy)
+        super().__init__(
+            colour=self.colour,
+            title=title,
+            type=type,
+            url=url,
+            description=description,
+            timestamp=timestamp,
+        )

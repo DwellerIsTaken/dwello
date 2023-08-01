@@ -9,7 +9,7 @@ from discord.partial_emoji import PartialEmoji
 from discord.ext.commands.context import Context as _Context
 
 from typing import (
-    TYPE_CHECKING, List, Optional, Type, TypeVar, Union,
+    TYPE_CHECKING, Any, List, Optional, Type, TypeVar, Union,
 )
 
 import contextlib
@@ -94,14 +94,15 @@ class DefaultPaginator(View):
         If you have another view or content you want to switch to you can pass that to the class and it'll be passed onto
         ``interaction.response.edit_message()``.
     """
-
+    # embeds and values should be in the corresponding positions in their lists
     def __init__(
         self,
         obj: Union[Context, Interaction[Dwello]],
         embeds: List[Embed],
         /,
+        values: Optional[List[Any]] = None,
         delete_button: Optional[bool] = False,
-        **kwargs,
+        **kwargs, # eh, redo?
     ):
         super().__init__()
 
@@ -110,12 +111,15 @@ class DefaultPaginator(View):
         ):
             self.bot: Dwello = obj.bot
             self.author = obj.author
+            self.ctx: Context = obj
         else:
             self.author = obj.user
             self.bot: Dwello = obj.client
+            self.interaction: Interaction = obj
 
         self.embeds = self._reconstruct_embeds(embeds)
 
+        self.values = values
         self.delete_button = delete_button
         self.kwargs = kwargs
 
@@ -173,6 +177,25 @@ class DefaultPaginator(View):
         with contextlib.suppress(discord.errors.NotFound):
             await self.message.edit(view=self)
 
+    async def _start(self) -> DefaultPaginator:
+        self._update_buttons()
+        embed = self.embeds[0]
+        if self.ctx:
+            self.message = await self.ctx.send(embed=embed, view=self)
+        else:
+            obj = self.interaction
+            send = obj.response.send_message
+            if any(self.kwargs):
+                if obj.response.is_done():
+                    await obj.response.edit_message(embed=embed, view=self)
+                else:
+                    await send(embed=embed, view=self)
+            else:
+                await send(embed=embed, view=self)
+            self.message = await obj.original_response()
+        await self.wait()
+        return self
+
     @classmethod
     async def start(
         cls: Type[DPT],
@@ -183,21 +206,4 @@ class DefaultPaginator(View):
         **kwargs,
     ) -> DPT:
         new = cls(obj, embeds, delete_button, **kwargs)
-        new._update_buttons()
-        embed = new.embeds[0]
-        if any(
-            (issubclass(obj.__class__, _Context), isinstance(obj, _Context)),
-        ):
-            new.message = await obj.send(embed=embed, view=new)
-        else:
-            send = obj.response.send_message
-            if any(kwargs):
-                if obj.response.is_done():
-                    await obj.response.edit_message(embed=embed, view=new)
-                else:
-                    await send(embed=embed, view=new)
-            else:
-                await send(embed=embed, view=new)
-            new.message = await obj.original_response()
-        await new.wait()
-        return new
+        return await new._start()

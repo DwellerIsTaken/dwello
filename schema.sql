@@ -80,7 +80,9 @@ CREATE TABLE IF NOT EXISTS todo(
 
 CREATE TABLE IF NOT EXISTS ideas(
     id SERIAL PRIMARY KEY,
+    author_id BIGINT NOT NULL,
     votes BIGINT DEFAULT 0,
+    created_at TIMESTAMP,
     content TEXT,
     title TEXT
 );
