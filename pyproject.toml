@@ -4,8 +4,9 @@ line-length = 125
 [tool.ruff]
 line-length = 125
 select = ["ASYNC", "E", "F", "W", "SIM"]
-ignore = ["W292","W293"]
+ignore = ["W292", "W293"]
 exclude = ["structure.py", "todo.py", "constants.py", "archive"]
+target-version = "py310"
 
 [tool.isort]
 profile = "black"
