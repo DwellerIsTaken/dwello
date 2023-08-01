@@ -21,7 +21,7 @@ from utils import ENV, DataBaseOperations, Twitch  # noqa: F401, E402
 
 
 class AiohttpWeb:
-    def __init__(self, bot: Dwello):
+    def __init__(self, bot: Dwello) -> None:
         self.bot = bot
         self.app: web.Application = web.Application()
         self.app.router.add_post("/api/post", self.handle_post)
@@ -47,7 +47,7 @@ class AiohttpWeb:
 
 
 class LevellingUtils:  # add to db_ops instead next
-    def __init__(self, bot: Dwello):
+    def __init__(self, bot: Dwello) -> None:
         self.bot = bot
 
     async def create_user(self, user_id: int, guild_id: int) -> None:
@@ -215,7 +215,7 @@ class LevellingUtils:  # add to db_ops instead next
 
 # ahahahh redo again
 class AutoComplete:
-    def __init__(self, bot: Dwello):
+    def __init__(self, bot: Dwello) -> None:
         self.bot = bot
 
     async def choice_autocomplete(
@@ -260,7 +260,7 @@ class AutoComplete:
 
 
 class ListenersFunctions:
-    def __init__(self, bot: Dwello):
+    def __init__(self, bot: Dwello) -> None:
         self.bot = bot
 
     async def bot_join(self, guild: discord.Guild) -> None:

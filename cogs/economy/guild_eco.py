@@ -13,7 +13,7 @@ from .shared import SharedEcoUtils
 
 
 class GuildEcoUtils:
-    def __init__(self, bot: Dwello):
+    def __init__(self, bot: Dwello) -> None:
         self.bot = bot
         self.se: SharedEcoUtils = SharedEcoUtils(self.bot)
 

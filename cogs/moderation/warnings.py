@@ -24,7 +24,7 @@ class TimeoutSuggestion(View):
         member: discord.Member,
         reason: str,
         **kwargs,
-    ):
+    ) -> None:
         super().__init__(**kwargs)
 
         self.bot = bot

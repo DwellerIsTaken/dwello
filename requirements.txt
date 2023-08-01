@@ -6,6 +6,7 @@ colorthief
 aiohttp
 asyncpg
 uvloop
+aiofiles
 pillow
 jishaku
 wikipedia-api

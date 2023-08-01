@@ -202,7 +202,8 @@ class Twitch:
 
     async def twitch_unsubscribe_from_streamer(
         self, ctx: Context, username: str | Literal["all"]
-    ) -> discord.Message | None:  # IF ALL: GET ALL TWITCH USERS THAT GUILD IS SUBSCRIBED TO AND UNSUB (what if the same user for multiple guilds)
+    ) -> discord.Message | None:
+        # IF ALL: GET ALL TWITCH USERS THAT GUILD IS SUBSCRIBED TO AND UNSUB (what if the same user for multiple guilds)
         async with self.bot.pool.acquire() as conn:
             conn: asyncpg.Connection
             async with conn.transaction():

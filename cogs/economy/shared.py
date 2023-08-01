@@ -10,7 +10,7 @@ from core import Context, Dwello, Embed
 
 
 class SharedEcoUtils:
-    def __init__(self, bot: Dwello):
+    def __init__(self, bot: Dwello) -> None:
         self.bot = bot
 
     async def fetch_basic_job_data_by_username(

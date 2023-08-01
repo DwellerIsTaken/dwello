@@ -5,6 +5,7 @@ from typing import TYPE_CHECKING, Any, overload
 
 import asyncpg
 import discord
+import aiofiles
 
 from .orm import Idea, Prefix, Warning
 
@@ -18,14 +19,14 @@ if TYPE_CHECKING:
 
 
 class DataBaseOperations:
-    def __init__(self, bot: Dwello):
+    def __init__(self, bot: Dwello) -> None:
         self.bot = bot
         self.pool = bot.pool
 
     async def create_tables(self) -> list[str]:
         async with self.bot.safe_connection() as conn:
-            with open("schema.sql") as f:
-                tables = f.read()
+            async with aiofiles.open("schema.sql") as f:
+                tables = await f.read()
 
             table_names = re.findall(r"CREATE TABLE IF NOT EXISTS (\w+)", tables)
 

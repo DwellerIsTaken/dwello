@@ -14,7 +14,7 @@ if TYPE_CHECKING:
     from core import Context, Dwello
 
 
-async def setup(bot: Dwello):
+async def setup(bot: Dwello) -> None:
     await bot.add_cog(CommandErrorHandler(bot))
 
 

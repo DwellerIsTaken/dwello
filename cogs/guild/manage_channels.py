@@ -13,14 +13,15 @@ from utils import HandleHTTPException
 
 
 class ChannelsFunctions:
-    def __init__(self, bot: Dwello):
+    def __init__(self, bot: Dwello) -> None:
         self.bot: Dwello = bot
 
     async def counter_func(
         self,
         ctx: Context,
         name: Literal["all", "member", "bot", "category"],
-    ) -> discord.VoiceChannel | discord.CategoryChannel | None:  # Optional[Tuple[discord.Message, Union[discord.VoiceChannel, discord.CategoryChannel]]]
+    ) -> discord.VoiceChannel | discord.CategoryChannel | None:
+        # Optional[Tuple[discord.Message, Union[discord.VoiceChannel, discord.CategoryChannel]]]
         async with self.bot.pool.acquire() as conn:
             conn: asyncpg.Connection
             async with conn.transaction():
@@ -137,7 +138,7 @@ class ChannelsFunctions:
 
 
 class Stats_View(View):
-    def __init__(self, bot: Dwello, ctx: Context, name: str, *, timeout: int = None):
+    def __init__(self, bot: Dwello, ctx: Context, name: str, *, timeout: int = None) -> None:
         super().__init__(timeout=timeout)
         self.bot = bot
         self.ctx = ctx

@@ -73,7 +73,7 @@ ANY = Null | str | list | bool | dict | int | None
 
 
 class Environment:
-    def __init__(self):
+    def __init__(self) -> None:
         self.__dict = os.environ
 
     def __getattr__(self, name: str):

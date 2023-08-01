@@ -12,7 +12,7 @@ from discord.ext import commands
 from core import Context, Dwello, Embed
 
 
-async def setup(bot: Dwello):
+async def setup(bot: Dwello) -> None:
     await bot.add_cog(Owner(bot))
 
 

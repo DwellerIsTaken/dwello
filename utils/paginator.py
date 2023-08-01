@@ -27,7 +27,7 @@ class PreviousPageButton(Button["DefaultPaginator"]):
         *,
         label: str | None = "<",
         **kwargs,
-    ):
+    ) -> None:
         super().__init__(label=label, **kwargs)
 
     async def callback(self, interaction: Interaction):
@@ -46,7 +46,7 @@ class StopViewButton(Button["DefaultPaginator"]):
         style: ButtonStyle = ButtonStyle.red,
         emoji: str | Emoji | PartialEmoji | None = discord.PartialEmoji(name="\N{WASTEBASKET}"),
         **kwargs,
-    ):
+    ) -> None:
         super().__init__(style=style, emoji=emoji, **kwargs)
 
     async def callback(self, interaction: Interaction[Dwello]):
@@ -64,7 +64,7 @@ class NextPageButton(Button["DefaultPaginator"]):
         *,
         label: str | None = ">",  # use emoji instead
         **kwargs,
-    ):
+    ) -> None:
         super().__init__(label=label, **kwargs)
 
     async def callback(self, interaction: Interaction):
@@ -77,7 +77,7 @@ class NextPageButton(Button["DefaultPaginator"]):
 
 
 class GoBackButton(Button["DefaultPaginator"]):
-    def __init__(self, **kwargs):
+    def __init__(self, **kwargs) -> None:
         super().__init__(**kwargs)
 
     async def callback(self, interaction: Interaction):
@@ -108,7 +108,7 @@ class DefaultPaginator(View):
         values: list[Any] | None = None,
         delete_button: bool | None = False,
         **kwargs,  # eh, redo?
-    ):
+    ) -> None:
         super().__init__(timeout=kwargs.pop("timeout", None))
 
         if isinstance(obj, CommandsContext):

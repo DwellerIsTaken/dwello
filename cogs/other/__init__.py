@@ -14,12 +14,12 @@ if TYPE_CHECKING:
 
 
 class Other(Events, Tasks, BotConfig, Todo):
-    def __init__(self, *args, **kwargs):
+    def __init__(self, *args, **kwargs) -> None:
         super().__init__(*args, **kwargs)
         self.message_cache: dict[int, Message] = {}
 
     """Other Class"""
 
 
-async def setup(bot: Dwello):
+async def setup(bot: Dwello) -> None:
     await bot.add_cog(Other(bot))

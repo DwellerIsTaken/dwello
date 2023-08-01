@@ -6,6 +6,7 @@ import json
 import re
 from typing import TYPE_CHECKING, Any
 
+import aiofiles
 import discord
 import wikipediaapi
 from aiospotify import Artist, Image, ObjectType, PartialAlbum, SearchResult, SpotifyClient, Track, http
@@ -39,7 +40,7 @@ class OptionSelectView(discord.ui.View):
         self,
         ctx: Context,
         options: list[tuple[str, Embed]],
-    ):
+    ) -> None:
         super().__init__()
         self.ctx = ctx
         self.options = options
@@ -651,8 +652,8 @@ class Scraping(BaseCog):
             data = await response.json()
 
         if data["cod"] == "404":
-            with open("datasets/countries.json") as file:
-                data: dict = json.load(file)
+            async with aiofiles.open("datasets/countries.json") as file:
+                data: dict = json.loads(await file.read())
 
             matches = []
             for key, value in data.items():

@@ -91,7 +91,7 @@ class NewsFeed:
 
 
 class NewsPreviousButton(discord.ui.Button[NVT]):
-    def __init__(self, **kwargs):
+    def __init__(self, **kwargs) -> None:
         super().__init__(**kwargs)
 
     async def callback(self, interaction: discord.Interaction):
@@ -108,7 +108,7 @@ class NewsPreviousButton(discord.ui.Button[NVT]):
 
 
 class NewsCurrentButton(discord.ui.Button[NVT]):
-    def __init__(self, **kwargs):
+    def __init__(self, **kwargs) -> None:
         super().__init__(**kwargs)
 
     async def callback(self, interaction: discord.Interaction):
@@ -124,7 +124,7 @@ class NewsCurrentButton(discord.ui.Button[NVT]):
 
 
 class NewsNextButton(discord.ui.Button[NVT]):
-    def __init__(self, **kwargs):
+    def __init__(self, **kwargs) -> None:
         super().__init__(**kwargs)
 
     async def callback(self, interaction: discord.Interaction):
@@ -141,7 +141,7 @@ class NewsNextButton(discord.ui.Button[NVT]):
 
 
 class NewsGoBackButton(discord.ui.Button[NVT]):
-    def __init__(self, **kwargs):
+    def __init__(self, **kwargs) -> None:
         super().__init__(**kwargs)
 
     async def callback(self, interaction: discord.Interaction):
@@ -175,7 +175,7 @@ class NewsViewer(discord.ui.View):
         /,
         embed: Embed = None,
         old_view: discord.ui.View = None,
-    ):
+    ) -> None:
         super().__init__()
 
         if isinstance(obj, Context):

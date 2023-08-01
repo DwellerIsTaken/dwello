@@ -38,7 +38,7 @@ class NewView(View):
         *,
         timeout: float | None = 180,
         **kwargs,
-    ):
+    ) -> None:
         super().__init__(timeout=timeout)
 
         self.kwargs = kwargs

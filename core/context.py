@@ -20,7 +20,7 @@ if TYPE_CHECKING:
 
 
 class ConfirmButton(discord.ui.Button):
-    def __init__(self, label: str, emoji: str, button_style: ButtonStyle):
+    def __init__(self, label: str, emoji: str, button_style: ButtonStyle) -> None:
         super().__init__(
             style=button_style,
             label=label,
@@ -35,7 +35,7 @@ class ConfirmButton(discord.ui.Button):
 
 
 class CancelButton(discord.ui.Button):
-    def __init__(self, label: str, emoji: str, button_style: ButtonStyle):
+    def __init__(self, label: str, emoji: str, button_style: ButtonStyle) -> None:
         super().__init__(style=button_style, label=label, emoji=emoji)
 
     async def callback(self, interaction: Interaction):
@@ -46,7 +46,7 @@ class CancelButton(discord.ui.Button):
 
 
 class Confirm(discord.ui.View):
-    def __init__(self, buttons: tuple[tuple[str]], timeout: int = 30):
+    def __init__(self, buttons: tuple[tuple[str]], timeout: int = 30) -> None:
         super().__init__(timeout=timeout)
         self.message = None
         self.value = None
@@ -98,7 +98,7 @@ class NewContext(commands.Context):  # [commands.Bot], Generic[T]
     guild: discord.Guild
     author: discord.Member
 
-    def __init__(self, *args, **kwargs):
+    def __init__(self, *args, **kwargs) -> None:
         super().__init__(*args, **kwargs)
 
     @staticmethod
@@ -387,7 +387,7 @@ class NewContext(commands.Context):  # [commands.Bot], Generic[T]
 
     def send_view(self):
         class View(discord.ui.View):
-            def __init__(self):
+            def __init__(self) -> None:
                 super().__init__()
                 self.add_item(
                     discord.ui.Button(label=f"Sent from {self.guild}", style=discord.ButtonStyle.blurple, disabled=True)

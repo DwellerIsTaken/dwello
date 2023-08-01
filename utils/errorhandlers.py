@@ -41,7 +41,7 @@ class HandleHTTPException(AbstractAsyncContextManager, AbstractContextManager):
 
     __slots__ = ("destination", "message")
 
-    def __init__(self, destination: discord.abc.Messageable, *, title: str | None = None):
+    def __init__(self, destination: discord.abc.Messageable, *, title: str | None = None) -> None:
         self.destination = destination
         self.message = title
 

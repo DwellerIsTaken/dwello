@@ -11,7 +11,7 @@ from .shared import SharedEcoUtils
 
 
 class BotEcoUtils:
-    def __init__(self, bot: Dwello):
+    def __init__(self, bot: Dwello) -> None:
         self.bot = bot
 
     async def balance_check(self, ctx: Context, amount: int, name: str) -> bool | None:

@@ -27,7 +27,7 @@ class NewEmbed(discord.Embed):
         url: Any | None = None,
         description: Any | None = None,
         timestamp: datetime.datetime | None = None,
-    ):
+    ) -> None:
         if not any((colour, color)):
             self.colour = self.bot_dominant_colour
         else:  # db guild config color check

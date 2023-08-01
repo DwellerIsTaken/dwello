@@ -33,7 +33,7 @@ SVT = TypeVar("SVT", bound="SourceView")
 newline = "\n"
 
 
-async def setup(bot: Dwello):
+async def setup(bot: Dwello) -> None:
     await bot.add_cog(About(bot))
 
 
@@ -42,7 +42,7 @@ class HelpCentre(discord.ui.View):
         self,
         ctx: Context,
         other_view: discord.ui.View,
-    ):
+    ) -> None:
         super().__init__()
         self.embed = None
         self.ctx = ctx
@@ -119,7 +119,7 @@ class HelpView(discord.ui.View):
         ctx: Context,
         data: dict[commands.Cog, list[commands.Command | discord.app_commands.Command]],
         help_command: commands.HelpCommand,
-    ):
+    ) -> None:
         super().__init__()
         self.ctx = ctx
         self.bot: Dwello = self.ctx.bot
@@ -339,7 +339,7 @@ class HelpView(discord.ui.View):
 
 
 class MyHelp(commands.HelpCommand):
-    def __init__(self, **options):
+    def __init__(self, **options) -> None:
         super().__init__(**options)
         self.context: Context
 
@@ -1177,7 +1177,7 @@ class UpvoteIdeaButton(discord.ui.Button["IdeaPaginator"]):
         style: ButtonStyle | None = ButtonStyle.green,
         label: str | None = "Upvote",
         **kwargs,
-    ):
+    ) -> None:
         super().__init__(style=style, label=label, **kwargs)
 
     async def callback(self, interaction: Interaction):
@@ -1205,7 +1205,7 @@ class ShowCodeButton(discord.ui.Button["SourceView"]):
         *,
         label: str | None = "Code",
         **kwargs,
-    ):
+    ) -> None:
         super().__init__(label=label, **kwargs)
 
     async def callback(self, interaction: Interaction):
@@ -1240,7 +1240,7 @@ class ShowFileButton(discord.ui.Button["SourceView"]):
         *,
         label: str | None = "File",
         **kwargs,
-    ):
+    ) -> None:
         super().__init__(label=label, **kwargs)
 
     async def callback(self, interaction: Interaction):
@@ -1271,7 +1271,7 @@ class SourceView(discord.ui.View):
         /,
         filename: str | None = "code.py",
         **kwargs,
-    ):
+    ) -> None:
         super().__init__(**kwargs)
 
         if any(

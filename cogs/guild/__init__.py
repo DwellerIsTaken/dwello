@@ -19,11 +19,11 @@ class Guild(Config, Info, Channels, Messages, Customisation, name="Guild Managem
     and permission management features, and tools for customizing the guild experience.
     """
 
-    def __init__(self, *args, **kwargs):
+    def __init__(self, *args, **kwargs) -> None:
         super().__init__(*args, **kwargs)
         self.select_emoji = "📝"
         self.select_brief = "Commands for guild customization, configuration, and management."
 
 
-async def setup(bot: Dwello):
+async def setup(bot: Dwello) -> None:
     await bot.add_cog(Guild(bot))

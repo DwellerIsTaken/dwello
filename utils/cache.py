@@ -33,7 +33,7 @@ class CacheProtocol(Protocol[R]):
 
 
 class ExpiringCache(dict):
-    def __init__(self, seconds: float):
+    def __init__(self, seconds: float) -> None:
         self.__ttl: float = seconds
         super().__init__()
 
@@ -44,7 +44,7 @@ class ExpiringCache(dict):
         for k in to_remove:
             del self[k]
 
-    def __contains__(self, key: str):
+    def __contains__(self, key: str) -> bool:
         self.__verify_cache_integrity()
         return super().__contains__(key)
 
@@ -52,7 +52,7 @@ class ExpiringCache(dict):
         self.__verify_cache_integrity()
         return super().__getitem__(key)
 
-    def __setitem__(self, key: str, value: Any):
+    def __setitem__(self, key: str, value: Any) -> None:
         super().__setitem__(key, (value, time.monotonic()))
 
 

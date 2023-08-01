@@ -109,7 +109,7 @@ class SpamChecker:
     From experience these values aren't reached unless someone is actively spamming.
     """
 
-    def __init__(self):
+    def __init__(self) -> None:
         self.by_content = CooldownByContent.from_cooldown(15, 17.0, commands.BucketType.member)
         self.by_user = commands.CooldownMapping.from_cooldown(10, 12.0, commands.BucketType.user)
         self.last_join: datetime.datetime | None = None

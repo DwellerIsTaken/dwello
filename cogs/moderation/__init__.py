@@ -25,7 +25,7 @@ class Moderation(
     Tools for server moderation, as well as various utilities designed specifically for administrators and moderators.
     """
 
-    def __init__(self, *args, **kwargs):
+    def __init__(self, *args, **kwargs) -> None:
         super().__init__(*args, **kwargs)
         self.select_emoji = "🛡️"
         self.select_brief = "Various moderation tools."
@@ -36,5 +36,5 @@ class Moderation(
         return True
 
 
-async def setup(bot: Dwello):
+async def setup(bot: Dwello) -> None:
     await bot.add_cog(Moderation(bot))

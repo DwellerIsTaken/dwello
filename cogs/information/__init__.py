@@ -17,11 +17,11 @@ class Information(Scraping, UserInfo, News, name="Information"):
     news feeds, and other relevant information.
     """
 
-    def __init__(self, *args, **kwargs):
+    def __init__(self, *args, **kwargs) -> None:
         super().__init__(*args, **kwargs)
         self.select_emoji = "📚"
         self.select_brief = "Commands for providing information and data to users."
 
 
-async def setup(bot: Dwello):
+async def setup(bot: Dwello) -> None:
     await bot.add_cog(Information(bot))

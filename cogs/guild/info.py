@@ -10,7 +10,7 @@ from core import BaseCog, Context, Dwello, Embed  # noqa: F401
 
 
 class Info(BaseCog):
-    def __init__(self, bot: Dwello, *args: Any, **kwargs: Any):
+    def __init__(self, bot: Dwello, *args: Any, **kwargs: Any) -> None:
         super().__init__(bot, *args, **kwargs)
 
     async def cog_check(self, ctx: Context) -> bool:

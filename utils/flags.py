@@ -40,7 +40,7 @@ class BaseFlags:
 
 
 class flag_value:
-    def __init__(self, func: Callable[[Any], int]):
+    def __init__(self, func: Callable[[Any], int]) -> None:
         self.flag: int = func(None)
         self.__doc__: str | None = func.__doc__
 
