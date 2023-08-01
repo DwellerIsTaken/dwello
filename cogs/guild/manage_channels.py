@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from typing import Any, Literal, Optional, Union
+from typing import Any, Literal
 
 import asyncpg
 import discord
@@ -8,8 +8,8 @@ from discord.ext import commands
 from discord.ui import Button, View, button
 
 import constants as cs
-from utils import HandleHTTPException
 from core import BaseCog, Context, Dwello, Embed
+from utils import HandleHTTPException
 
 
 class ChannelsFunctions:
@@ -20,9 +20,7 @@ class ChannelsFunctions:
         self,
         ctx: Context,
         name: Literal["all", "member", "bot", "category"],
-    ) -> Optional[
-        Union[discord.VoiceChannel, discord.CategoryChannel]
-    ]:  # Optional[Tuple[discord.Message, Union[discord.VoiceChannel, discord.CategoryChannel]]]
+    ) -> discord.VoiceChannel | discord.CategoryChannel | None:  # Optional[Tuple[discord.Message, Union[discord.VoiceChannel, discord.CategoryChannel]]]
         async with self.bot.pool.acquire() as conn:
             conn: asyncpg.Connection
             async with conn.transaction():
@@ -148,7 +146,7 @@ class Stats_View(View):
         self.cf_: ChannelsFunctions = ChannelsFunctions(self.bot)
 
     # DO A MORE USER-FRIENDLY INTERACTION CHECK
-    async def interaction_check(self, interaction: discord.Interaction) -> Optional[discord.Message]:
+    async def interaction_check(self, interaction: discord.Interaction) -> discord.Message | None:
         if interaction.user.id == self.ctx.author.id:
             return True
 
@@ -165,7 +163,7 @@ class Stats_View(View):
         disabled=False,
         custom_id="approve_button",
     )
-    async def approve(self, interaction: discord.interactions.Interaction, button: Button) -> Optional[discord.Message]:
+    async def approve(self, interaction: discord.interactions.Interaction, button: Button) -> discord.Message | None:
         async with self.bot.pool.acquire() as conn:
             conn: asyncpg.Connection
             async with conn.transaction():

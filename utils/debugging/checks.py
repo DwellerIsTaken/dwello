@@ -8,6 +8,7 @@ import constants as cs
 # REMOVE THIS FILE prbpl
 # remove debugging dir
 
+
 # make elegant
 async def member_check(ctx: commands.Context, member: discord.Member, bot: commands.Bot) -> bool:
     string = ctx.command.name

@@ -1,13 +1,14 @@
 from __future__ import annotations
 
-from typing import Any, List, Literal, Optional, Union
+from typing import Any, Literal
 
 import discord
-from discord.ext import commands
 from discord.app_commands import Choice
+from discord.ext import commands
 
 from core import BaseCog, Context, Dwello, Embed
 from utils import Prefix
+
 
 class Customisation(BaseCog):
     def __init__(self, bot: Dwello, *args: Any, **kwargs: Any) -> None:
@@ -16,7 +17,7 @@ class Customisation(BaseCog):
 
     async def cog_check(self, ctx: Context) -> bool:
         return ctx.guild is not None
-    
+
     @commands.hybrid_group(aliases=["prefixes"], invoke_without_command=True, with_app_command=True)
     async def prefix(self, ctx: Context):
         async with ctx.typing():
@@ -25,7 +26,7 @@ class Customisation(BaseCog):
     @commands.check_any(commands.is_owner(), commands.has_permissions(administrator=True))
     @prefix.command(name="add", help="Adds bot prefix to the guild.")
     async def add_prefix(self, ctx: Context, *, prefix: str):
-        _prefix: List[str] = prefix.split()
+        _prefix: list[str] = prefix.split()
         if len(_prefix) > 1:
             return await ctx.reply("Prefix musn't contain whitespaces.", user_mistake=True)
 
@@ -43,8 +44,8 @@ class Customisation(BaseCog):
     @delete_prefix.autocomplete("prefix")
     async def autocomplete_callback_prefix(self, interaction: discord.Interaction, current: str):
         item = len(current)
-        prefixes: List[Prefix] = await self.bot.db.get_prefixes(interaction.guild)
-        choices: List[Choice[str]] = [Choice(name="all", value="all")] + [
+        prefixes: list[Prefix] = await self.bot.db.get_prefixes(interaction.guild)
+        choices: list[Choice[str]] = [Choice(name="all", value="all")] + [
             Choice(name=prefix.name, value=prefix.name)
             for prefix in prefixes
             if current.startswith(prefix.name.lower()[:item])
@@ -52,15 +53,15 @@ class Customisation(BaseCog):
         if len(choices) > 10:
             return choices[:10]
         return choices
-    
+
 
 class PrefixConfig:
     def __init__(self, bot: Dwello) -> None:
         self.bot = bot
         self.db = bot.db
 
-    async def set_prefix(self, ctx: Context, _prefix: str) -> Optional[discord.Message]:
-        if not isinstance(prefix:= await self.db.add_prefix(ctx.guild, _prefix, context=ctx), Prefix):
+    async def set_prefix(self, ctx: Context, _prefix: str) -> discord.Message | None:
+        if not isinstance(prefix := await self.db.add_prefix(ctx.guild, _prefix, context=ctx), Prefix):
             return
         try:
             self.bot.guild_prefixes[ctx.guild.id].append(prefix.name)
@@ -68,8 +69,8 @@ class PrefixConfig:
             self.bot.guild_prefixes[ctx.guild.id] = [prefix.name]
         return await ctx.reply(embed=Embed(description=f"The prefix is set to `{prefix.name}`"), permission_cmd=True)
 
-    async def display_prefixes(self, ctx: Context) -> Optional[discord.Message]:
-        default_prefixes: List[str] = self.bot.DEFAULT_PREFIXES + [f"<@!{self.bot.user.id}>"]
+    async def display_prefixes(self, ctx: Context) -> discord.Message | None:
+        default_prefixes: list[str] = self.bot.DEFAULT_PREFIXES + [f"<@!{self.bot.user.id}>"]
         prefixes = await self.db.get_prefixes(ctx.guild)
 
         embed: Embed = Embed(title="Prefixes").set_footer(text=None)
@@ -87,13 +88,13 @@ class PrefixConfig:
         )
         return await ctx.reply(embed=embed, mention_author=False, ephemeral=False)
 
-    async def remove_prefix(self, ctx: Context, prefix: Union[str, Literal["all"]]) -> Optional[discord.Message]:
+    async def remove_prefix(self, ctx: Context, prefix: str | Literal["all"]) -> discord.Message | None:
         if not (await self.db.get_prefixes(ctx.guild)):
             return await ctx.reply(
                 "Prefix isn't yet set. \n```/prefix add [prefix]```",
                 user_mistake=True,
             )
-        count = len(await self.db.remove_prefix(prefix, ctx.guild, all=prefix=='all'))
+        count = len(await self.db.remove_prefix(prefix, ctx.guild, all=prefix == "all"))
         self.bot.guild_prefixes[ctx.guild.id].remove(prefix)
         return await ctx.reply(
             embed=Embed(

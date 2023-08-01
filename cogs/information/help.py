@@ -8,24 +8,23 @@ import inspect
 import io
 import itertools
 import os
-import psutil
-import pygit2
 import time
 import traceback
-from typing import Any, Dict, List, Optional, Tuple, Type, TypeVar, Union
+from typing import Any, TypeVar
 
 import discord
-from discord.http import Route
-from discord import app_commands
-from discord import Interaction
-from discord.ext import commands
+import psutil
+import pygit2
+from discord import Interaction, app_commands
 from discord.enums import ButtonStyle
+from discord.ext import commands
+from discord.http import Route
 from discord.ui import Select, button, select
 from typing_extensions import override
 
 import constants as cs
-from utils import create_codeblock, DefaultPaginator, Idea
 from core import Context, Dwello, Embed
+from utils import DefaultPaginator, Idea, create_codeblock
 
 from .news import NewsViewer
 
@@ -118,7 +117,7 @@ class HelpView(discord.ui.View):
     def __init__(
         self,
         ctx: Context,
-        data: Dict[commands.Cog, List[Union[commands.Command, discord.app_commands.Command]]],
+        data: dict[commands.Cog, list[commands.Command | discord.app_commands.Command]],
         help_command: commands.HelpCommand,
     ):
         super().__init__()
@@ -129,8 +128,8 @@ class HelpView(discord.ui.View):
         self.help_command = help_command
         self.message: discord.Message = None
         self.main_embed = self.build_main_page()
-        self.embeds: List[Embed] = [self.main_embed]
-        self.owner_cmds: List[commands.Command] = self.construct_owner_commands()
+        self.embeds: list[Embed] = [self.main_embed]
+        self.owner_cmds: list[commands.Command] = self.construct_owner_commands()
 
     @select(placeholder="Select a category", row=0)
     async def category_select(self, interaction: Interaction, select: Select):
@@ -148,9 +147,9 @@ class HelpView(discord.ui.View):
         else:
             return await interaction.response.send_message("Somehow, that category was not found? 🤔", ephemeral=True)
 
-    def construct_owner_commands(self) -> List[commands.Command]:
-        owner_cmds: List[commands.Command] = []
-        hidden_cmds: List[commands.Command] = []
+    def construct_owner_commands(self) -> list[commands.Command]:
+        owner_cmds: list[commands.Command] = []
+        hidden_cmds: list[commands.Command] = []
 
         for cog, comm in self.data.items():
             for cmd in comm:
@@ -164,7 +163,7 @@ class HelpView(discord.ui.View):
 
         return owner_cmds + hidden_cmds
 
-    def clean_command_count(self, cog: commands.Cog, commands: List[commands.Command, app_commands.Command]) -> int:
+    def clean_command_count(self, cog: commands.Cog, commands: list[commands.Command, app_commands.Command]) -> int:
         if cog.qualified_name == "Owner":
             return len(self.owner_cmds)
 
@@ -178,7 +177,7 @@ class HelpView(discord.ui.View):
 
         return count
 
-    def build_embeds(self, cog: commands.Cog) -> List[Embed]:
+    def build_embeds(self, cog: commands.Cog) -> list[Embed]:
         embeds = []
 
         for cog_, comm in self.data.items():
@@ -197,7 +196,7 @@ class HelpView(discord.ui.View):
                 title=f"{cog.qualified_name} commands [{self.clean_command_count(cog_, comm)}]",
                 description=description_clean,
             )
-            embed.set_footer(text='For more info on a command run `dw.help [command]`')
+            embed.set_footer(text="For more info on a command run `dw.help [command]`")
             # maybe another embed build for slash cause cant use that with owner cmds
             for cmd in comm:
                 name = f"`{cmd.name}`"
@@ -246,10 +245,9 @@ class HelpView(discord.ui.View):
         embed: Embed = Embed(
             title="Dwello Help Menu",
             description=(
-                "Hello, I'm Dwello! I'm still in development, but you can use me.\n"
-                "My prefixes are: `dw.`, `dwello.`."
-                ),
-            )
+                "Hello, I'm Dwello! I'm still in development, but you can use me.\n" "My prefixes are: `dw.`, `dwello.`."
+            ),
+        )
         embed.add_field(
             name="Getting Help",
             inline=False,
@@ -334,7 +332,7 @@ class HelpView(discord.ui.View):
         with contextlib.suppress(discord.errors.NotFound):
             await self.message.edit(view=self)
 
-    async def start(self) -> Optional[discord.Message]:
+    async def start(self) -> discord.Message | None:
         self.build_select()
         self._update_buttons()
         self.message = await self.ctx.send(embed=self.main_embed, view=self)
@@ -363,7 +361,7 @@ class MyHelp(commands.HelpCommand):
             if cog.qualified_name in ignored_cogs:
                 continue
 
-            commands_list: List[Union[commands.Command, discord.app_commands.Command]] = []
+            commands_list: list[commands.Command | discord.app_commands.Command] = []
             for command in cog.walk_commands():
                 if isinstance(command, commands.Group):
                     subcommands = command.commands
@@ -507,8 +505,8 @@ class MyHelp(commands.HelpCommand):
         if group.aliases:
             embed.description = f'{embed.description}\n\n**Aliases:**\n`{"`, `".join(group.aliases)}`'
         if group.commands:
-            subgroups: List[commands.Group] = []
-            subcommands: List[commands.Command] = []
+            subgroups: list[commands.Group] = []
+            subcommands: list[commands.Command] = []
             for c in group.commands:
                 if isinstance(c, commands.Group):
                     subgroups.append(c)
@@ -645,6 +643,7 @@ class MyHelp(commands.HelpCommand):
                 )
             )
 
+
 class About(commands.Cog):
     """
     😮
@@ -666,9 +665,9 @@ class About(commands.Cog):
         self.select_brief = "Bot Information commands."
 
         self.process = psutil.Process()
-        self.repo = pygit2.Repository('.git')
+        self.repo = pygit2.Repository(".git")
 
-    def get_uptime(self, /, complete=False) -> Union[Tuple[int, int, int, int], str]:
+    def get_uptime(self, /, complete=False) -> tuple[int, int, int, int] | str:
         """Return format: days, hours, minutes, seconds or full str."""
 
         uptime = datetime.datetime.now(datetime.timezone.utc) - self.bot.uptime
@@ -681,13 +680,13 @@ class About(commands.Cog):
             return f"{days}d, {hours}h, {minutes}m, {seconds}s"
         return days, hours, minutes, seconds
 
-    '''def get_bot_uptime(self, *, brief: bool = False) -> str: Use Danny's code instead?
-        return time.human_timedelta(self.bot.uptime, accuracy=None, brief=brief, suffix=False)'''
+    """def get_bot_uptime(self, *, brief: bool = False) -> str: Use Danny's code instead?
+        return time.human_timedelta(self.bot.uptime, accuracy=None, brief=brief, suffix=False)"""
 
     def get_startup_timestamp(self, style: discord.utils.TimestampStyle = None) -> str:
         return discord.utils.format_dt(self.bot.uptime, style=style or "F")
 
-    def get_average_latency(self, *latencies: float) -> Union[Any, float]:
+    def get_average_latency(self, *latencies: float) -> Any | float:
         if not latencies:
             raise TypeError("Missing required argument: 'latencies'")
 
@@ -696,13 +695,13 @@ class About(commands.Cog):
         return number / len(pings)
 
     def format_commit(self, commit: pygit2.Commit) -> str:
-        short, _, _ = commit.message.partition('\n')
+        short, _, _ = commit.message.partition("\n")
         short_sha2 = commit.hex[0:6]
         commit_tz = datetime.timezone(datetime.timedelta(minutes=commit.commit_time_offset))
         commit_time = datetime.datetime.fromtimestamp(commit.commit_time).astimezone(commit_tz)
 
         # [`hash`](url) message (offset)
-        #offset = time.format_relative(commit_time.astimezone(datetime.timezone.utc))
+        # offset = time.format_relative(commit_time.astimezone(datetime.timezone.utc))
         ml = 35
         return (
             f"[`{short_sha2}`]({cs.GITHUB}commit/{commit.hex}) {short[:ml]}{'...' if len(short) > ml else ''} "
@@ -711,24 +710,23 @@ class About(commands.Cog):
 
     def get_last_commits(self, count=3):
         commits = list(itertools.islice(self.repo.walk(self.repo.head.target, pygit2.GIT_SORT_TOPOLOGICAL), count))
-        return '\n'.join(self.format_commit(c) for c in commits)
-    
-    @commands.command(name='test')
-    async def bla(self, ctx: Context) -> Optional[discord.Message]:
-        return await ctx.send('bleh')
+        return "\n".join(self.format_commit(c) for c in commits)
+
+    @commands.command(name="test")
+    async def bla(self, ctx: Context) -> discord.Message | None:
+        return await ctx.send("bleh")
 
     # make uptime: add here -> trigger on mention in on_message
     @commands.hybrid_command(name="hello", aliases=cs.HELLO_ALIASES, with_app_command=True)
-    async def hello(self, ctx: Context) -> Optional[discord.Message]:
+    async def hello(self, ctx: Context) -> discord.Message | None:
         # make variations for the response
         prefix: str = str(self.bot.DEFAULT_PREFIXES[0])
         content: str = f"Hello there! I'm {self.bot.user.name}. Use `{prefix}help` for more."  # {self.bot.help_command}?
         return await ctx.send(content=content)  # display more info about bot
 
     @commands.hybrid_command(name="about", help="About me.", aliases=["botinfo", "info", "bi"], with_app_command=True)
-    async def about(self, ctx: Context) -> Optional[discord.Message]:
-
-        #information: discord.AppInfo = await self.bot.application_info()
+    async def about(self, ctx: Context) -> discord.Message | None:
+        # information: discord.AppInfo = await self.bot.application_info()
         author: discord.User = self.bot.get_user(548846436570234880)
 
         main_desc: str = (
@@ -741,13 +739,11 @@ class About(commands.Cog):
         )
 
         links: str = (
-            f"> {cs.GITHUB_EMOJI} [Source]({self.bot.repo})\n"
-            f"> {cs.EARLY_DEV_EMOJI} [Website]({cs.WEBSITE})\n"
-            "\n"
+            f"> {cs.GITHUB_EMOJI} [Source]({self.bot.repo})\n" f"> {cs.EARLY_DEV_EMOJI} [Website]({cs.WEBSITE})\n" "\n"
         )
 
-        commit_counts: Dict[str, int] = {}
-        commit_signatures: Dict[str, pygit2.Signature] = {}
+        commit_counts: dict[str, int] = {}
+        commit_signatures: dict[str, pygit2.Signature] = {}
         for commit in self.repo.walk(self.repo.head.target):
             signature = commit.author
             author_ = signature.name
@@ -758,12 +754,12 @@ class About(commands.Cog):
 
         embed: Embed = Embed(
             title="About Me",
-            description=main_desc+links,
-            url=cs.WEBSITE, # link to about page ?
+            description=main_desc + links,
+            url=cs.WEBSITE,  # link to about page ?
             color=self.bot.color,
         )
         embed.set_thumbnail(url=self.bot.user.display_avatar.url)
-        #embed.set_footer(text=f"ID: {self.bot.user.id}")
+        # embed.set_footer(text=f"ID: {self.bot.user.id}")
         embed.set_author(
             name=author.name,
             icon_url=author.display_avatar.url,
@@ -772,14 +768,18 @@ class About(commands.Cog):
 
         og_commiters = sorted(commit_signatures.values(), key=lambda x: x.time)[:3]
         embed.add_field(
-            name='First Contributors',
-            value='\n'.join(f'• [{author.name}](https://github.com/{author.name}): <t:{int(author.time)}:D>' for author in og_commiters),  # noqa: E501
+            name="First Contributors",
+            value="\n".join(
+                f"• [{author.name}](https://github.com/{author.name}): <t:{int(author.time)}:D>" for author in og_commiters
+            ),  # noqa: E501
         )
 
         top_commiters = sorted(commit_counts.items(), key=lambda x: x[1], reverse=True)[:3]  # noqa: E501
         embed.add_field(
-            name='Top Contributors',
-            value='\n'.join(f'• [{author}](https://github.com/{author}): {count}' for author, count in top_commiters),  # noqa: E501
+            name="Top Contributors",
+            value="\n".join(
+                f"• [{author}](https://github.com/{author}): {count}" for author, count in top_commiters
+            ),  # noqa: E501
         )
         embed.timestamp = discord.utils.utcnow()
         # f"{constants.INVITE} [invite me]({self.bot.invite_url}) | "
@@ -787,12 +787,11 @@ class About(commands.Cog):
         # f"{constants.BOTS_GG} [bots.gg]({self.bot.vote_bots_gg})"
 
         return await ctx.send(embed=embed)
-    
-    @commands.hybrid_command(name='whois', help="Shows who the member is.")
-    async def whois(self, ctx: Context, member: discord.Member=commands.Author) -> Optional[discord.Message]:
 
-        #embed.add_field(name="Display Name", value=member.display_name) if member.display_name != member.name else None
-        #embed.add_field(name="Discriminator", value=member.discriminator) get initial discriminator and not 0
+    @commands.hybrid_command(name="whois", help="Shows who the member is.")
+    async def whois(self, ctx: Context, member: discord.Member = commands.Author) -> discord.Message | None:
+        # embed.add_field(name="Display Name", value=member.display_name) if member.display_name != member.name else None
+        # embed.add_field(name="Discriminator", value=member.discriminator) get initial discriminator and not 0
 
         return await ctx.reply(
             embed=Embed(
@@ -801,24 +800,23 @@ class About(commands.Cog):
                 timestamp=discord.utils.utcnow(),
                 color=(
                     (
-                        r['accent_color']
-                        if (
-                            r:=await self.bot.http.request(Route('GET', '/users/{uid}', uid=member.id))
-                        ) else None
-                    ) or member.color
-                )
+                        r["accent_color"]
+                        if (r := await self.bot.http.request(Route("GET", "/users/{uid}", uid=member.id)))
+                        else None
+                    )
+                    or member.color
+                ),
             )
             .set_image(url=f"https://cdn.discordapp.com/banners/{member.id}/{r['banner']}?size=1024" if r else None)
             .set_footer(text=f"ID: {member.id}", icon_url=member.display_icon.url if member.display_icon else None)
             .set_author(name=member.name, icon_url=member.display_avatar.url)
             .set_thumbnail(url=member.display_avatar.url)
-
             .add_field(name="Name", value=member.name)
-            .add_field(name="Created", value=discord.utils.format_dt(member.created_at, style='D'))
-            .add_field(name="Joined", value=discord.utils.format_dt(member.joined_at, style='D'))
+            .add_field(name="Created", value=discord.utils.format_dt(member.created_at, style="D"))
+            .add_field(name="Joined", value=discord.utils.format_dt(member.joined_at, style="D"))
             .add_field(
                 name="Top Role",
-                value=member.top_role.mention if member.top_role.name != '@everyone' else member.top_role.name,
+                value=member.top_role.mention if member.top_role.name != "@everyone" else member.top_role.name,
             )
             .add_field(name="Device", value="Desktop" if member.desktop_status else "Mobile")
             .add_field(name="Status", value=member.status)
@@ -826,10 +824,10 @@ class About(commands.Cog):
                 name="Flags",
                 value=(
                     " ".join(
-                        emoji for f in member.public_flags.all()
-                        if (emoji := cs.PUBLIC_USER_FLAGS_EMOJI_DICT.get(f.name))
-                    ).split() or None
-                )
+                        emoji for f in member.public_flags.all() if (emoji := cs.PUBLIC_USER_FLAGS_EMOJI_DICT.get(f.name))
+                    ).split()
+                    or None
+                ),
             )
             .add_field(
                 name="Assets",
@@ -848,9 +846,11 @@ class About(commands.Cog):
                             f"Gaming: {game.name[:15] + '...' if game and len(game.name) > 15 else game.name}"
                             if (
                                 game := discord.utils.find(
-                                    lambda activity: isinstance(activity, discord.Game), member.activities,
+                                    lambda activity: isinstance(activity, discord.Game),
+                                    member.activities,
                                 )
-                            ) else "",
+                            )
+                            else "",
                             (
                                 f"Listening: "
                                 f"[{spotify.title[:15] + '...' if spotify and len(spotify.title) > 15 else spotify.title}]"
@@ -858,9 +858,11 @@ class About(commands.Cog):
                             )
                             if (
                                 spotify := discord.utils.find(
-                                    lambda activity: isinstance(activity, discord.Spotify), member.activities,
+                                    lambda activity: isinstance(activity, discord.Spotify),
+                                    member.activities,
                                 )
-                            ) else "",
+                            )
+                            else "",
                             (
                                 f"Streaming: "
                                 f"[{streaming.twitch_name or (streaming.name[:15] + '...' if len(streaming.name) > 15 else streaming.name)}]"  # noqa: E501
@@ -868,61 +870,58 @@ class About(commands.Cog):
                             )
                             if (
                                 streaming := discord.utils.find(
-                                    lambda activity: isinstance(activity, discord.Streaming), member.activities,
+                                    lambda activity: isinstance(activity, discord.Streaming),
+                                    member.activities,
                                 )
-                            ) else "",
+                            )
+                            else "",
                         ]
-                    ).strip('\n') or None
+                    ).strip("\n")
+                    or None
                 ),
             ),
         )
-    
-    async def _suggest_idea(self, ctx: Context, title: str, content: str) -> Optional[discord.Message]:
+
+    async def _suggest_idea(self, ctx: Context, title: str, content: str) -> discord.Message | None:
         idea = await self.bot.db.suggest_idea(title, content, ctx.author)
         # also somehow check if the ideas are similair
 
         return await ctx.reply(
             embed=Embed(
-                title="Successfully suggested",
-                description=(
-                    f"Title: {idea.title}\n"
-                    f"Description: {idea.content}"
-                )
+                title="Successfully suggested", description=(f"Title: {idea.title}\n" f"Description: {idea.content}")
             ).set_author(name=ctx.author.name, icon_url=ctx.author.display_avatar.url)
         )
-    
-    async def _ideas_show(self, ctx: Context) -> Union[DefaultPaginator, discord.Message]:
-        if not (ideas:= await self.bot.db.get_ideas()):
-            return await ctx.reply(
-                embed=Embed(description="No ideas yet.")
-            )
+
+    async def _ideas_show(self, ctx: Context) -> DefaultPaginator | discord.Message:
+        if not (ideas := await self.bot.db.get_ideas()):
+            return await ctx.reply(embed=Embed(description="No ideas yet."))
         return await IdeaPaginator(ctx, ideas)._start()
-    
-    @commands.hybrid_command(name="ideas", help="Shows the list of suggested ideas.",with_app_command=True)
-    async def ideas(self, ctx: Context) -> Optional[discord.Message]:
+
+    @commands.hybrid_command(name="ideas", help="Shows the list of suggested ideas.", with_app_command=True)
+    async def ideas(self, ctx: Context) -> discord.Message | None:
         return await self._ideas_show(ctx)
-  
+
     # somehow check if ideas is bullshit or not
     # maybe ai or smh
     # or a dict of 'bad' words instead
-    @commands.hybrid_command(name='suggest', help="Suggest an idea for bot improvement.") # call a modal here
-    async def suggest(self, ctx: Context, title: str, *, content: str) -> Optional[discord.Message]:
+    @commands.hybrid_command(name="suggest", help="Suggest an idea for bot improvement.")  # call a modal here
+    async def suggest(self, ctx: Context, title: str, *, content: str) -> discord.Message | None:
         return await self._suggest_idea(ctx, title, content)
-        
-    @commands.hybrid_group(name='idea', invoke_without_command=True, with_app_command=True)
+
+    @commands.hybrid_group(name="idea", invoke_without_command=True, with_app_command=True)
     async def idea(self, ctx: Context):
         return await ctx.send_help(ctx.command)
-    
-    @idea.command(name='suggest', help="Suggest an idea for bot improvement.")
-    async def hybrid_suggest(self, ctx: Context, title: str, *, content: str) -> Optional[discord.Message]:
+
+    @idea.command(name="suggest", help="Suggest an idea for bot improvement.")
+    async def hybrid_suggest(self, ctx: Context, title: str, *, content: str) -> discord.Message | None:
         return await self._suggest_idea(ctx, title, content)
-    
-    @idea.command(name='show', aliases=['display'], help="Shows the list of suggested ideas.")
-    async def hybrid_show_idea(self, ctx: Context) -> Optional[discord.Message]:
+
+    @idea.command(name="show", aliases=["display"], help="Shows the list of suggested ideas.")
+    async def hybrid_show_idea(self, ctx: Context) -> discord.Message | None:
         return await self._ideas_show(ctx)
 
     @commands.hybrid_command(name="uptime", help="Returns bot's uptime.", with_app_command=True)
-    async def uptime(self, ctx: Context) -> Optional[discord.Message]:
+    async def uptime(self, ctx: Context) -> discord.Message | None:
         timestamp = self.get_startup_timestamp()
 
         embed: Embed = Embed(
@@ -932,9 +931,9 @@ class About(commands.Cog):
 
         embed.add_field(name="Startup Time", value=timestamp, inline=False)
         return await ctx.reply(embed=embed)
-    
+
     @commands.hybrid_command(name="contribute", help="Please do.", with_app_command=True)
-    async def contribute(self, ctx: Context) -> Optional[discord.Message]:
+    async def contribute(self, ctx: Context) -> discord.Message | None:
         return await ctx.reply(f"{cs.GITHUB_EMOJI} {cs.GITHUB}\nJoin my [guild](<{cs.DISCORD}>) for more.")
 
     @commands.hybrid_command(
@@ -943,7 +942,7 @@ class About(commands.Cog):
         help="Pong.",
         with_app_command=True,
     )
-    async def ping(self, ctx: Context) -> Optional[discord.Message]:  # work on return design?
+    async def ping(self, ctx: Context) -> discord.Message | None:  # work on return design?
         typing_start = time.monotonic()
         await ctx.typing()
         typing_end = time.monotonic()
@@ -979,8 +978,7 @@ class About(commands.Cog):
         )
 
     @commands.hybrid_command(name="stats", help="Returns some of the bot's stats", with_app_command=True)
-    async def stats(self, ctx: Context) -> Optional[discord.Message]:
-
+    async def stats(self, ctx: Context) -> discord.Message | None:
         typing_start = time.monotonic()
         await ctx.typing()
         typing_end = time.monotonic()
@@ -1011,49 +1009,45 @@ class About(commands.Cog):
 
             total_members += guild.member_count or 0
 
-        links = (
-            f"-> {cs.GITHUB_EMOJI} [Source]({self.bot.repo})\n"
-            f"-> {cs.EARLY_DEV_EMOJI} [Website]({cs.WEBSITE})\n"
-            "\n"
-        )
+        links = f"-> {cs.GITHUB_EMOJI} [Source]({self.bot.repo})\n" f"-> {cs.EARLY_DEV_EMOJI} [Website]({cs.WEBSITE})\n" "\n"
         revision = self.get_last_commits()
         embed: Embed = Embed(
-            title=f'{self.bot.user.name} Statistics',
-            description=links + '**Latest Changes:**\n' + revision,
+            title=f"{self.bot.user.name} Statistics",
+            description=links + "**Latest Changes:**\n" + revision,
             url=cs.INVITE_LINK,
         )
         embed.set_thumbnail(url=self.bot.user.display_avatar.url)
-        embed.set_footer(text=f'{self.bot.main_prefix}about for more')
+        embed.set_footer(text=f"{self.bot.main_prefix}about for more")
         embed.set_author(
             name=author.name,
             icon_url=author.display_avatar.url,
             url="https://github.com/DwellerIsTaken/",
         )
 
-        embed.add_field(name='Members', value=f'{total_members} total\n{total_unique} unique')
-        embed.add_field(name='Guilds', value=len(self.bot.guilds)) # len(self.bot.guilds)
-        embed.add_field(name='Process', value=f'{memory_usage:.2f} MiB\n{cpu_usage:.2f}% CPU')
-        embed.add_field(name='Responses', value=self.bot.reply_count or 1)
-        embed.add_field(name='Lines', value=self.bot.total_lines)
-        embed.add_field(name='Latency', value=f"{round(average, 3)}ms")
-        embed.add_field(name='Uptime', value=self.get_uptime(complete=True))
+        embed.add_field(name="Members", value=f"{total_members} total\n{total_unique} unique")
+        embed.add_field(name="Guilds", value=len(self.bot.guilds))  # len(self.bot.guilds)
+        embed.add_field(name="Process", value=f"{memory_usage:.2f} MiB\n{cpu_usage:.2f}% CPU")
+        embed.add_field(name="Responses", value=self.bot.reply_count or 1)
+        embed.add_field(name="Lines", value=self.bot.total_lines)
+        embed.add_field(name="Latency", value=f"{round(average, 3)}ms")
+        embed.add_field(name="Uptime", value=self.get_uptime(complete=True))
 
         embed.timestamp = discord.utils.utcnow()
-        #embed.add_field(name='Total Commands', value=len(self.bot.commands)) ?
+        # embed.add_field(name='Total Commands', value=len(self.bot.commands)) ?
         return await ctx.reply(embed=embed)
 
     @commands.hybrid_command(name="source", help="Returns command's source.", with_app_command=True)
-    async def source(self, ctx: Context, *, command_name: Optional[str]) -> Optional[discord.Message]:
+    async def source(self, ctx: Context, *, command_name: str | None) -> discord.Message | None:
         git = cs.GITHUB
         if not command_name:
             return await ctx.reply(git)
 
         bot_name: str = self.bot.user.name.lower()
         bot_guild_name: str = self.bot.user.display_name.lower()
-        _bot_guild_name: List[str] = bot_guild_name.split()
-        _bot_name: List[str] = bot_name.split()
+        _bot_guild_name: list[str] = bot_guild_name.split()
+        _bot_name: list[str] = bot_name.split()
 
-        _base_words: List[str] = [
+        _base_words: list[str] = [
             "base",
             "bot",
             bot_name,
@@ -1061,7 +1055,7 @@ class About(commands.Cog):
             f"{bot_name} base",
             f"{_bot_name[0]} base",
         ]
-        _matches: List[str] = _base_words.copy()
+        _matches: list[str] = _base_words.copy()
         _command_name: str = command_name.lower()
 
         if bot_guild_name != bot_name:
@@ -1112,7 +1106,7 @@ class About(commands.Cog):
             if cog:
                 target = type(cog)
 
-        #source: str = inspect.getsource(target)
+        # source: str = inspect.getsource(target)
         file: str = inspect.getsourcefile(target)
         lines, _ = inspect.getsourcelines(target)
         git_lines = f"#L{_}-L{len(lines)+_}"
@@ -1131,8 +1125,8 @@ class About(commands.Cog):
 class IdeaPaginator(DefaultPaginator):
     def __init__(
         self,
-        obj: Union[Context, Interaction[Dwello]],
-        ideas: List[Idea],
+        obj: Context | Interaction[Dwello],
+        ideas: list[Idea],
         **kwargs,
     ) -> None:
         self.ideas = ideas
@@ -1140,7 +1134,7 @@ class IdeaPaginator(DefaultPaginator):
             bot = obj.bot
         except AttributeError:
             bot = obj.client
-        self._embeds = self._construct_embeds(bot) # dont override the parent class' embeds
+        self._embeds = self._construct_embeds(bot)  # dont override the parent class' embeds
         super().__init__(obj, self._embeds, values=self.ideas, **kwargs)
 
         self.voted = [(embed, False) for embed in self.embeds]
@@ -1150,10 +1144,10 @@ class IdeaPaginator(DefaultPaginator):
         self.previous.row = 0
         self.next.row = 2
 
-    def _construct_embeds(self, bot: Dwello) -> List[Embed]:
-        embeds: List[Embed] = []
+    def _construct_embeds(self, bot: Dwello) -> list[Embed]:
+        embeds: list[Embed] = []
         for idea in self.ideas:
-            author: Optional[discord.User] = bot.get_user(idea.author_id)
+            author: discord.User | None = bot.get_user(idea.author_id)
             embed = Embed(
                 title=idea.title,
                 description=idea.content,
@@ -1164,7 +1158,7 @@ class IdeaPaginator(DefaultPaginator):
                 embed.set_author(name=author.name, icon_url=author.display_avatar.url)
             embeds.append(embed)
         return embeds
-    
+
     def _update_buttons(self) -> None:
         styles = {True: ButtonStyle.gray, False: ButtonStyle.blurple}
         page = self.current_page
@@ -1180,12 +1174,12 @@ class UpvoteIdeaButton(discord.ui.Button["IdeaPaginator"]):
     def __init__(
         self,
         *,
-        style: Optional[ButtonStyle] = ButtonStyle.green,
-        label: Optional[str] = "Upvote",
+        style: ButtonStyle | None = ButtonStyle.green,
+        label: str | None = "Upvote",
         **kwargs,
     ):
         super().__init__(style=style, label=label, **kwargs)
-        
+
     async def callback(self, interaction: Interaction):
         assert self.view is not None
         view: IdeaPaginator = self.view
@@ -1209,15 +1203,15 @@ class ShowCodeButton(discord.ui.Button["SourceView"]):
     def __init__(
         self,
         *,
-        label: Optional[str] = "Code",
+        label: str | None = "Code",
         **kwargs,
     ):
         super().__init__(label=label, **kwargs)
-        
+
     async def callback(self, interaction: Interaction):
         assert self.view is not None
         view: SourceView = self.view
-        
+
         embed = view.embed
 
         if self.label.lower() == "code":
@@ -1226,58 +1220,60 @@ class ShowCodeButton(discord.ui.Button["SourceView"]):
         else:
             description = embed.description
             label = "Code"
-        
+
         embed_ = Embed(
             colour=embed.colour,
             title=embed.title,
             type=embed.type,
             url=embed.url,
-            description=description[:4096], # add ... where code ends?
+            description=description[:4096],  # add ... where code ends?
             timestamp=embed.timestamp,
         )
 
         self.label = label
         await interaction.response.edit_message(embed=embed_, view=view)
-        
-        
+
+
 class ShowFileButton(discord.ui.Button["SourceView"]):
     def __init__(
         self,
         *,
-        label: Optional[str] = "File",
+        label: str | None = "File",
         **kwargs,
     ):
         super().__init__(label=label, **kwargs)
-        
+
     async def callback(self, interaction: Interaction):
         assert self.view is not None
         view: SourceView = self.view
 
-        att: List[discord.File] = []
+        att: list[discord.File] = []
         if self.label.lower() == "file":
             view._update_file()
             att = [view.file]
             label = "Hide"
         else:
             label = "File"
-            
+
         self.label = label
         await interaction.response.edit_message(attachments=att, view=view)
-        
 
-_Context: Type[commands.Context] = commands.Context
+
+_Context: type[commands.Context] = commands.Context
+
+
 class SourceView(discord.ui.View):
     def __init__(
         self,
-        obj: Union[Context, Interaction[Dwello]],
+        obj: Context | Interaction[Dwello],
         embed: Embed,
-        source_lines: List[str],
+        source_lines: list[str],
         /,
-        filename: Optional[str] = "code.py",
+        filename: str | None = "code.py",
         **kwargs,
     ):
         super().__init__(**kwargs)
-        
+
         if any(
             (issubclass(obj.__class__, _Context), isinstance(obj, _Context)),
         ):
@@ -1286,31 +1282,31 @@ class SourceView(discord.ui.View):
         else:
             self.author = obj.user
             self.bot: Dwello = obj.client
-            
+
         self.embed = embed
         self.filename = filename
-        
-        self._code_str = ''.join(source_lines)
-        self._fp = self._code_str.encode('utf-8')
-        
+
+        self._code_str = "".join(source_lines)
+        self._fp = self._code_str.encode("utf-8")
+
         self.code_snippet = create_codeblock(self._code_str)
         self.file = self._create_file()
-        
+
         self.add_item(ShowCodeButton())
         self.add_item(ShowFileButton())
-            
+
         self.message: discord.Message = None
-        
+
     def _update_file(self) -> None:
         self.file = self._create_file()
-        
+
     def _create_file(self) -> discord.File:
         return discord.File(
             filename=self.filename,
             fp=io.BytesIO(self._fp),
         )
-        
-    async def interaction_check(self, interaction: Interaction[Dwello]) -> Optional[bool]:
+
+    async def interaction_check(self, interaction: Interaction[Dwello]) -> bool | None:
         if val := interaction.user == self.author:
             return val
         else:
@@ -1320,8 +1316,7 @@ class SourceView(discord.ui.View):
                         title="Failed to interact with the view",
                         description="Hey there! Sorry, but you can't interact with someone else's view.\n",
                         timestamp=discord.utils.utcnow(),
-                    )
-                    .set_image(url="https://media.tenor.com/jTKDchcLtrcAAAAd/walter-white-walter-crying.gif")
+                    ).set_image(url="https://media.tenor.com/jTKDchcLtrcAAAAd/walter-white-walter-crying.gif")
                 ),
                 ephemeral=True,
             )
@@ -1331,21 +1326,21 @@ class SourceView(discord.ui.View):
         with contextlib.suppress(discord.errors.NotFound):
             await self.message.edit(view=self)
 
-    @classmethod # separate start method for all the views / custom view with that classmethod
+    @classmethod  # separate start method for all the views / custom view with that classmethod
     async def start(
-        cls: Type[SVT],
-        obj: Union[Context, Interaction[Dwello]],
+        cls: type[SVT],
+        obj: Context | Interaction[Dwello],
         embed: Embed,
-        source_lines: List[str],
+        source_lines: list[str],
         /,
-        filename: Optional[str] = "code.py",
+        filename: str | None = "code.py",
         **kwargs,
     ) -> SVT:
         new = cls(obj, embed, source_lines, filename, **kwargs)
         if any(
             (issubclass(obj.__class__, _Context), isinstance(obj, _Context)),
         ):
-            new.message = await obj.reply(embed=embed, view=new) # reply or send?
+            new.message = await obj.reply(embed=embed, view=new)  # reply or send?
         else:
             send = obj.response.send_message
             await send(embed=embed, view=new)

@@ -1,15 +1,15 @@
 from __future__ import annotations
 
 import datetime
-from typing import Any, Dict, List, Optional, Union
+from typing import Any
 
 import discord
 from discord.app_commands import Choice
 from discord.ext import commands
 
 import constants as cs
-from utils import HandleHTTPException, member_check
 from core import BaseCog, Context, Dwello, Embed
+from utils import HandleHTTPException, member_check
 
 
 async def tempmute(
@@ -17,9 +17,9 @@ async def tempmute(
     ctx: Context,
     member: discord.Member,
     duration: int,
-    period: Optional[str] = None,
-    reason: Optional[str] = None,
-) -> Optional[discord.Message]:  # remove bot param for member check
+    period: str | None = None,
+    reason: str | None = None,
+) -> discord.Message | None:  # remove bot param for member check
     time_period_dict = {
         "seconds": "seconds",
         "minutes": "minutes",
@@ -71,6 +71,7 @@ async def tempmute(
     return await ctx.send(embed=embed)
     # interaction.response.send_message
 
+
 class Timeout(BaseCog):
     def __init__(self, bot: Dwello, *args: Any, **kwargs: Any) -> None:
         super().__init__(bot, *args, **kwargs)
@@ -95,9 +96,9 @@ class Timeout(BaseCog):
         ctx: Context,
         member: discord.Member,
         duration: int,
-        period: Optional[Choice[str]],
+        period: Choice[str] | None,
         *,
-        reason: Optional[str],
+        reason: str | None,
     ) -> None:
         async with ctx.typing(ephemeral=True):
             return await tempmute(self.bot, ctx, member, duration, period, reason)
@@ -107,7 +108,7 @@ class Timeout(BaseCog):
     async def mute_error(
         self,
         ctx: Context,
-        error: Union[commands.MissingPermissions, commands.BotMissingPermissions, Any],
+        error: commands.MissingPermissions | commands.BotMissingPermissions | Any,
     ):
         if isinstance(error, commands.MissingPermissions):
             missing_permissions_embed = Embed(
@@ -152,7 +153,7 @@ class Timeout(BaseCog):
     @commands.bot_has_permissions(moderate_members=True)
     @commands.has_permissions(moderate_members=True)
     @commands.guild_only()
-    async def unmute(self, ctx: Context, member: discord.Member) -> Optional[discord.Message]:
+    async def unmute(self, ctx: Context, member: discord.Member) -> discord.Message | None:
         async with ctx.typing(ephemeral=True):
             if member.id == self.bot.user.id:
                 return await ctx.reply(
@@ -196,12 +197,12 @@ class Timeout(BaseCog):
     )  # MODERATION OR MEMBER-FRIENDLY (PERMS)?
     @commands.bot_has_permissions(view_audit_log=True)
     @commands.guild_only()
-    async def timed_out(self, ctx: Context) -> Optional[discord.Message]:
+    async def timed_out(self, ctx: Context) -> discord.Message | None:
         async with ctx.typing(ephemeral=True):
-            timed_out_list: List[discord.Member] = []
-            reason_list: List[str] = []
+            timed_out_list: list[discord.Member] = []
+            reason_list: list[str] = []
 
-            member_updates: Dict[Union[int, str], Union[discord.AuditLogEntry, Any]] = {}
+            member_updates: dict[int | str, discord.AuditLogEntry | Any] = {}
             async for entry in ctx.guild.audit_logs(action=discord.AuditLogAction.member_update):
                 if entry.target in ctx.guild.members:
                     member_updates[entry.target.id] = entry

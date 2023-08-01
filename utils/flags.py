@@ -1,12 +1,15 @@
 from __future__ import annotations
-from typing import Callable, Any, Optional, TypeVar, overload
+
+from collections.abc import Callable
+from typing import Any, TypeVar, overload
+
 from typing_extensions import Self
 
-T = TypeVar('T', bound='BaseFlags')
+T = TypeVar("T", bound="BaseFlags")
 
 
 class BaseFlags:
-    __slots__ = ('value',)
+    __slots__ = ("value",)
 
     def __init__(self, value: int = 0) -> None:
         self.value = value
@@ -18,7 +21,7 @@ class BaseFlags:
         return hash(self.value)
 
     def __repr__(self) -> str:
-        return f'<{self.__class__.__name__} value={self.value}>'
+        return f"<{self.__class__.__name__} value={self.value}>"
 
     def is_empty(self) -> bool:
         """Returns true if the flags are empty (i.e. a zero value)"""
@@ -33,13 +36,13 @@ class BaseFlags:
         elif toggle is False:
             self.value &= ~o
         else:
-            raise TypeError(f'Value to set for {self.__class__.__name__} must be a bool.')
+            raise TypeError(f"Value to set for {self.__class__.__name__} must be a bool.")
 
 
 class flag_value:
     def __init__(self, func: Callable[[Any], int]):
         self.flag: int = func(None)
-        self.__doc__: Optional[str] = func.__doc__
+        self.__doc__: str | None = func.__doc__
 
     @overload
     def __get__(self, instance: None, owner: type[Any]) -> Self:
@@ -49,7 +52,7 @@ class flag_value:
     def __get__(self, instance: T, owner: type[T]) -> bool:
         ...
 
-    def __get__(self, instance: Optional[T], owner: type[T]) -> Any:
+    def __get__(self, instance: T | None, owner: type[T]) -> Any:
         if instance is None:
             return self
         return instance._has_flag(self.flag)
@@ -58,4 +61,4 @@ class flag_value:
         instance._set_flag(self.flag, value)
 
     def __repr__(self) -> str:
-        return f'<flag_value flag={self.flag!r}>'
+        return f"<flag_value flag={self.flag!r}>"

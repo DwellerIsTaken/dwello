@@ -4,6 +4,7 @@ from typing import Any
 
 from core import BaseCog, Dwello
 
+
 # later maybe?
 class BotConfig(BaseCog):
     def __init__(self, bot: Dwello, *args: Any, **kwargs: Any) -> None:

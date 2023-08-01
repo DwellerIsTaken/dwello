@@ -1,11 +1,11 @@
 from __future__ import annotations
 
-from typing import Any, Dict, Optional
+from typing import Any
 
 import asyncpg
 import discord
-from discord.ext import commands
 from discord.app_commands import Choice  # noqa: F401
+from discord.ext import commands
 
 import constants as cs  # noqa: F401
 from core import BaseCog, Context, Dwello, Embed
@@ -17,14 +17,14 @@ class Config(BaseCog):
 
         self._channel: ChannelConfig = ChannelConfig(bot)
 
-        self.extra_help: Dict[str, str] = {}  # add later for each group
+        self.extra_help: dict[str, str] = {}  # add later for each group
 
     async def cog_check(self, ctx: Context) -> bool:
         return ctx.guild is not None
 
     @commands.hybrid_group(invoke_without_command=True, with_app_command=True)
     @commands.has_permissions(manage_channels=True, manage_messages=True)
-    async def welcome(self, ctx: Context) -> Optional[discord.Message]:
+    async def welcome(self, ctx: Context) -> discord.Message | None:
         async with ctx.typing(ephemeral=True):
             return await ctx.send_help(ctx.command)
 
@@ -40,7 +40,7 @@ class Config(BaseCog):
     async def welcome_channel_set(
         self,
         ctx: Context,
-        channel: Optional[discord.TextChannel] = commands.CurrentChannel,
+        channel: discord.TextChannel | None = commands.CurrentChannel,
     ):
         return await self._channel.add_channel(ctx, "welcome", channel)
 
@@ -100,7 +100,7 @@ class Config(BaseCog):
     async def leave_channel_set(
         self,
         ctx: Context,
-        channel: Optional[discord.TextChannel] = commands.CurrentChannel,
+        channel: discord.TextChannel | None = commands.CurrentChannel,
     ):
         return await self._channel.add_channel(ctx, "leave", channel)
 
@@ -147,7 +147,7 @@ class Config(BaseCog):
     async def twitch_channel_set(
         self,
         ctx: Context,
-        channel: Optional[discord.TextChannel] = commands.CurrentChannel,
+        channel: discord.TextChannel | None = commands.CurrentChannel,
     ):
         return await self._channel.add_channel(ctx, "twitch", channel)
 
@@ -210,7 +210,7 @@ class ChannelConfig:
     def __init__(self, bot: Dwello) -> None:
         self.bot: Dwello = bot
 
-    async def add_message(self, ctx: Context, name: str, text: str) -> Optional[discord.Message]:
+    async def add_message(self, ctx: Context, name: str, text: str) -> discord.Message | None:
         async with self.bot.pool.acquire() as conn:
             conn: asyncpg.Connection
             async with conn.transaction():
@@ -261,8 +261,8 @@ class ChannelConfig:
         self,
         ctx: Context,
         name: str,
-        channel: Optional[discord.TextChannel] = commands.CurrentChannel,
-    ) -> Optional[discord.Message]:
+        channel: discord.TextChannel | None = commands.CurrentChannel,
+    ) -> discord.Message | None:
         async with self.bot.pool.acquire() as conn:
             conn: asyncpg.Connection
             async with conn.transaction():
@@ -301,7 +301,7 @@ class ChannelConfig:
             permission_cmd=True,
         )
 
-    async def message_display(self, ctx: Context, name: str) -> Optional[discord.Message]:
+    async def message_display(self, ctx: Context, name: str) -> discord.Message | None:
         async with self.bot.pool.acquire() as conn:
             conn: asyncpg.Connection
             async with conn.transaction():
@@ -325,7 +325,7 @@ class ChannelConfig:
             permission_cmd=True,
         )
 
-    async def channel_display(self, ctx: Context, name: str) -> Optional[discord.Message]:
+    async def channel_display(self, ctx: Context, name: str) -> discord.Message | None:
         async with self.bot.pool.acquire() as conn:
             conn: asyncpg.Connection
             async with conn.transaction():
@@ -351,7 +351,7 @@ class ChannelConfig:
             permission_cmd=True,
         )
 
-    async def remove(self, ctx: Context, name: str) -> Optional[discord.Message]:
+    async def remove(self, ctx: Context, name: str) -> discord.Message | None:
         async with self.bot.pool.acquire() as conn:
             conn: asyncpg.Connection
             async with conn.transaction():

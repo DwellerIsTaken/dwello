@@ -4,9 +4,9 @@ from typing import Any
 
 import asyncpg
 import discord
-
 from discord.ext import commands
 from typing_extensions import Self
+
 from core import BaseCog, Context, Dwello
 
 
@@ -14,9 +14,9 @@ class Events(BaseCog):
     def __init__(self, bot: Dwello, *args: Any, **kwargs: Any) -> None:
         super().__init__(bot, *args, **kwargs)
 
-    '''@commands.hybrid_command(name="table", with_app_command=False)
+    """@commands.hybrid_command(name="table", with_app_command=False)
     async def test(self, ctx: Context):
-        await self.bot.listeners.bot_join(ctx.guild)'''
+        await self.bot.listeners.bot_join(ctx.guild)"""
 
     @commands.Cog.listener()
     async def on_guild_join(self, guild: discord.Guild):
@@ -40,11 +40,11 @@ class Events(BaseCog):
             self.bot.reply_count += 1
 
         # await levelling.get_user_data(message.author.id, message.guild.id)
-        
+
     @commands.Cog.listener()
     async def on_command(self, ctx: Context) -> None:
         ...
-        
+
     @commands.Cog.listener()
     async def on_command_completion(self, ctx: Context) -> None:
         self.bot.commands_executed += 1

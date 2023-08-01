@@ -3,13 +3,14 @@ from __future__ import annotations
 import asyncio
 import enum
 import time
-
+from collections.abc import Callable, Coroutine, MutableMapping
 from functools import wraps
-from typing import Any, Callable, Coroutine, MutableMapping, TypeVar, Protocol
+from typing import Any, Protocol, TypeVar
 
 from lru import LRU
 
-R = TypeVar('R')
+R = TypeVar("R")
+
 
 # Can't use ParamSpec due to https://github.com/python/typing/discussions/946
 class CacheProtocol(Protocol[R]):
@@ -82,10 +83,10 @@ def cache(
             # we do care what 'self' parameter is when we __repr__ it
             def _true_repr(o):
                 if o.__class__.__repr__ is object.__repr__:
-                    return f'<{o.__class__.__module__}.{o.__class__.__name__}>'
+                    return f"<{o.__class__.__module__}.{o.__class__.__name__}>"
                 return repr(o)
 
-            key = [f'{func.__module__}.{func.__name__}']
+            key = [f"{func.__module__}.{func.__name__}"]
             key.extend(_true_repr(o) for o in args)
             if not ignore_kwargs:
                 for k, v in kwargs.items():
@@ -93,13 +94,13 @@ def cache(
                     # I want to pass asyncpg.Connection objects to the parameters
                     # however, they use default __repr__ and I do not care what
                     # connection is passed in, so I needed a bypass.
-                    if k == 'connection' or k == 'pool':
+                    if k == "connection" or k == "pool":
                         continue
 
                     key.append(_true_repr(k))
                     key.append(_true_repr(v))
 
-            return ':'.join(key)
+            return ":".join(key)
 
         @wraps(func)
         def wrapper(*args: Any, **kwargs: Any):

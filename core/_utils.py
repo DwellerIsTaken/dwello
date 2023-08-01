@@ -19,6 +19,7 @@ from utils import ENV, DataBaseOperations, Twitch  # noqa: F401, E402
 
 # REDO
 
+
 class AiohttpWeb:
     def __init__(self, bot: Dwello):
         self.bot = bot
@@ -45,7 +46,7 @@ class AiohttpWeb:
             print(f"Failed to start web server: {e}")
 
 
-class LevellingUtils: # add to db_ops instead next
+class LevellingUtils:  # add to db_ops instead next
     def __init__(self, bot: Dwello):
         self.bot = bot
 
@@ -53,12 +54,10 @@ class LevellingUtils: # add to db_ops instead next
         async with self.bot.pool.acquire() as conn:
             conn: asyncpg.Connection
             async with conn.transaction():
-                query: str = (
-                    """
+                query: str = """
                     INSERT INTO users(user_id, guild_id, event_type) VALUES($1, $2, 'server'), ($1, $2, 'bot')
                     ON CONFLICT (user_id, guild_id, event_type) DO NOTHING
                     """
-                )
                 await conn.execute(
                     query,
                     user_id,
@@ -186,7 +185,7 @@ class LevellingUtils: # add to db_ops instead next
         return rank
 
 
-'''class AutoCompleteWithFetch:
+"""class AutoCompleteWithFetch:
     def __init__(self, bot: Dwello):
         self.bot = bot
 
@@ -211,7 +210,7 @@ class LevellingUtils: # add to db_ops instead next
     ]
     if len(choices) > 10:
         return choices[:10]
-    return choices'''
+    return choices"""
 
 
 # ahahahh redo again

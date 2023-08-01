@@ -1,15 +1,7 @@
 from __future__ import annotations
 
 import contextlib
-from typing import (
-    TYPE_CHECKING,
-    Any,
-    List,
-    Optional,
-    Type,
-    TypeVar,
-    Union,
-)
+from typing import TYPE_CHECKING, Any, TypeVar
 
 import discord
 from discord import Interaction
@@ -20,8 +12,9 @@ from discord.partial_emoji import PartialEmoji
 from discord.ui import Button, View
 
 if TYPE_CHECKING:
-    from core import Context, Dwello, Embed
     from typing_extensions import Self
+
+    from core import Context, Dwello, Embed
 
 DPT = TypeVar("DPT", bound="DefaultPaginator")
 
@@ -32,7 +25,7 @@ class PreviousPageButton(Button["DefaultPaginator"]):
     def __init__(
         self,
         *,
-        label: Optional[str] = "<",
+        label: str | None = "<",
         **kwargs,
     ):
         super().__init__(label=label, **kwargs)
@@ -51,7 +44,7 @@ class StopViewButton(Button["DefaultPaginator"]):
         self,
         *,
         style: ButtonStyle = ButtonStyle.red,
-        emoji: Optional[Union[str, Emoji, PartialEmoji]] = discord.PartialEmoji(name="\N{WASTEBASKET}"),
+        emoji: str | Emoji | PartialEmoji | None = discord.PartialEmoji(name="\N{WASTEBASKET}"),
         **kwargs,
     ):
         super().__init__(style=style, emoji=emoji, **kwargs)
@@ -69,7 +62,7 @@ class NextPageButton(Button["DefaultPaginator"]):
     def __init__(
         self,
         *,
-        label: Optional[str] = ">",  # use emoji instead
+        label: str | None = ">",  # use emoji instead
         **kwargs,
     ):
         super().__init__(label=label, **kwargs)
@@ -103,16 +96,17 @@ class DefaultPaginator(View):
         If you have another view or content you want to switch to you can pass that to the class and it'll be passed onto
         ``interaction.response.edit_message()``.
     """
+
     message: discord.Message
 
     # embeds and values should be in the corresponding positions in their lists
     def __init__(
         self,
-        obj: Union[Context, Interaction[Dwello]],
-        embeds: List[Embed],
+        obj: Context | Interaction[Dwello],
+        embeds: list[Embed],
         /,
-        values: Optional[List[Any]] = None,
-        delete_button: Optional[bool] = False,
+        values: list[Any] | None = None,
+        delete_button: bool | None = False,
         **kwargs,  # eh, redo?
     ):
         super().__init__(timeout=kwargs.pop("timeout", None))
@@ -147,14 +141,14 @@ class DefaultPaginator(View):
 
         self.current_page = 0
 
-    def _reconstruct_embeds(self, embeds: List[Embed]) -> List[Embed]:
-        _embeds: List[Embed] = []
+    def _reconstruct_embeds(self, embeds: list[Embed]) -> list[Embed]:
+        _embeds: list[Embed] = []
         for i, embed in enumerate(embeds):
             if not embed.footer:
                 embed.set_footer(text=f"Page: {i+1}")
             _embeds.append(embed)
         return _embeds
-    
+
     btn_styles = {True: ButtonStyle.gray, False: ButtonStyle.blurple}
 
     def _update_buttons(self) -> None:
@@ -170,15 +164,15 @@ class DefaultPaginator(View):
             return True
 
         await interaction.response.send_message(
-                embed=(
-                    Embed(
-                        title="Failed to interact with the view",
-                        description="Hey there! Sorry, but you can't interact with someone else's view.\n",
-                        timestamp=discord.utils.utcnow(),
-                    ).set_image(url=INTERACTION_CHECK_GIF)
-                ),
-                ephemeral=True,
-            )
+            embed=(
+                Embed(
+                    title="Failed to interact with the view",
+                    description="Hey there! Sorry, but you can't interact with someone else's view.\n",
+                    timestamp=discord.utils.utcnow(),
+                ).set_image(url=INTERACTION_CHECK_GIF)
+            ),
+            ephemeral=True,
+        )
         return False
 
     async def on_timeout(self) -> None:
@@ -210,11 +204,11 @@ class DefaultPaginator(View):
 
     @classmethod
     async def start(
-        cls: Type[DPT],
-        obj: Union[Context, Interaction[Dwello]],
-        embeds: List[Embed],
+        cls: type[DPT],
+        obj: Context | Interaction[Dwello],
+        embeds: list[Embed],
         /,
-        delete_button: Optional[bool] = False,
+        delete_button: bool | None = False,
         **kwargs,
     ) -> DPT:
         new = cls(obj, embeds, delete_button=delete_button, **kwargs)

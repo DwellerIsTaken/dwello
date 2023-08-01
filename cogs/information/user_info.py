@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from typing import Any
 
-from core import BaseCog, Dwello, Context  # noqa: F401
+from core import BaseCog, Context, Dwello  # noqa: F401
 
 # from colorthief import ColorThief
 # import matplotlib.colors as clr

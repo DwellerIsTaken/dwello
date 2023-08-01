@@ -1,18 +1,17 @@
 from __future__ import annotations
 
 import discord
-from discord.app_commands import (
-    locale_str, Translator, TranslationContext, TranslationContextLocation,
-)
+from discord.app_commands import TranslationContext, TranslationContextLocation, Translator, locale_str
+
+
 # just copy danny's
 # TRANSLATOR
 class NewTranslator(Translator):
     """
     Custom translator class inherrited from :class:`discord.Translator`.
     """
-    async def translate(
-        self, string: locale_str, locale: discord.Locale, context: TranslationContext
-    ):  # noqa: E501
+
+    async def translate(self, string: locale_str, locale: discord.Locale, context: TranslationContext):  # noqa: E501
         print(
             f"STRING: {string}",
             f"STRING_MSG: {string.message}",
@@ -36,14 +35,14 @@ class NewTranslator(Translator):
         return "engels"
 
     # no translation string for a command or anything? return None"""
-        
+
         if locale is not discord.Locale.dutch:
             # its not nl -> return None
             return None
 
         # check if the command description is being translated
         if context.location is TranslationContextLocation.command_description:
-            print(context.data) # will the command instance (app_commands.Command)
+            print(context.data)  # will the command instance (app_commands.Command)
             # check original description
             print(f"DESC: {string.message}")
             if string.message == "english":

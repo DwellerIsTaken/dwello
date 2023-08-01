@@ -1,12 +1,12 @@
 from __future__ import annotations
 
 import os  # noqa: F401
-from typing import TYPE_CHECKING, Any, Dict, Literal, Optional, Tuple, Union
+from typing import TYPE_CHECKING, Any, Literal
 
 import aiohttp
 import asyncpg
 import discord
-from typing_extensions import Self, Type
+from typing_extensions import Self
 
 import constants as cs
 from utils import ENV
@@ -41,18 +41,18 @@ class Twitch:
         self.access_token = access_token
 
     @classmethod
-    async def create_access_token(cls: Type[Self], bot: Dwello) -> Self:
+    async def create_access_token(cls: type[Self], bot: Dwello) -> Self:
         access_token = await get_access_token(bot)
         return cls(access_token, bot)
 
     @property
-    def headers(self: Self) -> Dict[str, Any]:
+    def headers(self: Self) -> dict[str, Any]:
         return {
             "Client-ID": CLIENT_ID,
             "Authorization": f"Bearer {self.access_token}",
         }
 
-    async def username_to_id(self, username: str) -> Optional[str]:
+    async def username_to_id(self, username: str) -> str | None:
         url = f"https://api.twitch.tv/helix/users?login={username.lower()}"
 
         response: aiohttp.ClientResponse = await self.session.get(url, headers=self.headers)
@@ -66,7 +66,7 @@ class Twitch:
 
         return _user_id
 
-    async def id_to_username(self, user_id: int) -> Optional[str]:
+    async def id_to_username(self, user_id: int) -> str | None:
         url = f"https://api.twitch.tv/helix/users?id={user_id}"
 
         response: aiohttp.ClientResponse = await self.session.get(url, headers=self.headers)
@@ -81,9 +81,7 @@ class Twitch:
 
         return _username
 
-    async def event_subscription(
-        self, ctx: Context, type_: str, username: str
-    ) -> Union[Tuple[discord.Message, dict], Any]:
+    async def event_subscription(self, ctx: Context, type_: str, username: str) -> tuple[discord.Message, dict] | Any:
         async with self.bot.pool.acquire() as conn:
             conn: asyncpg.Connection
             async with conn.transaction():
@@ -124,7 +122,7 @@ class Twitch:
                     ctx.guild.id,
                     "twitch",
                 )
-                channel_id = int(channel_record[0]) if isinstance(channel_record[0], (str, int)) else None
+                channel_id = int(channel_record[0]) if isinstance(channel_record[0], str | int) else None
                 if not channel_record or not self.bot.get_channel(channel_id):
                     return await ctx.reply(
                         "You must set the channel for twitch notifications first. ```/twitch channel set [#channel]```"
@@ -173,7 +171,7 @@ class Twitch:
         # type_ = stream.online
 
     # return a list of users the guild is subscribed to
-    async def guild_twitch_subscriptions(self, ctx: Context) -> Optional[discord.Message]:
+    async def guild_twitch_subscriptions(self, ctx: Context) -> discord.Message | None:
         async with self.bot.pool.acquire() as conn:
             conn: asyncpg.Connection
             async with conn.transaction():
@@ -203,10 +201,8 @@ class Twitch:
         return await ctx.reply(embed=twitch_embed)
 
     async def twitch_unsubscribe_from_streamer(
-        self, ctx: Context, username: Union[str, Literal["all"]]
-    ) -> Optional[
-        discord.Message
-    ]:  # IF ALL: GET ALL TWITCH USERS THAT GUILD IS SUBSCRIBED TO AND UNSUB (what if the same user for multiple guilds)
+        self, ctx: Context, username: str | Literal["all"]
+    ) -> discord.Message | None:  # IF ALL: GET ALL TWITCH USERS THAT GUILD IS SUBSCRIBED TO AND UNSUB (what if the same user for multiple guilds)
         async with self.bot.pool.acquire() as conn:
             conn: asyncpg.Connection
             async with conn.transaction():
@@ -265,7 +261,7 @@ class Twitch:
 
     async def twitch_to_discord(
         self, data
-    ) -> Optional[discord.Message]:  # LET MEMBERS CUSTOMISE EVERYTHING (thumbnail, title, description, footer, timestamp...)
+    ) -> discord.Message | None:  # LET MEMBERS CUSTOMISE EVERYTHING (thumbnail, title, description, footer, timestamp...)
         async with self.bot.pool.acquire() as conn:
             conn: asyncpg.Connection
             async with conn.transaction():

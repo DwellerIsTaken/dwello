@@ -3,7 +3,6 @@ from __future__ import annotations
 import asyncio
 from contextlib import AbstractAsyncContextManager, AbstractContextManager
 from types import TracebackType
-from typing import Optional, Type
 
 import discord
 
@@ -42,7 +41,7 @@ class HandleHTTPException(AbstractAsyncContextManager, AbstractContextManager):
 
     __slots__ = ("destination", "message")
 
-    def __init__(self, destination: discord.abc.Messageable, *, title: Optional[str] = None):
+    def __init__(self, destination: discord.abc.Messageable, *, title: str | None = None):
         self.destination = destination
         self.message = title
 
@@ -54,9 +53,9 @@ class HandleHTTPException(AbstractAsyncContextManager, AbstractContextManager):
 
     def __exit__(
         self,
-        exc_type: Optional[Type[BaseException]] = None,
-        exc_val: Optional[BaseException] = None,
-        exc_tb: Optional[TracebackType] = None,
+        exc_type: type[BaseException] | None = None,
+        exc_val: BaseException | None = None,
+        exc_tb: TracebackType | None = None,
     ) -> bool:
         # log.warning(
         #'Context manager HandleHTTPException was used with `with` statement.'
@@ -78,9 +77,9 @@ class HandleHTTPException(AbstractAsyncContextManager, AbstractContextManager):
 
     async def __aexit__(
         self,
-        exc_type: Optional[Type[BaseException]] = None,
-        exc_val: Optional[BaseException] = None,
-        exc_tb: Optional[TracebackType] = None,
+        exc_type: type[BaseException] | None = None,
+        exc_val: BaseException | None = None,
+        exc_tb: TracebackType | None = None,
     ) -> bool:
         if exc_val is not None and isinstance(exc_val, discord.HTTPException) and exc_type:
             embed = discord.Embed(

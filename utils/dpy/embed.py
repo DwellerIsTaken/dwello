@@ -1,36 +1,38 @@
 from __future__ import annotations
 
-# HERE WE CAN CONSTRUCT EMBED BASED ON GUILD CONFIG
-
 import datetime
+from typing import TYPE_CHECKING, Any, ClassVar
 
 import discord
 
-from typing import TYPE_CHECKING, Any, Callable, ClassVar, Iterable, LiteralString, Optional, Sequence, Tuple, TypeVar, Union  # noqa: F401, E501
+# HERE WE CAN CONSTRUCT EMBED BASED ON GUILD CONFIG
+
 
 if TYPE_CHECKING:
-    from discord.types.embed import Embed as EmbedData, EmbedType  # noqa: F401
-    
+    from discord.types.embed import Embed as EmbedData  # noqa: F401
+    from discord.types.embed import EmbedType
+
+
 class NewEmbed(discord.Embed):
-    bot_dominant_colour: ClassVar[Optional[Union[int, discord.Colour]]] = None
+    bot_dominant_colour: ClassVar[int | discord.Colour | None] = None
 
     # someone fix pls
     def __init__(
         self,
         *,
-        colour: Optional[Union[int, discord.Colour]] = None,
-        color: Optional[Union[int, discord.Colour]] = None,
-        title: Optional[Any] = None,
-        type: EmbedType = 'rich',
-        url: Optional[Any] = None,
-        description: Optional[Any] = None,
-        timestamp: Optional[datetime.datetime] = None,
+        colour: int | discord.Colour | None = None,
+        color: int | discord.Colour | None = None,
+        title: Any | None = None,
+        type: EmbedType = "rich",
+        url: Any | None = None,
+        description: Any | None = None,
+        timestamp: datetime.datetime | None = None,
     ):
         if not any((colour, color)):
             self.colour = self.bot_dominant_colour
-        else: # db guild config color check
+        else:  # db guild config color check
             self.colour = colour if colour is not None else color
-        
+
         super().__init__(
             colour=self.colour,
             title=title,

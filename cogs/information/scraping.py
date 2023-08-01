@@ -1,12 +1,12 @@
 from __future__ import annotations
 
+import contextlib
 import difflib
 import json
 import re
-from typing import TYPE_CHECKING, Any, Dict, List, Optional, Tuple
+from typing import TYPE_CHECKING, Any
 
 import discord
-import contextlib
 import wikipediaapi
 from aiospotify import Artist, Image, ObjectType, PartialAlbum, SearchResult, SpotifyClient, Track, http
 from discord import app_commands
@@ -16,7 +16,7 @@ from yarl import URL
 
 import constants as cs
 from core import BaseCog, Context, Dwello, Embed
-from utils import ENV, capitalize_greek_numbers, get_unix_timestamp, DefaultPaginator
+from utils import ENV, DefaultPaginator, capitalize_greek_numbers, get_unix_timestamp
 
 if TYPE_CHECKING:
     from discord import Interaction
@@ -32,17 +32,18 @@ UNSPLASH_DEMO_ACCESS_KEY = ENV["UNSPLASH_DEMO_ACCESS_KEY"]
 
 # create simple response handler class
 
+
 # not sure what this is
 class OptionSelectView(discord.ui.View):
     def __init__(
         self,
         ctx: Context,
-        options: List[Tuple[str, Embed]],
+        options: list[tuple[str, Embed]],
     ):
         super().__init__()
         self.ctx = ctx
         self.options = options
-        self.embeds: List[Embed] = [embed[1] for embed in options]
+        self.embeds: list[Embed] = [embed[1] for embed in options]
 
         self.main_embed = self.embeds[0]
 
@@ -67,7 +68,7 @@ class OptionSelectView(discord.ui.View):
         self.clear_items()
         await self.message.edit(view=self)
 
-    async def start(self: Self) -> Optional[discord.Message]:
+    async def start(self: Self) -> discord.Message | None:
         self.build_select()
         self.message = await self.ctx.send(embed=self.main_embed, view=self)
 
@@ -95,7 +96,7 @@ class Scraping(BaseCog):
         return TMDB_KEY
 
     @property
-    def tmdb_headers(self: Self) -> Dict[str, str]:
+    def tmdb_headers(self: Self) -> dict[str, str]:
         return {
             "accept": "application/json",
             "Authorization": f"Bearer {self.tmdb_key}",
@@ -108,9 +109,9 @@ class Scraping(BaseCog):
     @property
     def wiki_user_agent(self) -> str:
         return "CoolBot/0.0 (https://example.org/coolbot/; coolbot@example.org)"
-    
+
     @property
-    def wiki_headers(self) -> Dict[str, str]:
+    def wiki_headers(self) -> dict[str, str]:
         return {"User-Agent": self.wiki_user_agent}
 
     @commands.hybrid_command(
@@ -119,7 +120,7 @@ class Scraping(BaseCog):
         aliases=["images"],
         with_app_command=True,
     )
-    async def image(self, ctx: Context, *, image: str) -> Optional[discord.Message]:
+    async def image(self, ctx: Context, *, image: str) -> discord.Message | None:
         url: URL = "https://api.unsplash.com/photos/random"
 
         headers = {
@@ -153,21 +154,21 @@ class Scraping(BaseCog):
         aliases=["albums"],
         with_app_command=True,
     )
-    async def album(self, ctx: Context, *, album: str) -> Optional[discord.Message]:
+    async def album(self, ctx: Context, *, album: str) -> discord.Message | None:
         data: SearchResult = await self.spotify_client.search(query=album, types=[ObjectType.Album], limit=5)
 
-        albums: List[Dict[str, Any]] = data._data["albums"]["items"]
+        albums: list[dict[str, Any]] = data._data["albums"]["items"]
         if not albums:
             return await ctx.reply(
                 f"Can't find any albums by the name of *{mk(album, as_needed=False)}*",
                 user_mistake=True,
             )
-        
+
         # loop if you want to make a paginator or dropdown
 
-        embeds: List[Embed] = [] # type
+        embeds: list[Embed] = []  # type
         for album in albums:
-            album: Dict[str, Any] # = albums[0]
+            album: dict[str, Any]  # = albums[0]
 
             _id = album["id"]
             name = album["name"]
@@ -193,7 +194,7 @@ class Scraping(BaseCog):
                     value="\n".join([f"> [{i[0].title()}]({i[1]})" for i in artists]),
                 )
             )
-            tracks_data: Dict[str, Any] = await self.spotify_http_client.get_album_tracks(id=_id, market="US", limit=5)
+            tracks_data: dict[str, Any] = await self.spotify_http_client.get_album_tracks(id=_id, market="US", limit=5)
 
             if tracks := tracks_data["items"]:
                 embed.add_field(
@@ -210,10 +211,10 @@ class Scraping(BaseCog):
         aliases=["artists"],
         with_app_command=True,
     )
-    async def artist(self, ctx: Context, *, artist: str) -> Optional[discord.Message]:
+    async def artist(self, ctx: Context, *, artist: str) -> discord.Message | None:
         data: SearchResult = await self.spotify_client.search(query=artist, types=[ObjectType.Artist], limit=5)
 
-        artists: List[Artist] = data.artists.items
+        artists: list[Artist] = data.artists.items
         if not artists:
             return await ctx.reply(
                 f"Can't find any artists by the name of *{mk(artist, as_needed=False)}*",
@@ -222,11 +223,11 @@ class Scraping(BaseCog):
 
         artist: Artist = artists[0]
 
-        album_data: Dict[str, Any] = await self.spotify_http_client.get_artist_albums(
+        album_data: dict[str, Any] = await self.spotify_http_client.get_artist_albums(
             id=artist.id, include_groups=["album"], market="US", limit=5
         )
 
-        tracks_data: Dict[str, Any] = await self.spotify_http_client.get_artist_top_tracks(id=artist.id, market="US")
+        tracks_data: dict[str, Any] = await self.spotify_http_client.get_artist_top_tracks(id=artist.id, market="US")
 
         albums = album_data["items"]
 
@@ -249,7 +250,7 @@ class Scraping(BaseCog):
             for name, album in zip(album_names, sorted_unique_albums)
         ]
 
-        tracks: List[Dict[str, Any]] = tracks_data["tracks"]
+        tracks: list[dict[str, Any]] = tracks_data["tracks"]
         top_tracks = sorted(tracks, key=lambda x: x["popularity"], reverse=True)
 
         _description = f"**Followers**: {artist.followers.total:,}\n**Genres**: " + ", ".join(list(artist.genres[:2]))
@@ -280,17 +281,17 @@ class Scraping(BaseCog):
         aliases=["playlists"],
         with_app_command=True,
     )
-    async def playlist(self, ctx: Context, *, playlist: str) -> Optional[discord.Message]:
+    async def playlist(self, ctx: Context, *, playlist: str) -> discord.Message | None:
         data: SearchResult = await self.spotify_client.search(query=playlist, types=[ObjectType.Playlist], limit=5)
 
-        playlists: List[Dict[str, Any]] = data._data["playlists"]["items"]
+        playlists: list[dict[str, Any]] = data._data["playlists"]["items"]
         if not playlists:
             return await ctx.reply(
                 f"Can't find any playlists by the name of *{mk(playlist, as_needed=False)}*",
                 user_mistake=True,
             )
 
-        playlist: Dict[str, Any] = playlists[0]
+        playlist: dict[str, Any] = playlists[0]
 
         name = playlist["name"]
         url = playlist["external_urls"]["spotify"]
@@ -315,27 +316,27 @@ class Scraping(BaseCog):
         return await ctx.reply(embed=embed)
 
     @commands.hybrid_command(name="track", help="Returns a track.", aliases=["tracks"], with_app_command=True)
-    async def track(self, ctx: Context, *, track: str) -> Optional[discord.Message]:
+    async def track(self, ctx: Context, *, track: str) -> discord.Message | None:
         data: SearchResult = await self.spotify_client.search(query=track, types=[ObjectType.Track], limit=5)
 
-        tracks: List[Track] = data.tracks.items
+        tracks: list[Track] = data.tracks.items
         if not tracks:
             return await ctx.reply(
                 f"Can't find any tracks by the name of *{mk(track, as_needed=False)}*",
                 user_mistake=True,
             )
 
-        embeds: List[Embed] = []
+        embeds: list[Embed] = []
         for _track in tracks:
             _album: PartialAlbum = _track.album
-            _artists: List[Tuple[str, str]] = [(artist.name, artist.external_urls.spotify) for artist in _track.artists][:2]
+            _artists: list[tuple[str, str]] = [(artist.name, artist.external_urls.spotify) for artist in _track.artists][:2]
 
             duration_in_minutes = _track.duration / 1000 / 60
 
             duration_str = (
-                f"**Duration**: {'{:.2f}'.format(duration_in_minutes)} min"
+                f"**Duration**: {f'{duration_in_minutes:.2f}'} min"
                 if duration_in_minutes >= 1
-                else "{:.2f}".format(_track.duration / 1000) + " sec"
+                else f"{_track.duration / 1000:.2f}" + " sec"
             )
 
             release_str = "\n**Release Date**: "
@@ -382,7 +383,7 @@ class Scraping(BaseCog):
         raise commands.BadArgument(f"Couldn't find a game by the name *{mk(name)}*")
 
     @commands.hybrid_command(name="game", help="Returns a game.", aliases=["games"], with_app_command=True)
-    async def game(self, ctx: Context, *, game: str) -> Optional[discord.Message]:
+    async def game(self, ctx: Context, *, game: str) -> discord.Message | None:
         game_id = await self.get_game_by_name(game)
 
         url: URL = f"https://store.steampowered.com/api/appdetails?appids={game_id}&l=en"
@@ -426,7 +427,7 @@ class Scraping(BaseCog):
         aliases=["actors", "actress", "actresses"],
         with_app_command=True,
     )  # amybe people alias, but later if there are no other ppl aliases
-    async def movie_person(self, ctx: Context, *, person: str) -> Optional[discord.Message]:
+    async def movie_person(self, ctx: Context, *, person: str) -> discord.Message | None:
         pages: int = 1
         url: URL = (
             f"https://api.themoviedb.org/3/search/person?query={person}&include_adult=True&language=en-US&page={pages}"
@@ -474,7 +475,7 @@ class Scraping(BaseCog):
         help="Returns a movie by its title.",
         aliases=["film", "films", "movies"],
     )
-    async def movie(self, ctx: Context, *, movie: str) -> Optional[discord.Message]:
+    async def movie(self, ctx: Context, *, movie: str) -> discord.Message | None:
         # Docs: https://developer.themoviedb.org/reference/intro/getting-started
 
         pages: int = 1
@@ -513,7 +514,7 @@ class Scraping(BaseCog):
         return await ctx.reply(embed=embed)
 
     @app_commands.command(name="movie", description="Returns a movie by its title.")
-    async def _movie(self, interaction: Interaction, *, movie: str, year: int = None) -> Optional[discord.Message]:
+    async def _movie(self, interaction: Interaction, *, movie: str, year: int = None) -> discord.Message | None:
         pages: int = 1
 
         url: URL = f"https://api.themoviedb.org/3/search/movie?query={movie}&include_adult=True&language=en-US&primary_release_year={year}&page={pages}"
@@ -555,7 +556,7 @@ class Scraping(BaseCog):
         return await interaction.response.send_message(embed=embed)
 
     @commands.command(name="show", help="Returns a TV show by its title.", aliases=["series", "shows"])
-    async def show(self, ctx: Context, *, show: str) -> Optional[discord.Message]:
+    async def show(self, ctx: Context, *, show: str) -> discord.Message | None:
         pages: int = 1
         url: URL = f"https://api.themoviedb.org/3/search/tv?query={show}&include_adult=True&language=en-US&page={pages}"
         async with self.bot.http_session.get(url=url, headers=self.tmdb_headers) as response:
@@ -592,7 +593,7 @@ class Scraping(BaseCog):
         return await ctx.reply(embed=embed)
 
     @app_commands.command(name="show", description="Returns a TV show by its title.")
-    async def _show(self, interaction: Interaction, *, show: str, year: int = None) -> Optional[discord.Message]:
+    async def _show(self, interaction: Interaction, *, show: str, year: int = None) -> discord.Message | None:
         pages: int = 1
 
         url = f"https://api.themoviedb.org/3/search/tv?query={show}&include_adult=True&language=en-US&primary_release_year={year}&page={pages}"
@@ -638,7 +639,7 @@ class Scraping(BaseCog):
         help="Shows you the temparature in the city you've typed in.",
         with_app_command=True,
     )
-    async def weather(self, ctx: Context, *, city: str) -> Optional[discord.Message]:
+    async def weather(self, ctx: Context, *, city: str) -> discord.Message | None:
         if not city:
             return await ctx.reply("Please provide a city or a contry.", mention_author=True)
 
@@ -650,7 +651,7 @@ class Scraping(BaseCog):
             data = await response.json()
 
         if data["cod"] == "404":
-            with open("datasets/countries.json", "r") as file:
+            with open("datasets/countries.json") as file:
                 data: dict = json.load(file)
 
             matches = []

@@ -2,7 +2,6 @@ from __future__ import annotations
 
 import datetime
 import re
-from typing import Optional, Tuple, Union
 
 import asyncpg
 import discord
@@ -16,7 +15,7 @@ class SharedEcoUtils:
 
     async def fetch_basic_job_data_by_username(
         self, ctx: Context, member: discord.Member = None
-    ) -> Optional[Tuple[Optional[str], Optional[int], Union[str, None], Optional[int]]]:
+    ) -> tuple[str | None, int | None, str | None, int | None] | None:
         async with self.bot.pool.acquire() as conn:
             conn: asyncpg.Connection
             async with conn.transaction():
@@ -53,7 +52,7 @@ class SharedEcoUtils:
 
         return name, salary, description, job_id
 
-    async def add_currency(self, member: discord.Member, amount: int, name: str) -> Optional[int]:
+    async def add_currency(self, member: discord.Member, amount: int, name: str) -> int | None:
         async with self.bot.pool.acquire() as conn:
             conn: asyncpg.Connection
             async with conn.transaction():
@@ -78,7 +77,7 @@ class SharedEcoUtils:
 
                 return balance
 
-    async def work(self, ctx: Context, name: str) -> Optional[discord.Message]:
+    async def work(self, ctx: Context, name: str) -> discord.Message | None:
         async with self.bot.pool.acquire() as conn:
             conn: asyncpg.Connection
             async with conn.transaction():

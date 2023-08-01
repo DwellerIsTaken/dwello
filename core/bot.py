@@ -18,20 +18,20 @@ if os.name == "nt":
     asyncio.set_event_loop_policy(asyncio.WindowsSelectorEventLoopPolicy())
 else:
     try:
-        import uvloop # type: ignore
+        import uvloop  # type: ignore
     except ImportError:
         pass
     else:
         asyncio.set_event_loop_policy(uvloop.EventLoopPolicy())
 
-from ._utils import ENV, AiohttpWeb, AutoComplete, DataBaseOperations, LevellingUtils, ListenersFunctions, OtherUtils, Twitch
-from utils import get_avatar_dominant_color
-from utils import NewTranslator as Translator
-from utils import NewEmbed as Embed
-from utils import NewView as View  # noqa: F401
-
-from .context import NewContext as Context
 import constants as cs
+from utils import NewEmbed as Embed
+from utils import NewTranslator as Translator
+from utils import NewView as View  # noqa: F401
+from utils import get_avatar_dominant_color
+
+from ._utils import ENV, AiohttpWeb, AutoComplete, DataBaseOperations, LevellingUtils, ListenersFunctions, OtherUtils, Twitch
+from .context import NewContext as Context
 
 if TYPE_CHECKING:
     from asyncpg import Connection, Pool
@@ -51,8 +51,8 @@ LINKS_RE = re.compile(
     flags=re.IGNORECASE,
 )
 
-initial_extensions: Tuple[str] = ("jishaku",)
-extensions: List[str] = [
+initial_extensions: tuple[str] = ("jishaku",)
+extensions: list[str] = [
     "cogs.economy",
     "cogs.entertainment",
     "cogs.information",
@@ -86,7 +86,7 @@ def countlines(directory: str, /, lines=0, ext=".py", skip_blank=False):
             if not filename.endswith(ext):
                 continue
             file = os.path.join(root, filename)
-            with open(file, "r", encoding="utf-8") as f:
+            with open(file, encoding="utf-8") as f:
                 new_lines = len([i for i in f.readlines() if i.strip()]) if skip_blank else len(f.readlines())
                 lines = lines + new_lines
     return lines
@@ -99,8 +99,8 @@ def blacklist_check(ctx: Context) -> bool:
 
 # CONTEXT MENUS
 # Example
-'''async def my_cool_context_menu(interaction: discord.Interaction, message: discord.Message):
-    await interaction.response.send_message("Very cool message!", ephemeral=True)'''
+"""async def my_cool_context_menu(interaction: discord.Interaction, message: discord.Message):
+    await interaction.response.send_message("Very cool message!", ephemeral=True)"""
 
 
 class ContextManager(Generic[DBT]):
@@ -139,7 +139,7 @@ class ContextManager(Generic[DBT]):
 
 class Dwello(commands.AutoShardedBot):
     user: discord.ClientUser
-    DEFAULT_PREFIXES: ClassVar[List[str]] = ["dw.", "Dw.", "dwello.", "Dwello."]
+    DEFAULT_PREFIXES: ClassVar[list[str]] = ["dw.", "Dw.", "dwello.", "Dwello."]
     # extend by [f"<@!{self.bot.user.id}>"] ?
 
     logger = logging.getLogger("logging")
@@ -168,11 +168,11 @@ class Dwello(commands.AutoShardedBot):
 
         self.reply_count: int = 0
         self.commands_executed: int = 0
-        
+
         self._was_ready = False
         self.test_instance = False
         self.main_prefix: str = self.DEFAULT_PREFIXES[0]
-        self.total_lines: int = countlines('G:\My Drive\discordbot', skip_blank=True)  # noqa: W605
+        self.total_lines: int = countlines("G:\My Drive\discordbot", skip_blank=True)  # noqa: W605
         # wont work on host, somehow automatically determine the directory
 
         self.blacklisted_users: dict[int, str] = {}
@@ -197,11 +197,11 @@ class Dwello(commands.AutoShardedBot):
         self.message_cache: dict[int, discord.Message] = {}
 
     @property
-    def color(self) -> Optional[discord.Color]:
+    def color(self) -> discord.Color | None:
         return self.default_color
-    
+
     @property
-    def colour(self) -> Optional[discord.Colour]:
+    def colour(self) -> discord.Colour | None:
         return self.default_color
 
     async def setup_hook(self) -> None:
@@ -227,12 +227,12 @@ class Dwello(commands.AutoShardedBot):
         self.add_check(blacklist_check)
 
         # Example Context Menu:
-        '''self.tree.add_command(
+        """self.tree.add_command(
             discord.app_commands.ContextMenu(
                 name="Cool Command Name",
                 callback=my_cool_context_menu,
             )
-        )'''
+        )"""
 
         await self.tree.set_translator(Translator())
 
@@ -272,7 +272,7 @@ class Dwello(commands.AutoShardedBot):
 
         if await self.is_owner(message.author) and guild_prefixes:
             prefixes.extend(self.DEFAULT_PREFIXES)
-            
+
         # override or extend
         return commands.when_mentioned_or(*prefixes)(self, message)
 
@@ -283,7 +283,7 @@ class Dwello(commands.AutoShardedBot):
         self._was_ready = True
 
         if self.user.id == 1125762669056630915:
-            self.DEFAULT_PREFIXES: List[str] = ["t.", "dt.", "Dt.", "beta.", "Beta."]
+            self.DEFAULT_PREFIXES: list[str] = ["t.", "dt.", "Dt.", "beta.", "Beta."]
             self.test_instance = True
 
         if not hasattr(self, "uptime"):
@@ -294,7 +294,7 @@ class Dwello(commands.AutoShardedBot):
             Embed.bot_dominant_colour = self.default_color
 
     @override
-    async def load_extension(self, name: str, *, package: Optional[str] = None, _raise: bool = True) -> None:
+    async def load_extension(self, name: str, *, package: str | None = None, _raise: bool = True) -> None:
         self._ext_log.info(f"{col(7)}Attempting to load {col(7, fmt=4)}{name}{col()}")
         try:
             await super().load_extension(name, package=package)
@@ -306,7 +306,7 @@ class Dwello(commands.AutoShardedBot):
                 raise e
 
     @override
-    async def unload_extension(self, name: str, *, package: Optional[str] = None, _raise: bool = True) -> None:
+    async def unload_extension(self, name: str, *, package: str | None = None, _raise: bool = True) -> None:
         self._ext_log.info(f"{col(7)}Attempting to unload extension {col(7, fmt=4)}{name}{col()}")
         try:
             await super().unload_extension(name, package=package)
@@ -318,7 +318,7 @@ class Dwello(commands.AutoShardedBot):
                 raise e
 
     @override
-    async def reload_extension(self, name: str, *, package: Optional[str] = None, _raise: bool = True) -> None:
+    async def reload_extension(self, name: str, *, package: str | None = None, _raise: bool = True) -> None:
         self._ext_log.info(f"{col(7)}Attempting to reload extension {col(7, fmt=4)}{name}{col()}")
         try:
             await super().reload_extension(name, package=package)
@@ -334,7 +334,7 @@ class Dwello(commands.AutoShardedBot):
         self,
         channel: ...,
         message: ...,
-    ) -> Optional[discord.Message]:
+    ) -> discord.Message | None:
         ...
 
     @overload
@@ -346,25 +346,25 @@ class Dwello(commands.AutoShardedBot):
         partial: bool = ...,
         force_fetch: bool = ...,
         dm_allowed: bool = ...,
-    ) -> Optional[Union[discord.Message, discord.PartialMessage]]:
+    ) -> discord.Message | discord.PartialMessage | None:
         ...
 
     @overload
     async def get_or_fetch_message(
         self,
-        channel: Union[str, int],
-    ) -> Optional[discord.Message]:
+        channel: str | int,
+    ) -> discord.Message | None:
         ...
 
     async def get_or_fetch_message(
         self,
-        channel: Union[str, int, discord.PartialMessageable],
-        message: Optional[Union[int, str]] = None,
+        channel: str | int | discord.PartialMessageable,
+        message: int | str | None = None,
         *,
         partial: bool = False,
         force_fetch: bool = False,
         dm_allowed: bool = False,
-    ) -> Optional[Union[discord.Message, discord.PartialMessage]]:
+    ) -> discord.Message | discord.PartialMessage | None:
         if message is None:
             dummy_message = str(channel)
             if link := LINKS_RE.match(dummy_message):
@@ -387,7 +387,7 @@ class Dwello(commands.AutoShardedBot):
 
         message = int(message)
 
-        channel_id = int(channel) if isinstance(channel, (int, str)) else channel.id
+        channel_id = int(channel) if isinstance(channel, int | str) else channel.id
         channel = await self.getch(self.get_channel, self.fetch_channel, channel_id)
 
         if channel is None:

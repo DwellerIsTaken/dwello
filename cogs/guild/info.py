@@ -1,13 +1,13 @@
 from __future__ import annotations
 
-from typing import Any, List, Literal, Optional, Union  # noqa: F401
-
 import contextlib
+from typing import Any, List, Literal, Optional, Union  # noqa: F401
 
 import discord
 from discord.ext import commands
 
 from core import BaseCog, Context, Dwello, Embed  # noqa: F401
+
 
 class Info(BaseCog):
     def __init__(self, bot: Dwello, *args: Any, **kwargs: Any):
@@ -15,13 +15,13 @@ class Info(BaseCog):
 
     async def cog_check(self, ctx: Context) -> bool:
         return ctx.guild is not None
-    
+
     @commands.hybrid_group(invoke_without_command=True, with_app_command=True)
-    async def guild(self, ctx: Context) -> Optional[discord.Message]:
+    async def guild(self, ctx: Context) -> discord.Message | None:
         return await ctx.send_help(ctx.command)
-    
-    @guild.command(name='info', help='Shows info on a guild.')
-    async def info(self, ctx: Context) -> Optional[discord.Message]:
+
+    @guild.command(name="info", help="Shows info on a guild.")
+    async def info(self, ctx: Context) -> discord.Message | None:
         guild = ctx.guild
 
         invite_link = None
@@ -29,18 +29,23 @@ class Info(BaseCog):
             invites = await guild.invites()
             invite_link = invites[0].url
 
-        embed: Embed = Embed(
-            timestamp=discord.utils.utcnow(),
-            title=f"Info on {guild.name}",
-            description=guild.description,
-            url=guild.vanity_url or invite_link,
-        ).set_footer(
-            text=f"ID: {guild.id}", icon_url=guild.icon.url if guild.icon else None,
-        ).set_thumbnail(
-            url=guild.icon.url if guild.icon else None,
+        embed: Embed = (
+            Embed(
+                timestamp=discord.utils.utcnow(),
+                title=f"Info on {guild.name}",
+                description=guild.description,
+                url=guild.vanity_url or invite_link,
+            )
+            .set_footer(
+                text=f"ID: {guild.id}",
+                icon_url=guild.icon.url if guild.icon else None,
+            )
+            .set_thumbnail(
+                url=guild.icon.url if guild.icon else None,
+            )
         )
         embed.add_field(name="Owner", value=guild.owner.name)
-        embed.add_field(name="Created at", value=discord.utils.format_dt(guild.created_at, style='D'))
+        embed.add_field(name="Created at", value=discord.utils.format_dt(guild.created_at, style="D"))
         embed.add_field(name="Total Members", value=guild.member_count if guild.member_count else len(guild.members))
         embed.add_field(name="MFA Level", value=str(guild.mfa_level)[9:])
         embed.add_field(name="NSFW Level", value=str(guild.nsfw_level)[10:])
@@ -55,13 +60,13 @@ class Info(BaseCog):
         if guild.scheduled_events:
             embed.add_field(
                 name="Upcoming Events",
-                value="\n".join(f"[{event.name}]({event.url})" for event in guild.scheduled_events[-5:])
+                value="\n".join(f"[{event.name}]({event.url})" for event in guild.scheduled_events[-5:]),
             )
-        '''if guild.roles:
+        """if guild.roles:
             embed.add_field(
                 name="Highest Roles",
                 value="\n".join(role.name for role in guild.roles[-5:])
-            )''' #looks bad
+            )"""  # looks bad
         if any((guild.icon, guild.banner)):
             embed.add_field(
                 name="Assets",
@@ -71,15 +76,15 @@ class Info(BaseCog):
                 ),
             )
         return await ctx.reply(embed=embed)
-    
+
 
 class PrefixConfig:
     def __init__(self, bot: Dwello) -> None:
         self.bot = bot
         self.db = bot.db
 
-    async def display_prefixes(self, ctx: Context) -> Optional[discord.Message]:
-        default_prefixes: List[str] = self.bot.DEFAULT_PREFIXES + [f"<@!{self.bot.user.id}>"]
+    async def display_prefixes(self, ctx: Context) -> discord.Message | None:
+        default_prefixes: list[str] = self.bot.DEFAULT_PREFIXES + [f"<@!{self.bot.user.id}>"]
         prefixes = await self.db.get_prefixes(ctx.guild)
 
         embed: Embed = Embed(title="Prefixes").set_footer(text=None)
@@ -97,13 +102,13 @@ class PrefixConfig:
         )
         return await ctx.reply(embed=embed, mention_author=False, ephemeral=False)
 
-    async def remove_prefix(self, ctx: Context, prefix: Union[str, Literal["all"]]) -> Optional[discord.Message]:
+    async def remove_prefix(self, ctx: Context, prefix: str | Literal["all"]) -> discord.Message | None:
         if not (await self.db.get_prefixes(ctx.guild)):
             return await ctx.reply(
                 "Prefix isn't yet set. \n```/prefix add [prefix]```",
                 user_mistake=True,
             )
-        count = len(await self.db.remove_prefix(prefix, ctx.guild, all=prefix=='all'))
+        count = len(await self.db.remove_prefix(prefix, ctx.guild, all=prefix == "all"))
         self.bot.guild_prefixes[ctx.guild.id].remove(prefix)
         return await ctx.reply(
             embed=Embed(

@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from typing import Any, Optional
+from typing import Any
 
 import asyncpg
 from discord.ext import commands
@@ -14,7 +14,7 @@ class BotEcoUtils:
     def __init__(self, bot: Dwello):
         self.bot = bot
 
-    async def balance_check(self, ctx: Context, amount: int, name: str) -> Optional[bool]:
+    async def balance_check(self, ctx: Context, amount: int, name: str) -> bool | None:
         async with self.bot.pool.acquire() as conn:
             conn: asyncpg.Connection
             async with conn.transaction():

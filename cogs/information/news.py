@@ -4,15 +4,15 @@ import contextlib
 import datetime
 import re
 from dataclasses import dataclass
-from typing import TYPE_CHECKING, Any, List, Optional, Tuple, Type, TypeVar, Union
+from typing import TYPE_CHECKING, Any, TypeVar
 
 import asyncpg
 import discord
 from discord import ButtonStyle, app_commands
 from discord.ext import commands
 
-from utils import get_unix_timestamp, is_discord_link
 from core import BaseCog, Context, Dwello, Embed
+from utils import get_unix_timestamp, is_discord_link
 
 NVT = TypeVar("NVT", bound="NewsViewer")
 
@@ -28,7 +28,7 @@ class Page:  # DO SMTH LIKE THIS FOR EVERY CMD IN SCRAPING YO UNPACK EASILY | MA
     title: str
     message_id: int
     channel_id: int
-    cached_message: Optional[discord.Message] = None
+    cached_message: discord.Message | None = None
 
 
 class NewsFeed:
@@ -43,14 +43,14 @@ class NewsFeed:
         The maximum number of pages in the feed.
     """
 
-    __slots__: Tuple[str, ...] = (  # see what __slots__ are used for
+    __slots__: tuple[str, ...] = (  # see what __slots__ are used for
         "news",
         "max_pages",
         "_current_page",
     )
 
-    def __init__(self, news: List[asyncpg.Record]) -> None:  # use this to unpack later
-        self.news: List[Page] = [Page(**n) for n in news]  # type: ignore
+    def __init__(self, news: list[asyncpg.Record]) -> None:  # use this to unpack later
+        self.news: list[Page] = [Page(**n) for n in news]  # type: ignore
         self.max_pages = len(news)
         self._current_page = 0
         # self.news.reverse()
@@ -166,12 +166,12 @@ class NewsViewer(discord.ui.View):
 
     if TYPE_CHECKING:
         message: discord.Message
-        ctx: Optional[Context]
+        ctx: Context | None
 
     def __init__(
         self,
-        obj: Union[Context, discord.Interaction[Dwello]],
-        news: List[asyncpg.Record] = None,
+        obj: Context | discord.Interaction[Dwello],
+        news: list[asyncpg.Record] = None,
         /,
         embed: Embed = None,
         old_view: discord.ui.View = None,
@@ -242,12 +242,12 @@ class NewsViewer(discord.ui.View):
         next_page_num = self.news.max_pages - self.news.news.index(self.news.next)
         self.next.disabled = next_page_num == self.news.max_pages
 
-    async def interaction_check(self, interaction: discord.Interaction[Dwello]) -> Optional[bool]:
+    async def interaction_check(self, interaction: discord.Interaction[Dwello]) -> bool | None:
         if val := interaction.user == self.author:
             return val
         else:
             return await interaction.response.send_message(content="Hey! You can't do that!", ephemeral=True)
-        
+
     async def on_timeout(self) -> None:
         self.clear_items()
         with contextlib.suppress(discord.errors.NotFound):
@@ -255,9 +255,9 @@ class NewsViewer(discord.ui.View):
 
     @classmethod
     async def start(
-        cls: Type[NVT],
+        cls: type[NVT],
         ctx: Context,
-        news: List[asyncpg.Record] = None,
+        news: list[asyncpg.Record] = None,
         /,
         embed: Embed = None,
         old_view: discord.ui.View = None,
@@ -270,7 +270,7 @@ class NewsViewer(discord.ui.View):
             )
         else:
             new.update_labels()
-            _embed: Embed = await new.get_embed(new.news.current) #news[new.news.current_index]
+            _embed: Embed = await new.get_embed(new.news.current)  # news[new.news.current_index]
 
         new.message = await ctx.send(embed=_embed, view=new)
         await new.wait()
@@ -278,9 +278,9 @@ class NewsViewer(discord.ui.View):
 
     @classmethod
     async def from_interaction(
-        cls: Type[NVT],
+        cls: type[NVT],
         interaction: discord.Interaction[Dwello],
-        news: List[asyncpg.Record] = None,
+        news: list[asyncpg.Record] = None,
         /,
         embed: Embed = None,
         old_view: discord.ui.View = None,

@@ -13,11 +13,11 @@ FOOTER = "https://hitoshi.org"
 WEBSITE = "https://hitoshi.org"
 GITHUB = "https://github.com/DwellerIsTaken/discordbot/"
 DISCORD = "https://discord.gg/8FKNF8pC9u"
-INVITE_LINK = "https://discord.com/api/oauth2/authorize?client_id=798268589906853908&permissions=50564649975543&scope=bot" # TEMPORARY  # noqa: E501
+INVITE_LINK = "https://discord.com/api/oauth2/authorize?client_id=798268589906853908&permissions=50564649975543&scope=bot"  # TEMPORARY  # noqa: E501
 
 # __EMOJIS__
 GITHUB_EMOJI = "<:github:1100906448030011503>"
-EARLY_DEV_EMOJI = "<:EarlyVerifiedBotDeveloper:1135358665877102592>" # REMOVE LATER
+EARLY_DEV_EMOJI = "<:EarlyVerifiedBotDeveloper:1135358665877102592>"  # REMOVE LATER
 
 BUGHUNTER_EMOJI = "<:BugHunter:1135358734453977160>"
 BUGHUNTER_LVL2_EMOJI = "<:BugHunterLevel2:1135358722890289284>"

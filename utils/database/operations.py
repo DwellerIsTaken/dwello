@@ -1,17 +1,20 @@
 from __future__ import annotations
 
 import re
-from typing import TYPE_CHECKING, Any, Dict, List, Optional, Union, overload
+from typing import TYPE_CHECKING, Any, overload
 
 import asyncpg
 import discord
-#import functools
 
 from .orm import Idea, Prefix, Warning
 
+# import functools
+
+
 if TYPE_CHECKING:
-    from core import Context, Dwello
     from asyncpg import Record
+
+    from core import Context, Dwello
 
 
 class DataBaseOperations:
@@ -19,9 +22,9 @@ class DataBaseOperations:
         self.bot = bot
         self.pool = bot.pool
 
-    async def create_tables(self) -> List[str]:
+    async def create_tables(self) -> list[str]:
         async with self.bot.safe_connection() as conn:
-            with open("schema.sql", "r") as f:
+            with open("schema.sql") as f:
                 tables = f.read()
 
             table_names = re.findall(r"CREATE TABLE IF NOT EXISTS (\w+)", tables)
@@ -29,16 +32,16 @@ class DataBaseOperations:
             await conn.execute(tables)
         return table_names
 
-    async def fetch_table_data(self, *tables: str) -> Dict[str, Union[Any, list]]:
+    async def fetch_table_data(self, *tables: str) -> dict[str, Any | list]:
         async with self.bot.safe_connection() as conn:
             try:
                 data = self.bot.db_data
 
             except AttributeError:
-                data: Dict[str, Union[Any, list]] = {}
+                data: dict[str, Any | list] = {}
 
             if not tables:
-                tables: List[str] = self.bot.tables.copy()
+                tables: list[str] = self.bot.tables.copy()
                 tables.remove("prefixes")
 
             for table in tables:
@@ -48,7 +51,7 @@ class DataBaseOperations:
                 table_data = await conn.fetch(query)
                 data[table] = table_data
         return data
-    
+
     # use ctx, member, message ... (find one class for that) as an object to get guild and author
     async def warn(
         self,
@@ -56,7 +59,7 @@ class DataBaseOperations:
         guild: discord.Guild,
         author: discord.Member,
         *,
-        reason: Optional[str] = "Not specified",
+        reason: str | None = "Not specified",
     ) -> Warning:
         async with self.bot.safe_connection() as conn:
             record: Record = await conn.fetchrow(
@@ -70,49 +73,45 @@ class DataBaseOperations:
                 author.id,
             )
         return Warning(record, self.bot)
-    
-    async def unwarn(self, warn_id: int, user_id: int, guild: discord.Guild, *, all=False) -> List[Warning]:
+
+    async def unwarn(self, warn_id: int, user_id: int, guild: discord.Guild, *, all=False) -> list[Warning]:
         async with self.bot.safe_connection() as conn:
-            records: List[Record]
+            records: list[Record]
             if all:
                 records = await conn.fetch(
-                    "DELETE FROM warnings "
-                    "WHERE (guild_id, user_id) IN (($1, $2)) "
-                    "RETURNING *",
+                    "DELETE FROM warnings " "WHERE (guild_id, user_id) IN (($1, $2)) " "RETURNING *",
                     guild.id,
                     user_id,
                 )
             else:
                 records = await conn.fetch(
-                    "DELETE FROM warnings "
-                    "WHERE (warn_id, guild_id, user_id) IN (($1, $2, $3)) "
-                    "RETURNING *",
+                    "DELETE FROM warnings " "WHERE (warn_id, guild_id, user_id) IN (($1, $2, $3)) " "RETURNING *",
                     warn_id,
                     guild.id,
                     user_id,
                 )
         return [Warning(record, self.bot) for record in records]
-    
-    #@functools.lru_cache(maxsize=1)
-    async def get_warnings(self, user_id: int, guild: discord.Guild) -> List[Warning]:
+
+    # @functools.lru_cache(maxsize=1)
+    async def get_warnings(self, user_id: int, guild: discord.Guild) -> list[Warning]:
         async with self.bot.safe_connection() as conn:
-            records: List[Record] = await conn.fetch(
+            records: list[Record] = await conn.fetch(
                 "SELECT * FROM warnings WHERE guild_id = $1 AND user_id = $2",
                 guild.id,
                 user_id,
             )
         return [Warning(record, self.bot) for record in records]
-    
-    async def get_warning_by_id(self, warn_id: int, user_id: int, guild: discord.Guild) -> Optional[Warning]:
+
+    async def get_warning_by_id(self, warn_id: int, user_id: int, guild: discord.Guild) -> Warning | None:
         async with self.bot.safe_connection() as conn:
-            record: Optional[Record] = await conn.fetchrow(
+            record: Record | None = await conn.fetchrow(
                 "SELECT * FROM warnings WHERE (warn_id, guild_id, user_id) IN (($1, $2, $3))",
                 warn_id,
                 guild.id,
                 user_id,
             )
         return Warning(record, self.bot) if record is not None else None
-    
+
     @overload
     async def add_prefix(
         self,
@@ -120,7 +119,7 @@ class DataBaseOperations:
         prefix: str,
         *,
         context: None,
-    ) -> Optional[Prefix]:
+    ) -> Prefix | None:
         ...
 
     @overload
@@ -130,7 +129,7 @@ class DataBaseOperations:
         prefix: str,
         *,
         context: Context,
-    ) -> Union[Prefix, discord.Message]:
+    ) -> Prefix | discord.Message:
         ...
 
     async def add_prefix(
@@ -138,13 +137,12 @@ class DataBaseOperations:
         guild: discord.Guild,
         prefix: str,
         *,
-        context: Optional[Context] = None,
-    ) -> Union[Prefix, discord.Message]:
+        context: Context | None = None,
+    ) -> Prefix | discord.Message:
         async with self.bot.safe_connection() as conn:
             try:
-                record: Optional[Record] = await conn.fetchrow(
-                    "INSERT INTO prefixes(prefix, guild_id) VALUES($1, $2) "
-                    "RETURNING *",
+                record: Record | None = await conn.fetchrow(
+                    "INSERT INTO prefixes(prefix, guild_id) VALUES($1, $2) " "RETURNING *",
                     prefix,
                     guild.id,
                 )
@@ -158,45 +156,41 @@ class DataBaseOperations:
                 raise
 
         return Prefix(record, self.bot)
-    
-    async def remove_prefix(self, prefix: str, guild: discord.Guild, *, all=False) -> List[Prefix]:
+
+    async def remove_prefix(self, prefix: str, guild: discord.Guild, *, all=False) -> list[Prefix]:
         async with self.bot.safe_connection() as conn:
-            records: List[Record]
+            records: list[Record]
             if all:
                 records = await conn.fetch(
-                    "DELETE FROM prefixes "
-                    "WHERE guild_id = $1 "
-                    "RETURNING *",
+                    "DELETE FROM prefixes " "WHERE guild_id = $1 " "RETURNING *",
                     guild.id,
                 )
             else:
                 records = await conn.fetch(
-                    "DELETE FROM prefixes "
-                    "WHERE (prefix, guild_id) IN (($1, $2)) "
-                    "RETURNING *",
+                    "DELETE FROM prefixes " "WHERE (prefix, guild_id) IN (($1, $2)) " "RETURNING *",
                     prefix,
                     guild.id,
                 )
         return [Prefix(record, self.bot) for record in records]
-    
-    #@functools.lru_cache(maxsize=1)
-    async def get_prefixes(self, guild: discord.Guild) -> List[Prefix]:
+
+    # @functools.lru_cache(maxsize=1)
+    async def get_prefixes(self, guild: discord.Guild) -> list[Prefix]:
         async with self.bot.safe_connection() as conn:
-            records: List[Record] = await conn.fetch(
+            records: list[Record] = await conn.fetch(
                 "SELECT * FROM prefixes WHERE guild_id = $1",
                 guild.id,
             )
         return [Prefix(record, self.bot) for record in records]
-    
+
     async def suggest_idea(
         self,
         title: str,
         content: str,
-        author: Union[discord.User, discord.Member],
+        author: discord.User | discord.Member,
     ) -> Idea:
         return await Idea.suggest(self.bot, title, content, author.id)
-    
-    async def get_ideas(self) -> List[Idea]:
+
+    async def get_ideas(self) -> list[Idea]:
         async with self.bot.safe_connection() as conn:
-            records: List[Record] = await conn.fetch("SELECT * FROM ideas")
+            records: list[Record] = await conn.fetch("SELECT * FROM ideas")
         return [Idea(record, self.bot) for record in records]

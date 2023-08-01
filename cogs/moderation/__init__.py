@@ -16,7 +16,8 @@ if TYPE_CHECKING:
 class Moderation(
     AutoMod,
     StandardModeration,
-    Timeout, Warnings,
+    Timeout,
+    Warnings,
     name="Moderation",
 ):
     """

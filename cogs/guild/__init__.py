@@ -2,11 +2,11 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
-from .info import Info
 from .config import Config
+from .customisation import Customisation
+from .info import Info
 from .manage_channels import Channels
 from .manage_messages import Messages
-from .customisation import Customisation
 
 if TYPE_CHECKING:
     from core import Dwello

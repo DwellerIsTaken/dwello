@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from typing import Any, Optional, Union
+from typing import Any
 
 import discord
 from discord.app_commands import Choice
@@ -26,8 +26,8 @@ class StandardModeration(BaseCog):
         ctx: Context,
         member: discord.Member,
         *,
-        reason: Optional[str] = None,
-    ) -> Optional[discord.Message]:
+        reason: str | None = None,
+    ) -> discord.Message | None:
         async with ctx.typing(ephemeral=True):
             if await member_check(ctx, member, self.bot) is not True:  # redo member_check later (?)
                 return
@@ -67,7 +67,7 @@ class StandardModeration(BaseCog):
     @commands.hybrid_command(name="unban", help="Unbans users for good behaviour.", with_app_command=True)
     @commands.bot_has_permissions(send_messages=True, view_audit_log=True, ban_members=True)
     @commands.has_guild_permissions(ban_members=True)
-    async def unban(self, ctx: Context, member: str) -> Union[discord.Message, discord.InteractionMessage, None]:
+    async def unban(self, ctx: Context, member: str) -> discord.Message | discord.InteractionMessage | None:
         if member.isdigit():
             member_id = int(member, base=10)
             try:
@@ -87,7 +87,7 @@ class StandardModeration(BaseCog):
                     member = entry.user
                     break
 
-        if not isinstance(member, (discord.User, discord.Object)):
+        if not isinstance(member, discord.User | discord.Object):
             return await ctx.reply("The provided member doesn't exist or isn't banned.", user_mistake=True)
 
         async with ctx.typing(ephemeral=True):
@@ -126,8 +126,8 @@ class StandardModeration(BaseCog):
         ctx: Context,
         member: discord.Member,
         *,
-        reason: Optional[str] = None,
-    ) -> Optional[discord.Message]:
+        reason: str | None = None,
+    ) -> discord.Message | None:
         async with ctx.typing(ephemeral=True):
             if await member_check(ctx, member, self.bot) is not True:
                 return
@@ -159,8 +159,8 @@ class StandardModeration(BaseCog):
         ctx: Context,
         member: discord.Member,
         *,
-        nickname: Optional[str] = None,
-    ) -> Optional[discord.Message]:
+        nickname: str | None = None,
+    ) -> discord.Message | None:
         async with ctx.typing(ephemeral=True):
             if not nickname and not member.nick:
                 return await ctx.reply(f"**{member}** has no nickname to remove.", user_mistake=True)

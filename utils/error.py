@@ -2,8 +2,8 @@ from __future__ import annotations
 
 import sys
 import traceback
-from typing import TYPE_CHECKING, Optional
 from contextlib import suppress
+from typing import TYPE_CHECKING
 
 import discord
 from discord.ext import commands
@@ -24,7 +24,7 @@ class CommandErrorHandler(commands.Cog):
         self.bot = bot
 
     @commands.Cog.listener()
-    async def on_command_error(self, ctx: Context, error: Exception) -> Optional[discord.Message]:
+    async def on_command_error(self, ctx: Context, error: Exception) -> discord.Message | None:
         """The event triggered when an error is raised while invoking a command.
         Parameters
         ------------

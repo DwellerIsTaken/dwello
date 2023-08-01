@@ -1,13 +1,14 @@
 from __future__ import annotations
 
-from typing import Optional, MutableMapping
+import datetime
+from collections.abc import MutableMapping
 
 import discord
-import datetime
 from discord.ext import commands
 
-from .flags import flag_value, BaseFlags
-from .cache import cache, ExpiringCache  # noqa: F401
+from .cache import ExpiringCache, cache  # noqa: F401
+from .flags import BaseFlags, flag_value
+
 
 class AutoModFlags(BaseFlags):
     @flag_value
@@ -21,7 +22,7 @@ class AutoModFlags(BaseFlags):
         return 2
 
 
-'''class ModConfig:
+"""class ModConfig:
     __slots__ = (
         'automod_flags',
         'id',
@@ -85,7 +86,7 @@ class AutoModFlags(BaseFlags):
 
     async def apply_mute(self, member: discord.Member, reason: Optional[str]):
         if self.mute_role_id:
-            await member.add_roles(discord.Object(id=self.mute_role_id), reason=reason)'''
+            await member.add_roles(discord.Object(id=self.mute_role_id), reason=reason)"""
 
 
 class CooldownByContent(commands.CooldownMapping):
@@ -111,18 +112,18 @@ class SpamChecker:
     def __init__(self):
         self.by_content = CooldownByContent.from_cooldown(15, 17.0, commands.BucketType.member)
         self.by_user = commands.CooldownMapping.from_cooldown(10, 12.0, commands.BucketType.user)
-        self.last_join: Optional[datetime.datetime] = None
+        self.last_join: datetime.datetime | None = None
         self.new_user = commands.CooldownMapping.from_cooldown(30, 35.0, commands.BucketType.channel)
-        self._by_mentions: Optional[commands.CooldownMapping] = None
-        self._by_mentions_rate: Optional[int] = None
+        self._by_mentions: commands.CooldownMapping | None = None
+        self._by_mentions_rate: int | None = None
 
         # user_id flag mapping (for about 30 minutes)
         self.fast_joiners: MutableMapping[int, bool] = ExpiringCache(seconds=1800.0)
         self.hit_and_run = commands.CooldownMapping.from_cooldown(10, 12, commands.BucketType.channel)
 
-        self.mention_count = 5 # add to guild config table instead
+        self.mention_count = 5  # add to guild config table instead
 
-    def by_mentions(self) -> Optional[commands.CooldownMapping]:
+    def by_mentions(self) -> commands.CooldownMapping | None:
         if not self.mention_count:
             return None
 
@@ -175,7 +176,7 @@ class SpamChecker:
             self.fast_joiners[member.id] = True
         return is_fast
 
-    def is_mention_spam(self, message: discord.Message) -> bool: # config:
+    def is_mention_spam(self, message: discord.Message) -> bool:  # config:
         mapping = self.by_mentions()
         if mapping is None:
             return False

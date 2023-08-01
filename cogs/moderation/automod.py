@@ -1,18 +1,17 @@
 from __future__ import annotations
 
+import contextlib
+from collections import defaultdict
 from typing import Any
 
 import discord
-import contextlib
 from discord.ext import commands
-from collections import defaultdict
 
-from utils import SpamChecker, HandleHTTPException
 from core import BaseCog, Dwello
+from utils import HandleHTTPException, SpamChecker
 
 
 class AutoMod(BaseCog):
-
     def __init__(self, bot: Dwello, *args: Any, **kwargs: Any) -> None:
         super().__init__(bot, *args, **kwargs)
         self._spam_check: defaultdict[int, SpamChecker] = defaultdict(SpamChecker)
@@ -23,12 +22,12 @@ class AutoMod(BaseCog):
         checker = self._spam_check[guild_id]
         if not checker.is_spamming(message):
             return
-        
+
         if member.guild.owner.id == member.id or self.bot.user.id == member.id:
             return
-        
+
         async with HandleHTTPException(message.channel, title=f"Failed to ban {member}"):
-            await member.ban(reason='Auto-ban for spamming')
+            await member.ban(reason="Auto-ban for spamming")
 
     async def ban_for_mention_spam(
         self,
@@ -38,11 +37,10 @@ class AutoMod(BaseCog):
         member: discord.Member,
         multiple: bool = False,
     ) -> None:
-
         if multiple:
-            reason = f'Spamming mentions over multiple messages ({mention_count} mentions)'
+            reason = f"Spamming mentions over multiple messages ({mention_count} mentions)"
         else:
-            reason = f'Spamming mentions ({mention_count} mentions)'
+            reason = f"Spamming mentions ({mention_count} mentions)"
 
         async with HandleHTTPException(message.channel, title=f"Failed to ban {member}"):
             await member.ban(reason=reason)
@@ -61,9 +59,13 @@ class AutoMod(BaseCog):
         checker = self._spam_check[guild_id]
         if checker.is_mention_spam(message):
             return await self.ban_for_mention_spam(
-                checker.mention_count, guild_id, message, message.author, multiple=True,
+                checker.mention_count,
+                guild_id,
+                message,
+                message.author,
+                multiple=True,
             )
-        
+
         # auto-ban tracking for mention spams begin here
         if len(message.mentions) <= 3:
             return

@@ -3,14 +3,14 @@ from __future__ import annotations
 import datetime
 import io
 import random
-from typing import Any, Dict, Optional, Union
+from typing import Any
 
 import discord
 from discord import app_commands
 from discord.ext import commands
 
-from utils import ENV
 from core import BaseCog, Context, Dwello, Embed
+from utils import ENV
 
 
 class Fun(BaseCog):
@@ -26,7 +26,7 @@ class Fun(BaseCog):
         /,
         listing: str = "hot",
         limit: int = 50,
-    ) -> Union[Dict[str, Any], Any]:
+    ) -> dict[str, Any] | Any:
         async with self.bot.http_session.get(
             f"https://www.reddit.com/r/{subreddit}/{listing}.json?limit={limit}",
             headers={"User-agent": "Discord Bot"},
@@ -38,7 +38,7 @@ class Fun(BaseCog):
             return await ctx.reply("No subreddit found.", user_mistake=True)  # make an errorhandler for that
 
         try:
-            _data: Dict[str, Any] = random.choice(data["data"]["children"])["data"]
+            _data: dict[str, Any] = random.choice(data["data"]["children"])["data"]
         except IndexError:
             return await ctx.reply("No subreddit found.", user_mistake=True)
 
@@ -50,7 +50,7 @@ class Fun(BaseCog):
         aliases=["tenor"],
         with_app_command=True,
     )
-    async def gif(self, ctx: Context, *, gif: str = "dankmeme") -> Optional[discord.Message]:
+    async def gif(self, ctx: Context, *, gif: str = "dankmeme") -> discord.Message | None:
         key: str = ENV["TENOR_KEY"]
         limit: int = 1
         ckey: str = self.bot.user.id
@@ -82,7 +82,7 @@ class Fun(BaseCog):
         return await ctx.reply(embed=embed)
 
     @commands.hybrid_command(name="meme", help="Returns a subreddit meme.", with_app_command=True)
-    async def meme(self, ctx: Context) -> Optional[discord.Message]:
+    async def meme(self, ctx: Context) -> discord.Message | None:
         data = await self.retrieve_subreddit(ctx, "dankmeme")
         if isinstance(data, discord.Message):
             return
@@ -100,8 +100,8 @@ class Fun(BaseCog):
         return await ctx.reply(embed=embed)
 
     @commands.hybrid_command(name="reddit", help="Returns a subreddit.", with_app_command=True)
-    async def reddit(self, ctx: Context, subreddit: str) -> Optional[discord.Message]:
-        data: Dict[str, Any] = await self.retrieve_subreddit(ctx, subreddit)
+    async def reddit(self, ctx: Context, subreddit: str) -> discord.Message | None:
+        data: dict[str, Any] = await self.retrieve_subreddit(ctx, subreddit)
         if isinstance(data, discord.Message):
             return
 
@@ -131,7 +131,7 @@ class Fun(BaseCog):
         help="Shows the song member is listening to.",
         with_app_command=True,
     )
-    async def spotify(self, ctx: Context, *, member: discord.Member = commands.Author) -> Optional[discord.Message]:
+    async def spotify(self, ctx: Context, *, member: discord.Member = commands.Author) -> discord.Message | None:
         if ctx.interaction:
             member: discord.Member = ctx.guild.get_member(member.id)
             await ctx.defer()

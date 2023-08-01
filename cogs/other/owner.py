@@ -3,7 +3,7 @@
 
 from __future__ import annotations
 
-from typing import Set, Literal, Optional
+from typing import Literal
 
 import asyncpg
 import discord
@@ -33,7 +33,7 @@ class Owner(commands.Cog):
         self.select_emoji = "🌐"
         self.select_brief = "Owners' tools."
 
-        self.additional_cmds: Set[str] = {"news"}
+        self.additional_cmds: set[str] = {"news"}
 
     @commands.is_owner()
     @commands.group(name="blacklist", invoke_without_command=True, hidden=True)
@@ -111,7 +111,7 @@ class Owner(commands.Cog):
 
     @commands.command()
     @commands.is_owner()
-    async def sync(self, ctx: Context) -> Optional[discord.Message]:
+    async def sync(self, ctx: Context) -> discord.Message | None:
         return await ctx.send(f"Synced {len(await self.bot.tree.sync())} global commands")
 
     @commands.command()
@@ -121,8 +121,8 @@ class Owner(commands.Cog):
         self,
         ctx: Context,
         guilds: commands.Greedy[discord.Object],
-        spec: Optional[Literal["~", "*", "^"]] = None,
-    ) -> Optional[discord.Message]:
+        spec: Literal["~", "*", "^"] | None = None,
+    ) -> discord.Message | None:
         bot = self.bot
         if not guilds:
             if spec == "~":

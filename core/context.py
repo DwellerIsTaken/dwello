@@ -4,9 +4,10 @@ import asyncio
 import functools
 import random
 import re
+from collections.abc import Callable, Iterable, Sequence
 from contextlib import suppress
 from operator import attrgetter
-from typing import TYPE_CHECKING, Any, Callable, Iterable, Optional, Sequence, Tuple, TypeVar, Union
+from typing import TYPE_CHECKING, Any, TypeVar
 
 import discord
 from discord.ext import commands
@@ -45,7 +46,7 @@ class CancelButton(discord.ui.Button):
 
 
 class Confirm(discord.ui.View):
-    def __init__(self, buttons: Tuple[Tuple[str]], timeout: int = 30):
+    def __init__(self, buttons: tuple[tuple[str]], timeout: int = 30):
         super().__init__(timeout=timeout)
         self.message = None
         self.value = None
@@ -118,15 +119,15 @@ class NewContext(commands.Context):  # [commands.Bot], Generic[T]
     @override
     async def send(
         self,
-        content: Optional[str] = None,
+        content: str | None = None,
         *,
-        embed: Optional[discord.Embed] = None,
-        embeds: Optional[Sequence[discord.Embed]] = None,
+        embed: discord.Embed | None = None,
+        embeds: Sequence[discord.Embed] | None = None,
         bold: bool = False,
         italic: bool = False,
         underline: bool = False,
         **kwargs: Any,
-    ) -> Optional[discord.Message]:
+    ) -> discord.Message | None:
         assert isinstance(self.me, discord.Member)
 
         perms: discord.Permissions = self.channel.permissions_for(self.me)
@@ -148,7 +149,7 @@ class NewContext(commands.Context):  # [commands.Bot], Generic[T]
             test_string = re.sub(
                 "[^A-Za-z0-9._-]+",
                 "",
-                (str(content) or "") + str((embed.to_dict() if embed else "")),
+                (str(content) or "") + str(embed.to_dict() if embed else ""),
             )
             if self.bot.http.token in test_string.replace("\u200b", "").replace(" ", ""):
                 raise commands.BadArgument("Could not send message as it contained the bot's token!")
@@ -177,13 +178,13 @@ class NewContext(commands.Context):  # [commands.Bot], Generic[T]
     @override  # ritik check this and leave all the features but u can rewrite
     async def reply(  # add things and cleanup
         self,
-        content: Optional[str] = None,
+        content: str | None = None,
         *,
-        ephemeral: Optional[bool] = None,
-        user_mistake: Optional[bool] = None,
-        mention_author: Optional[bool] = None,
-        permission_cmd: Optional[bool] = None,
-        mention_reference_author: Optional[bool] = True,
+        ephemeral: bool | None = None,
+        user_mistake: bool | None = None,
+        mention_author: bool | None = None,
+        permission_cmd: bool | None = None,
+        mention_reference_author: bool | None = True,
         **kwargs: Any,
     ) -> discord.Message:
         mention: bool = False
@@ -221,14 +222,14 @@ class NewContext(commands.Context):  # [commands.Bot], Generic[T]
         else:
             return await self.send(content, mention_author=mention, ephemeral=ephemeral, **kwargs)
 
-    async def error(self, *args: Any, **kwargs: Any) -> Optional[discord.Message]:
+    async def error(self, *args: Any, **kwargs: Any) -> discord.Message | None:
         """Similar to send, but if the original message is deleted, it will delete the error message as well."""
-        embed: Optional[discord.Embed] = kwargs.get("embed")
+        embed: discord.Embed | None = kwargs.get("embed")
         if isinstance(embed, discord.Embed) and not embed.color:
             # if no color is set, set it to red
             embed.color = discord.Color.red()
 
-        msg: Optional[discord.Message] = await self.reply(
+        msg: discord.Message | None = await self.reply(
             *args,
             **kwargs,
         )
@@ -302,13 +303,13 @@ class NewContext(commands.Context):  # [commands.Bot], Generic[T]
     async def confirm(
         self,
         message: str = "Do you want to confirm?",
-        buttons: Optional[Tuple[Union[discord.PartialEmoji, str], str, discord.ButtonStyle]] = None,
+        buttons: tuple[discord.PartialEmoji | str, str, discord.ButtonStyle] | None = None,
         timeout: int = 30,
         delete_after_confirm: bool = False,
         delete_after_timeout: bool = False,
-        delete_after_cancel: Optional[bool] = None,
+        delete_after_cancel: bool | None = None,
         return_message: bool = False,
-    ) -> Union[bool, Tuple[bool, discord.Message]]:
+    ) -> bool | tuple[bool, discord.Message]:
         """A confirmation menu."""
 
         delete_after_cancel = delete_after_cancel if delete_after_cancel is not None else delete_after_confirm
@@ -371,17 +372,17 @@ class NewContext(commands.Context):  # [commands.Bot], Generic[T]
         with suppress(discord.Forbidden, discord.HTTPException):
             await super().typing()
 
-    @property # maybe call bot.is_owner(), but its async so
+    @property  # maybe call bot.is_owner(), but its async so
     def is_bot_owner(self) -> bool:
         return self.author.id in self.bot.owner_ids
 
     @property
-    def reference(self) -> Optional[discord.Message]:
+    def reference(self) -> discord.Message | None:
         message = getattr(self.message.reference, "resolved", None)
         return isinstance(message, discord.Message) and message or None
 
     @property
-    def referenced_user(self) -> Optional[discord.abc.User]:
+    def referenced_user(self) -> discord.abc.User | None:
         return getattr(self.reference, "author", None)
 
     def send_view(self):
@@ -391,5 +392,5 @@ class NewContext(commands.Context):  # [commands.Bot], Generic[T]
                 self.add_item(
                     discord.ui.Button(label=f"Sent from {self.guild}", style=discord.ButtonStyle.blurple, disabled=True)
                 )
-        
+
         return View()
