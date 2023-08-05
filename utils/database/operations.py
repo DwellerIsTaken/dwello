@@ -35,19 +35,10 @@ class DataBaseOperations:
 
     async def fetch_table_data(self, *tables: str) -> dict[str, Any | list]:
         async with self.bot.safe_connection() as conn:
-            try:
-                data = self.bot.db_data
-
-            except AttributeError:
-                data: dict[str, Any | list] = {}
-
-            if not tables:
-                tables: list[str] = self.bot.tables.copy()
-                tables.remove("prefixes")
-
+            data: dict[str, Any | list] = {}
             for table in tables:
                 if table == "prefixes":
-                    continue
+                    continue # stored in dict already
                 query = f"SELECT * FROM {table}"
                 table_data = await conn.fetch(query)
                 data[table] = table_data

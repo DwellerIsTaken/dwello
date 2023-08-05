@@ -215,7 +215,7 @@ class Dwello(commands.AutoShardedBot):
             raise e
 
         self.tables = await self.db.create_tables()
-        self.db_data = await self.db.fetch_table_data()
+        #self.db_data = await self.db.fetch_table_data()
         self.guild_prefixes = dict(
             await self.pool.fetch("SELECT guild_id, array_agg(prefix) FROM prefixes GROUP BY guild_id")
         )
