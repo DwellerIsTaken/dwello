@@ -4,7 +4,7 @@ import discord
 # __COLORS__:
 
 WARNING_COLOR = 0xFF0000  # -> COLOR FOR WARNINGS
-TWITCH_COLOR = discord.Colour.random()  # get color of streamer later & add customize option
+TWITCH_COLOR = discord.Colour.random()  # get color of streamer later & add customize option # gets once | remove this later
 
 # ___FOOTERS___:
 FOOTER = "https://hitoshi.org"
@@ -33,7 +33,7 @@ PARTNER_EMOJI = "<:Partner:1135358566316908656>"
 ACTIVE_DEVELOPER_EMOJI = "<:ActiveDeveloper:1135358551397769227>"
 STAFF_EMOJI = "<:Staff:1135360330139181127>"
 
-
+# __DICTIONARIES__
 PUBLIC_USER_FLAGS_EMOJI_DICT = {
     "hypesquad_brilliance": HYPESQUAD_BRILLIANCE_EMOJI,
     "hypesquad_bravery": HYPESQUAD_BRAVERY_EMOJI,
@@ -50,7 +50,117 @@ PUBLIC_USER_FLAGS_EMOJI_DICT = {
     "partner": PARTNER_EMOJI,
 }
 
-# __ALIASES__
+LANGUAGES = {
+    'af': 'Afrikaans',
+    'sq': 'Albanian',
+    'am': 'Amharic',
+    'ar': 'Arabic',
+    'hy': 'Armenian',
+    'az': 'Azerbaijani',
+    'eu': 'Basque',
+    'be': 'Belarusian',
+    'bn': 'Bengali',
+    'bs': 'Bosnian',
+    'bg': 'Bulgarian',
+    'ca': 'Catalan',
+    'ceb': 'Cebuano',
+    'ny': 'Chichewa',
+    'zh-cn': 'Chinese (Simplified)',
+    'zh-tw': 'Chinese (Traditional)',
+    'co': 'Corsican',
+    'hr': 'Croatian',
+    'cs': 'Czech',
+    'da': 'Danish',
+    'nl': 'Dutch',
+    'en': 'English',
+    'eo': 'Esperanto',
+    'et': 'Estonian',
+    'tl': 'Filipino',
+    'fi': 'Finnish',
+    'fr': 'French',
+    'fy': 'Frisian',
+    'gl': 'Galician',
+    'ka': 'Georgian',
+    'de': 'German',
+    'el': 'Greek',
+    'gu': 'Gujarati',
+    'ht': 'Haitian Creole',
+    'ha': 'Hausa',
+    'haw': 'Hawaiian',
+    'iw': 'Hebrew',
+    'he': 'Hebrew',
+    'hi': 'Hindi',
+    'hmn': 'Hmong',
+    'hu': 'Hungarian',
+    'is': 'Icelandic',
+    'ig': 'Igbo',
+    'id': 'Indonesian',
+    'ga': 'Irish',
+    'it': 'Italian',
+    'ja': 'Japanese',
+    'jw': 'Javanese',
+    'kn': 'Kannada',
+    'kk': 'Kazakh',
+    'km': 'Khmer',
+    'ko': 'Korean',
+    'ku': 'Kurdish (Kurmanji)',
+    'ky': 'Kyrgyz',
+    'lo': 'Lao',
+    'la': 'Latin',
+    'lv': 'Latvian',
+    'lt': 'Lithuanian',
+    'lb': 'Luxembourgish',
+    'mk': 'Macedonian',
+    'mg': 'Malagasy',
+    'ms': 'Malay',
+    'ml': 'Malayalam',
+    'mt': 'Maltese',
+    'mi': 'Maori',
+    'mr': 'Marathi',
+    'mn': 'Mongolian',
+    'my': 'Myanmar (Burmese)',
+    'ne': 'Nepali',
+    'no': 'Norwegian',
+    'or': 'Odia',
+    'ps': 'Pashto',
+    'fa': 'Persian',
+    'pl': 'Polish',
+    'pt': 'Portuguese',
+    'pa': 'Punjabi',
+    'ro': 'Romanian',
+    'ru': 'Russian',
+    'sm': 'Samoan',
+    'gd': 'Scots Gaelic',
+    'sr': 'Serbian',
+    'st': 'Sesotho',
+    'sn': 'Shona',
+    'sd': 'Sindhi',
+    'si': 'Sinhala',
+    'sk': 'Slovak',
+    'sl': 'Slovenian',
+    'so': 'Somali',
+    'es': 'Spanish',
+    'su': 'Sundanese',
+    'sw': 'Swahili',
+    'sv': 'Swedish',
+    'tg': 'Tajik',
+    'ta': 'Tamil',
+    'te': 'Telugu',
+    'th': 'Thai',
+    'tr': 'Turkish',
+    'uk': 'Ukrainian',
+    'ur': 'Urdu',
+    'ug': 'Uyghur',
+    'uz': 'Uzbek',
+    'vi': 'Vietnamese',
+    'cy': 'Welsh',
+    'xh': 'Xhosa',
+    'yi': 'Yiddish',
+    'yo': 'Yoruba',
+    'zu': 'Zulu',
+}
+
+# __LISTS__
 HELLO_ALIASES = [
     "salutations",
     "greetings",
@@ -79,6 +189,7 @@ HELLO_ALIASES = [
     "zdravo",
     "salam",
 ]
+
 
 # MOVE TO FILES THEMSELVES LATER
 server_statistics_help_embed_description = "Below you can see *the accurate description* of how you should be using the counter commands. \n \n **First of all**, choose a type of counter which you want to create. You can choose from: ```all (Member and bot users) \nmembers (Member users) \nbots (Bot users)``` \n**And**, if you want to create a specific category where all your countes will be located, use: ```category```\n**Second of all**, type the command like: ```$add_counter [chosen type of counter/category]``` \n**And last**, but not least, a quick tip: you can go to the channel settings and set things up as you wish to! \n\nAnd __*don`t*__ create a type of counter channel that already exists on your server!\nFor more information about counters see `$add_counter list`."
