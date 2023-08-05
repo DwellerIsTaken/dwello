@@ -81,10 +81,15 @@ CREATE TABLE IF NOT EXISTS todo(
 CREATE TABLE IF NOT EXISTS ideas(
     id SERIAL PRIMARY KEY,
     author_id BIGINT NOT NULL,
-    votes BIGINT DEFAULT 0,
     created_at TIMESTAMP,
     content TEXT,
     title TEXT
+);
+
+CREATE TABLE IF NOT EXISTS idea_voters(
+    id BIGINT,
+    voter_id BIGINT,
+    PRIMARY KEY (id, voter_id)
 );
 
 ALTER SEQUENCE jobs_id_seq START 10000000 INCREMENT BY 1;

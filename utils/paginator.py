@@ -141,6 +141,8 @@ class DefaultPaginator(View):
 
         self.current_page = 0
 
+        self.message: discord.Message | None = None
+
     def _reconstruct_embeds(self, embeds: list[Embed]) -> list[Embed]:
         _embeds: list[Embed] = []
         for i, embed in enumerate(embeds):

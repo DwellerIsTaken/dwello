@@ -29,6 +29,7 @@ from utils import DefaultPaginator, Idea, create_codeblock
 from .news import NewsViewer
 
 SVT = TypeVar("SVT", bound="SourceView")
+IPT = TypeVar("IPT", bound="IdeaPaginator")
 
 newline = "\n"
 
@@ -895,7 +896,7 @@ class About(commands.Cog):
     async def _ideas_show(self, ctx: Context) -> DefaultPaginator | discord.Message:
         if not (ideas := await self.bot.db.get_ideas()):
             return await ctx.reply(embed=Embed(description="No ideas yet."))
-        return await IdeaPaginator(ctx, ideas)._start()
+        return await IdeaPaginator.start(ctx, ideas)
 
     @commands.hybrid_command(name="ideas", help="Shows the list of suggested ideas.", with_app_command=True)
     async def ideas(self, ctx: Context) -> discord.Message | None:
@@ -1121,7 +1122,7 @@ class About(commands.Cog):
 
         return await SourceView.start(ctx, embed, lines, filename=f"{command_name}.py")
 
-
+# I DONT LIKE THIS AT ALL | maybe redo
 class IdeaPaginator(DefaultPaginator):
     def __init__(
         self,
@@ -1137,7 +1138,7 @@ class IdeaPaginator(DefaultPaginator):
         self._embeds = self._construct_embeds(bot)  # dont override the parent class' embeds
         super().__init__(obj, self._embeds, values=self.ideas, **kwargs)
 
-        self.voted = [(embed, False) for embed in self.embeds]
+        self.voted = [(embed, self.ideas[n].voted(self.author.id)) for n, embed in enumerate(self.embeds)]
 
         self.upvote = UpvoteIdeaButton(row=1)
         self.add_item(self.upvote)
@@ -1168,6 +1169,22 @@ class IdeaPaginator(DefaultPaginator):
         self.next.style = styles[page == total]
         self.previous.style = styles[page == 0]
         self.upvote.disabled = self.voted[page][1]
+        if self.upvote.disabled is True:
+            self.upvote.label = "Voted"
+            self.upvote.style = ButtonStyle.red
+        else:
+            self.upvote.label = "Upvote"
+            self.upvote.style = ButtonStyle.green
+
+    @classmethod
+    async def start(
+        cls: type[IPT],
+        obj: Context | Interaction[Dwello],
+        ideas: list[Idea],
+        **kwargs,
+    ) -> IPT:
+        self = cls(obj, ideas, **kwargs)
+        return await self._start()
 
 
 class UpvoteIdeaButton(discord.ui.Button["IdeaPaginator"]):
@@ -1188,7 +1205,7 @@ class UpvoteIdeaButton(discord.ui.Button["IdeaPaginator"]):
         embed = view.embeds[page]
         idea: Idea = view.ideas[page]
 
-        await idea.upvote()
+        await idea.upvote(view.author.id)
 
         embed.set_footer(text=f"Votes: {idea.votes}")
         view.voted[page] = (embed, True)

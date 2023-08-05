@@ -143,7 +143,7 @@ class DataBaseOperations:
         async with self.bot.safe_connection() as conn:
             try:
                 record: Record | None = await conn.fetchrow(
-                    "INSERT INTO prefixes(prefix, guild_id) VALUES($1, $2) " "RETURNING *",
+                    "INSERT INTO prefixes(prefix, guild_id) VALUES($1, $2) RETURNING *",
                     prefix,
                     guild.id,
                 )
@@ -163,12 +163,12 @@ class DataBaseOperations:
             records: list[Record]
             if all:
                 records = await conn.fetch(
-                    "DELETE FROM prefixes " "WHERE guild_id = $1 " "RETURNING *",
+                    "DELETE FROM prefixes WHERE guild_id = $1 RETURNING *",
                     guild.id,
                 )
             else:
                 records = await conn.fetch(
-                    "DELETE FROM prefixes " "WHERE (prefix, guild_id) IN (($1, $2)) " "RETURNING *",
+                    "DELETE FROM prefixes WHERE (prefix, guild_id) IN (($1, $2)) RETURNING *",
                     prefix,
                     guild.id,
                 )
@@ -194,4 +194,4 @@ class DataBaseOperations:
     async def get_ideas(self) -> list[Idea]:
         async with self.bot.safe_connection() as conn:
             records: list[Record] = await conn.fetch("SELECT * FROM ideas")
-        return [Idea(record, self.bot) for record in records]
+        return [await Idea.get(record, self.bot) for record in records]

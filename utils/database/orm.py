@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, TypeVar
+from typing import TYPE_CHECKING, List, TypeVar
 
 import discord
 
@@ -159,16 +159,17 @@ class Blacklist:
 
 
 class Idea:
-    __slots__ = ("bot", "id", "author_id", "votes", "created_at", "content", "title")
+    __slots__ = ("bot", "id", "author_id", "created_at", "content", "title", "voters")
 
     def __init__(self, record: Record, bot: Dwello) -> None:
         self.bot: Dwello = bot
         self.id: int = record["id"]
         self.author_id: int = record["author_id"]
-        self.votes: int = record["votes"]
         self.created_at: datetime | None = record.get("created_at")
         self.content: str | None = record.get("content")
         self.title: str | None = record.get("title")
+
+        self.voters: List[str] | None = None
 
     @property
     def name(self) -> str:
@@ -177,23 +178,48 @@ class Idea:
     @property
     def text(self) -> str:
         return self.content
+    
+    @property
+    def votes(self) -> int:
+        return len(self.voters)
+
+    async def _get_voters(self) -> List[int]:
+        async with self.bot.safe_connection() as conn:
+            records: List[Record] = await conn.fetch(
+                "SELECT * FROM idea_voters WHERE id = $1",
+                self.id,
+            )
+        return [int(record['voter_id']) for record in records]
 
     async def remove(self) -> None:
         async with self.bot.safe_connection() as conn:
             return await conn.execute(
-                "DELETE FROM ideas " "WHERE id = $1",
+                "DELETE FROM ideas WHERE id = $1",
                 self.id,
             )
+        
+    def voted(self, voter_id: int) -> bool:
+        return voter_id in self.voters
 
-    async def upvote(self) -> None:
+    async def upvote(self, voter_id: int) -> None:
         async with self.bot.safe_connection() as conn:
             await conn.execute(
-                "UPDATE ideas SET votes = $1 WHERE id = $2",
-                self.votes + 1,
+                "INSERT INTO idea_voters(id, voter_id) VALUES($1, $2)",
                 self.id,
+                voter_id,
             )
-        self.votes += 1
+        self.voters.append(voter_id)
         return
+    
+    @classmethod
+    async def get(
+        cls: type[IT],
+        record: Record,
+        bot: Dwello,
+    ) -> IT:
+        self = cls(record, bot)
+        self.voters = await self._get_voters()
+        return self
 
     @classmethod
     async def suggest(
@@ -211,4 +237,6 @@ class Idea:
                 content,
                 title,
             )
-        return cls(record, bot)
+        self = cls(record, bot)
+        self.voters = await self._get_voters()
+        return self
