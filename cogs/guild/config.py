@@ -188,11 +188,9 @@ class Config(BaseCog):
     async def twitch_streamer_remove(self, ctx: Context, username: str):  # add choice to delete all
         return await self.bot.twitch.twitch_unsubscribe_from_streamer(ctx, username)
 
-    @twitch_streamer_remove.autocomplete("username")  # make it global
+    @twitch_streamer_remove.autocomplete("username")
     async def autocomplete_callback_twitch_remove(self, interaction: discord.Interaction, current: str):
-        return await self.bot.autocomplete.choice_autocomplete(
-            interaction, current, "twitch_users", "username", "user_id", True
-        )  # autocoplete per cmd or global?
+        return await self.bot.db.autocomplete(current, "twitch_users", "username", "user_id", all=True)
 
 
 # RESTRUCTURE GROUP-SUBGROUP CONNECTIONS LIKE: welcome set channel/message | welcome display channel/message (?)

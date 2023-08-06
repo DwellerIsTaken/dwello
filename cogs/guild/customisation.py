@@ -50,9 +50,7 @@ class Customisation(BaseCog):
             for prefix in prefixes
             if current.startswith(prefix.name.lower()[:item])
         ]
-        if len(choices) > 10:
-            return choices[:10]
-        return choices
+        return choices if len(choices) < 10 else choices[:10]
 
 
 class PrefixConfig:

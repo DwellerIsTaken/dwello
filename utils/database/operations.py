@@ -1,11 +1,13 @@
 from __future__ import annotations
 
 import re
-from typing import TYPE_CHECKING, Any, overload
+from typing import TYPE_CHECKING, Any, overload #Literal
 
 import asyncpg
 import discord
 import aiofiles
+
+from discord.app_commands import Choice
 
 from .orm import Idea, Prefix, Warning
 
@@ -22,6 +24,71 @@ class DataBaseOperations:
     def __init__(self, bot: Dwello) -> None:
         self.bot = bot
         self.pool = bot.pool
+
+    discord.utils.format_dt
+
+    async def autocomplete(
+        self,
+        current: str,
+        table: str,
+        name: str,
+        value: str,
+        *,
+        all: bool = False,
+        choice_length: int = 5,
+    ) -> list[Choice]:
+        """
+        Autocompletes the input string by fetching data from the specified table.
+
+        Parameters
+        ----------
+        current: :class:`str`
+            The string that needs to be autocompleted.
+        table: :class:`str`
+            The table where the data will be fetched.
+        name: :class:`str`
+            The column whose items will be displayed as choices' names.
+        value: :class:`str`
+            The column whose items will be used as values.
+        all: :class:`bool`
+            If True, adds an option 'all' to choices. (Default: False)
+        choice_length :class:`int`
+            Parameter representing the length of the choice list that is returned. (Default: 5)
+
+        Returns
+        -------
+        :class:`list[Choice]`
+            A list of Choice objects representing the autocomplete options.
+
+        Note
+        ----
+        - The data type of the 'value' parameter needs to match the annotation.
+        - The 'value' column must contain strings.
+        - The 'current' argument's type must match the type of 'value' and vice versa.
+        """
+
+        query = f"SELECT * FROM {table}"
+        async with self.bot.safe_connection() as conn:
+            records: list[Record] = await conn.fetch(query)
+
+        choices = []
+        item = len(current)
+
+        if all:
+            choices.append(Choice(name="all", value="all"))
+
+        for record in records:
+            if not any(name_:=record[name], value_:=record[value]):
+                continue
+            
+            name_, value_ = str(name_), str(value_)
+            if (
+                current.startswith(name_.lower()[:item])
+                or current.startswith(value_[:item])
+            ):
+                choices.append(Choice(name=name_, value=value_))
+
+        return choices[:choice_length]
 
     async def create_tables(self) -> list[str]:
         async with self.bot.safe_connection() as conn:

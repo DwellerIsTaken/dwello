@@ -218,9 +218,6 @@ class Warnings(BaseCog):
     @functools.lru_cache(maxsize=1)
     @hybrid_unwarn.autocomplete("warning")
     async def autocomplete_callback(self, interaction: discord.Interaction, current: str) -> list[Choice]:
-        # REDO: DONT FETCH ON AUTOCOMPLETE
-        # FOLLOWUP: OR DO
-
         item = len(current)
         warnings: list[Warning] = await self.bot.db.get_warnings(interaction.namespace["member"].id, interaction.guild)
         choices: list[Choice[str]] = [Choice(name="all", value="all")] + [
@@ -234,6 +231,4 @@ class Warnings(BaseCog):
                 or current.startswith(str(warning.id)[:item])
             )
         ]
-        if len(choices) > 10:
-            return choices[:10]
-        return choices
+        return choices if len(choices) < 10 else choices[:10]

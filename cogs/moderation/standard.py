@@ -105,12 +105,14 @@ class StandardModeration(BaseCog):
     async def autocomplete_callback(self, interaction: discord.Interaction, current: str):
         item = len(current)
         choices = []
-
         async for entry in interaction.guild.bans(limit=None):
-            if current.startswith(str(entry.user.name).lower()[:item]):  # noqa: SIM114
-                choices.append(Choice(name=str(entry.user.name), value=str(entry.user.id)))
-            elif current.startswith(str(entry.user.id)[:item]):
-                choices.append(Choice(name=str(entry.user.name), value=str(entry.user.id)))
+            name = str(entry.user.name)
+            id = str(entry.user.id)
+            if (
+                current.startswith(name.lower()[:item])
+                or current.startswith(id[:item])
+            ):
+                choices.append(Choice(name=name, value=id))
         return choices[:5] if len(choices) > 5 else choices
 
     @commands.hybrid_command(
@@ -174,7 +176,6 @@ class StandardModeration(BaseCog):
                 description=message.format(user=member, nick=nickname),
                 color=cs.WARNING_COLOR,
             )
-
             async with HandleHTTPException(ctx, title=f"Failed to set nickname for {member}."):
                 await member.edit(nick=nickname)
 

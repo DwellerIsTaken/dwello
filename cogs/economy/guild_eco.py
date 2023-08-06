@@ -275,7 +275,7 @@ class Guild_Economy(BaseCog):  # REDO
 
     @job_delete.autocomplete("name")
     async def autocomplete_callback_job_delete(self, interaction: discord.Interaction, current: str):
-        return await self.bot.autocomplete.choice_autocomplete(interaction, current, "jobs", "name", None, True)
+        return await self.bot.db.autocomplete(interaction, current, "jobs", "name", None, True)
 
     @jobs.command(name="set", description="You can set your server job here!")  # MAYBE PUT THIS IN ECONOMY.PY
     async def job_set(self, ctx: Context, name: str) -> discord.Message | None:
@@ -319,7 +319,7 @@ class Guild_Economy(BaseCog):  # REDO
 
     @job_set.autocomplete("name")
     async def autocomplete_callback_job_set(self, interaction: discord.Interaction, current: str):
-        return await self.bot.autocomplete.choice_autocomplete(interaction, current, "jobs", "name", None, False)
+        return await self.bot.db.autocomplete(interaction, current, "jobs", "name", None, False)
 
     @jobs.command(name="remove", description="Removes member's job. | Admin-associated")  # thus only one param is for admins
     async def job_remove(self, ctx: Context, member: discord.Member = None):
