@@ -30,7 +30,7 @@ from utils import NewTranslator as Translator
 from utils import NewView as View  # noqa: F401
 from utils import get_avatar_dominant_color
 
-from ._utils import ENV, AiohttpWeb, DataBaseOperations, LevellingUtils, ListenersFunctions, OtherUtils, Twitch
+from ._utils import ENV, AiohttpWeb, DataBaseOperations, LevellingUtils, ListenersFunctions, Twitch
 from .context import NewContext as Context
 
 if TYPE_CHECKING:
@@ -188,7 +188,6 @@ class Dwello(commands.AutoShardedBot):
         self.listeners = ListenersFunctions(self)
         self.levelling = LevellingUtils(self)
         self.db: DataBaseOperations = DataBaseOperations(self)
-        self.otherutils = OtherUtils(self)
         self.web = AiohttpWeb(self)
 
         # Caching Variables (for now)

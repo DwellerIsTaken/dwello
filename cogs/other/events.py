@@ -48,6 +48,7 @@ class Events(BaseCog):
     @commands.Cog.listener()
     async def on_command_completion(self, ctx: Context) -> None:
         self.bot.commands_executed += 1
+        return
 
     """@commands.Cog.listener()
     async def on_interaction(self, interaction: discord.interactions.Interaction):
@@ -55,7 +56,7 @@ class Events(BaseCog):
 
     channel_type_list = ["category", "all", "member", "bot"]
 
-    @commands.Cog.listener()
+    @commands.Cog.listener() # kinda fix
     async def on_guild_channel_delete(self, channel: discord.abc.GuildChannel) -> None:
         async with self.bot.pool.acquire() as conn:
             conn: asyncpg.Connection
