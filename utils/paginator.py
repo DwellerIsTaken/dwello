@@ -167,7 +167,7 @@ class DefaultPaginator(View):
 
         await interaction.response.send_message(
             embed=(
-                Embed(
+                discord.Embed(
                     title="Failed to interact with the view",
                     description="Hey there! Sorry, but you can't interact with someone else's view.\n",
                     timestamp=discord.utils.utcnow(),
