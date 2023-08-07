@@ -518,8 +518,15 @@ class Todo(BaseCog):
             await ctx.send_help(ctx.command)
 
     @todo.command(description="Adds a Todo")
-    async def add(self, ctx: Context, *, content: str):
-        todo = await self.add_todo(user_id=ctx.author.id, content=content)
+    async def add(self, ctx: Context, *, content: Optional[str] = None):
+        if ctx.reference is not None:
+            message = ctx.message.reference.resolved
+            todo = await self.add_todo(user_id=ctx.author.id, content=content, message=message)
+        else:
+            if content is None:
+                return await ctx.send(f"You forgot to enter the content... (`{ctx.prefix}todo add <content>`)")
+            todo = await self.add_todo(user_id=ctx.author.id, content=content)
+            
         embed = discord.Embed(title="Added todo!", description=content, color=todo.color)
         embed.set_footer(text=f"ID: {todo.id}")
         view = View()
