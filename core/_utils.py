@@ -209,7 +209,7 @@ class ListenersFunctions:
         async with self.bot.pool.acquire() as conn:
             conn: asyncpg.Connection
             async with conn.transaction():
-                await self.bot.otherutils.exe_sql(member.guild)
+                await self.bot.otherutils.exe_sql(member.guild) # fix later
 
                 # adjust counters too in this event
 

@@ -112,7 +112,8 @@ class Owner(commands.Cog):
     @commands.command()
     @commands.is_owner()
     async def sync(self, ctx: Context) -> discord.Message | None:
-        return await ctx.send(f"Synced {len(await self.bot.tree.sync())} global commands")
+        message: discord.Message = await ctx.send("Syncing...")
+        return await message.reply(f"Synced {len(await self.bot.tree.sync())} global commands")
 
     @commands.command()
     @commands.is_owner()

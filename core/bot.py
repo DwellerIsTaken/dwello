@@ -232,7 +232,7 @@ class Dwello(commands.AutoShardedBot):
             )
         )"""
 
-        await self.tree.set_translator(Translator())
+        await self.tree.set_translator(Translator(self.http_session))
 
         asyncio.create_task(self.web.run(port=8081))
 
