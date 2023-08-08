@@ -508,13 +508,13 @@ class PlayerConverter(commands.Converter):
             try:
                 return await cog.get_player_by_puuid(argument)
             except NotFound:
-                return
+                raise
 
         elif len(split) == 2:
             try:
                 return await cog.get_player_by_tag(*split)
             except NotFound:
-                return
+                raise
 
         else:
             raise ParsingError(argument)
@@ -566,6 +566,9 @@ class Valorant(BaseCog):
     async def get_matches(self, player: Player, *, amount: int = 1) -> Union[Match, List[Match]]:
         if amount > 10:
             raise ValueError("You can only get 10 matches at a time.")
+        
+        elif player is None:
+            raise NotFound(str(player))
 
         region, name, tag = player.region, player.name, player.tag
         route = Route(
@@ -660,6 +663,9 @@ class Valorant(BaseCog):
     async def parsing_handler(self, ctx: Context, error: Any):
         if hasattr(error, "original") and isinstance(error.original, ParsingError):
             return await ctx.send("Couldn't parse that username or PUUID, please make sure it's correct and try again.")
-
+        
+        elif hasattr(error, "original") and isinstance(error.original, NotFound):
+            return await ctx.send("Couldn't find that player, please make they exist and try again.")
+            
         else:
             ctx.command.on_error = None  # Triggers global error handler if we don't handle it here
