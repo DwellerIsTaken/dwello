@@ -550,6 +550,9 @@ class Valorant(BaseCog):
         return Player.from_json(json_["data"])
 
     async def get_rank_data(self, player: PlayerT) -> PlayerT:
+        if player is None:
+            raise NotFound(str(player))
+
         route = Route("GET", "/v1/mmr-history/{region}/{name}/{tag}", region=player.region, name=player.name, tag=player.tag)
         res = await self.http.request(route)
 
@@ -588,9 +591,6 @@ class Valorant(BaseCog):
 
     @valorant.command(name="player", description="Get information on a Valorant account.")
     async def player_(self, ctx: Context, player: PlayerConverter):
-        if player is None:
-            return await ctx.send("Couldn't find that player, make sure that player exists and the account is not private.")
-
         await ctx.typing()
         player: Player = await self.get_rank_data(player)
 
@@ -661,11 +661,12 @@ class Valorant(BaseCog):
     @player_.error
     @match.error
     async def parsing_handler(self, ctx: Context, error: Any):
-        if hasattr(error, "original") and isinstance(error.original, ParsingError):
-            return await ctx.send("Couldn't parse that username or PUUID, please make sure it's correct and try again.")
-        
-        elif hasattr(error, "original") and isinstance(error.original, NotFound):
-            return await ctx.send("Couldn't find that player, please make they exist and try again.")
+        if hasattr(error, "original"):
+            if isinstance(error.original, ParsingError):
+                return await ctx.send("Couldn't parse that username or PUUID, please make sure it's correct and try again.")
+            
+            elif  isinstance(error.original, NotFound):
+                return await ctx.send("Couldn't find that player, make sure that player exists and the account is not private.")
             
         else:
             ctx.command.on_error = None  # Triggers global error handler if we don't handle it here
