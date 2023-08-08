@@ -9,7 +9,7 @@ import aiofiles
 
 from discord.app_commands import Choice
 
-from .orm import Idea, Prefix, Warning
+from .orm import Idea, Prefix, Warning, User
 
 # import functools
 
@@ -24,8 +24,6 @@ class DataBaseOperations:
     def __init__(self, bot: Dwello) -> None:
         self.bot = bot
         self.pool = bot.pool
-
-    discord.utils.format_dt
 
     async def autocomplete(
         self,
@@ -110,7 +108,22 @@ class DataBaseOperations:
                 table_data = await conn.fetch(query)
                 data[table] = table_data
         return data
-
+    
+    async def create_user(self, user_id: int) -> User:
+        return await User.create(user_id, self.bot)
+    
+    async def get_user(self, user_id: int) -> User:
+        async with self.bot.safe_connection() as conn:
+            record: Record | None = await conn.fetchrow("SELECT * FROM users WHERE id = $1", user_id)
+        if not record:
+            return await self.create_user(user_id)
+        return await User.get(record, self.bot)
+    
+    async def get_users(self) -> list[User]:
+        async with self.bot.safe_connection() as conn:
+            records: list[Record] = await conn.fetch("SELECT * FROM users")
+        return [await User.get(record, self.bot) for record in records]
+        
     # use ctx, member, message ... (find one class for that) as an object to get guild and author
     async def warn(
         self,
@@ -214,7 +227,7 @@ class DataBaseOperations:
                     return await context.reply("This prefix is already added!", user_mistake=True)
                 raise
 
-        return Prefix(record, self.bot)
+        return await Prefix.get(record, self.bot)
 
     async def remove_prefix(self, prefix: str, guild: discord.Guild, *, all=False) -> list[Prefix]:
         async with self.bot.safe_connection() as conn:

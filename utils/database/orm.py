@@ -2,49 +2,213 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING, List, TypeVar
 
+from typing_extensions import Self
+
 import discord
 
 if TYPE_CHECKING:
     from datetime import datetime
 
-    from asyncpg import Record
+    from asyncpg import Record, BitString
 
     from core import Dwello
 
+UT = TypeVar("UT", bound="User")
 WT = TypeVar("WT", bound="Warning")
 IT = TypeVar("IT", bound="Idea")
 
 
-class User:
+class BasicORM:
+    @classmethod
+    async def get(
+        cls: type[Self],
+        record: Record,
+        bot: Dwello,
+    ) -> Self:
+        return cls(record, bot)
+
+
+# this should be a global User, thus no event_type
+# maybe Member orm later or smh like UserJob (smht within eco)
+# GuildUser actually is the correct name
+# so, a leaderboard will be a global leaderbord (try to get the user, if no you exclude him from the leaderboard)
+# and here below is a global member that will have a global rank
+# to make a local leaderboard you can check for every user in guild what their rank is or smh
+class User(BasicORM):
+    """
+    Class representing an ORM (Object Relational Mapping) for a global bot user.
+    Contains such things as xp, level, money and message count.
+
+    Parameters
+    ----------
+    record: :class:`asyncpg.Record`
+        A record that is destributed across attributes.
+    bot: :class:`Dwello`
+        The bot instance mainly used, in this case, for working with the postgres database.
+    
+    Attributes
+    ----------
+    id: :class:`int`
+        ID of the global user.
+    xp: :class:`int`
+        The amount of experience points on the current level.
+    level: :class:`int`
+        Current global level of the user.
+    messages: :class:`int`
+        The global message count for the user,
+        representing only the count of messages successfully inserted into the database
+        across all shared guilds where both the bot and the user are present.
+    total_xp: :class:`int`
+        Attribute representing the total experience points a user has ever gotten.
+    money: :class:`int`
+        User's money shared across guilds where both the bot and the user are present.
+        Should be used in global economy or smh.
+    _worked: :class:`asyncpg.BitString`
+        Attribute representing whether the user already worked today (globally) or not.
+        Use :class:`.worked` instead.
+
+    .. note::
+        -> event_type - removed
+        -> job_id - removed
+    """
+
     __slots__ = (
         "bot",
         "id",
-        "guild_id",
         "xp",
         "level",
         "messages",
         "total_xp",
         "money",
-        "worked",
-        "event_type",
-        "job_id",
+        "_worked",
     )
 
     def __init__(self, record: Record, bot: Dwello) -> None:
         self.bot: Dwello = bot
-        self.id: int = record["user_id"]
-        self.guild_id: int = record["guild_id"]
+        self.id: int = record["id"]
         self.xp: int = record["xp"]
         self.level: int = record["level"]
+        self.money: int = record["money"]
         self.messages: int = record["messages"]
         self.total_xp: int = record["total_xp"]
-        self.money: int = record["money"]
-        self.worked: int = record["worked"]  # BIT
-        self.event_type: str = record["event_type"]
-        self.job_id: int | None = record.get("job_id")
 
+        self._worked: BitString = record["worked"]
 
-class TwitchUser:
+    @property # probaly temporary
+    def worked(self) -> bool:
+        return bool(self._worked.to_int())
+
+    @property
+    def current_xp(self) -> int:
+        return self.xp
+    
+    @property
+    def experience(self) -> int:
+        return self.xp
+    
+    @property
+    def message_count(self) -> int:
+        return self.messages
+    
+    @property
+    def xp_formula(self) -> int:
+        return int(self.level ** 2 * 50)
+    
+    @property
+    def xp_until_next_level(self) -> int:
+        return self.xp_formula - self.xp
+
+    @classmethod
+    async def create(
+        cls: type[UT],
+        user_id: int,
+        bot: Dwello,
+    ) -> UT:
+        async with bot.safe_connection() as conn:
+            record: Record = await conn.fetchrow(
+                """
+                    INSERT INTO users (id) VALUES ($1)
+                    ON CONFLICT (id) DO UPDATE SET id = excluded.id
+                    RETURNING *;
+                """,
+                user_id,
+            )
+        return cls(record, bot)
+    
+    async def remove(self) -> None:
+        async with self.bot.safe_connection() as conn:
+            await conn.execute("DELETE FROM users WHERE id = $1", self.id)
+        return
+
+    async def get_rank(self) -> int | None:
+        async with self.bot.safe_connection() as conn:
+            #records: list[Record] = await conn.fetch("SELECT * FROM users ORDER BY total_xp DESC")
+            query = """
+                SELECT (SELECT COUNT(*) + 1
+                        FROM users AS u2
+                        WHERE u2.total_xp > u1.total_xp) AS rank
+                FROM users AS u1
+                WHERE id = $1
+                ON CONFLICT DO NOTHING
+            """
+            rank: int | None = await conn.fetchval(query, self.id)
+        return rank
+    
+    async def increase_xp(self, message: discord.Message, rate: int = 5) -> int:
+        if message.author.bot or not message.guild:
+            return
+        xp = self.xp+rate
+        level = self.level
+        total = self.total_xp+rate
+        messages = self.messages+1
+
+        if xp >= self.xp_formula:
+            xp, level = 0, level+1
+
+        async with self.bot.safe_connection() as conn:
+            await conn.execute(
+                "UPDATE users SET xp = $1, total_xp = $2, level = $3, messages = $4 WHERE id = $5",
+                xp,
+                total,
+                level,
+                messages,
+                message.author.id,
+            )
+        self.messages = messages
+        self.total_xp = total
+        self.level = level
+        self.xp = xp
+
+        return self.xp_until_next_level
+
+# ADD THIS TO USER CUSTOMISATION
+# THUS ONLY SEND IF ENABLED
+# https://discord.com/channels/822162578653577336/1081039402945478666/1138587797645697074
+#|xp until next level
+"""level_embed_dis = f"*Your new level is: {new_level}*\n*Xp until your next level: {xp_till_next_level}*"
+
+level_embed = discord.Embed(
+    title="Congratulations with your new level!",
+    description=string.Template(level_embed_dis).safe_substitute(member=message.author.name),
+)
+
+level_embed.set_thumbnail(url=f"{message.author.display_avatar}")
+level_embed.set_author(
+    name=f"{message.author.name}",
+    icon_url=f"{message.author.display_avatar}",
+)
+level_embed.set_footer(text=f"{message.guild.name}")
+level_embed.timestamp = discord.utils.utcnow()"""
+
+# async with suppress(discord.HTTPException): await message.author.send(embed=level_embed)
+
+"""try:
+    await message.author.send(embed=level_embed)
+
+except discord.HTTPException:
+    pass"""
+
+class TwitchUser(BasicORM):
     __slots__ = ("bot", "username", "user_id", "guild_id")
 
     def __init__(self, record: Record, bot: Dwello) -> None:
@@ -54,7 +218,7 @@ class TwitchUser:
         self.guild_id: int = record["guild_id"]
 
 
-class Warning:
+class Warning(BasicORM):
     __slots__ = (
         "id",
         "bot",
@@ -77,14 +241,14 @@ class Warning:
     async def remove(self) -> list[Record]:
         async with self.bot.safe_connection() as conn:
             return await conn.fetch(
-                "DELETE FROM warnings " "WHERE (warn_id, guild_id, user_id) IN (($1, $2, $3)) " "RETURNING *",
+                "DELETE FROM warnings WHERE (warn_id, guild_id, user_id) IN (($1, $2, $3)) RETURNING *",
                 self.id,
                 self.guild_id,
                 self.user_id,
             )
 
-
-class ServerData:
+# different table for counters?
+class ServerData(BasicORM):
     __slots__ = (
         "bot",
         "guild_id",
@@ -105,7 +269,7 @@ class ServerData:
         self.deny_clicked: int | None = record.get("deny_clicked")  # BIT
 
 
-class Prefix:
+class Prefix(BasicORM):
     __slots__ = ("bot", "guild_id", "prefix")
 
     def __init__(self, record: Record, bot: Dwello) -> None:
@@ -120,13 +284,13 @@ class Prefix:
     async def remove(self) -> list[Record]:
         async with self.bot.safe_connection() as conn:
             return await conn.fetch(
-                "DELETE FROM prefixes " "WHERE (prefix, guild_id) IN (($1, $2)) " "RETURNING *",
+                "DELETE FROM prefixes WHERE (prefix, guild_id) IN (($1, $2)) RETURNING *",
                 self.prefix,
                 self.guild_id,
             )
 
 
-class Job:
+class Job(BasicORM):
     __slots__ = ("bot", "guild_id", "name", "id", "salary", "description")
 
     def __init__(self, record: Record, bot: Dwello) -> None:
@@ -138,7 +302,7 @@ class Job:
         self.description: str | None = record.get("description")
 
 
-class News:
+class News(BasicORM):
     __slots__ = ("bot", "title", "message_id", "channel_id", "id")
 
     def __init__(self, record: Record, bot: Dwello) -> None:
@@ -149,7 +313,7 @@ class News:
         self.channel_id: int | None = record.get("channel_id")
 
 
-class Blacklist:
+class Blacklist(BasicORM):
     __slots__ = ("bot", "user_id", "reason")
 
     def __init__(self, record: Record, bot: Dwello) -> None:

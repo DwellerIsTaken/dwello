@@ -76,4 +76,4 @@ async def update_counters(bot: Dwello, guild: Guild) -> None:
                     await channel.edit(name=name)
                     
             except Exception as e:  # handle type error
-                print(e, "exe_sql (utils/other.py)")
+                print(e, "update_counters (utils/other.py)")

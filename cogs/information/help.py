@@ -789,6 +789,7 @@ class About(commands.Cog):
 
         return await ctx.send(embed=embed)
 
+    # maybe add a button, so itll also display member's lvl, xp, rank, money... from global user
     @commands.hybrid_command(name="whois", help="Shows who the member is.")
     async def whois(self, ctx: Context, member: discord.Member = commands.Author) -> discord.Message | None:
         # embed.add_field(name="Display Name", value=member.display_name) if member.display_name != member.name else None
@@ -1210,9 +1211,6 @@ class UpvoteIdeaButton(discord.ui.Button["IdeaPaginator"]):
         embed.set_footer(text=f"Votes: {idea.votes}")
         view.voted[page] = (embed, True)
         self.disabled = True
-
-        # works | you should add somewhere the people who already voted, so they wont twice
-
         await interaction.response.edit_message(view=view)
 
 

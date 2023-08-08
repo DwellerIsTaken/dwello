@@ -2,7 +2,10 @@ from __future__ import annotations
 
 from typing import Any
 
-from core import BaseCog, Context, Dwello  # noqa: F401
+import discord  # noqa: F401
+from discord.ext import commands # noqa: F401
+
+from core import BaseCog, Context, Dwello # noqa: F401
 
 # from colorthief import ColorThief
 # import matplotlib.colors as clr
@@ -25,78 +28,74 @@ class UserInfo(BaseCog):
         # self.eco = GuildEcoUtils(bot)
 
     """@commands.hybrid_command(name = 'stats', description="Shows personal information and rank statistics",with_app_command=True)
-    async def stats(self, ctx: DwelloContext, member: Optional[Union[discord.Member, discord.User]] = commands.Author) -> Optional[discord.Message]:
-        async with ctx.typing(ephemeral=True):
-            async with self.bot.pool.acquire() as conn:
-                conn: asyncpg.Connection
-                async with conn.transaction():
+    async def stats(self, ctx: Context, member: discord.Member | None = commands.Author) -> discord.Message | None:
 
-                    if ctx.guild:
-                        query = "SELECT xp, messages, level, money, total_xp FROM users WHERE user_id = $1 AND guild_id = $2 AND event_type = $3"
-                        warn_query = "SELECT warn_text FROM warnings WHERE user_id = $1 AND guild_id = $2"
-                        query_params = [member.id, ctx.guild.id, "bot"]
-                        warn_params = [member.id, ctx.guild.id]
-                    else:
-                        query = "SELECT xp, messages, level, money, total_xp FROM users WHERE user_id = $1 AND guild_id IS NOT NULL AND event_type = $2"
-                        warn_query = "SELECT warn_text FROM warnings WHERE user_id = $1 AND guild_id IS NOT NULL"
-                        query_params = [member.id, "bot"]
-                        warn_params = [member.id]
+        if ctx.guild:
+            query = "SELECT xp, messages, level, money, total_xp FROM users WHERE user_id = $1 AND guild_id = $2 AND event_type = $3"
+            warn_query = "SELECT warn_text FROM warnings WHERE user_id = $1 AND guild_id = $2"
+            query_params = [member.id, ctx.guild.id, "bot"]
+            warn_params = [member.id, ctx.guild.id]
+        else:
+            query = "SELECT xp, messages, level, money, total_xp FROM users WHERE user_id = $1 AND guild_id IS NOT NULL AND event_type = $2"
+            warn_query = "SELECT warn_text FROM warnings WHERE user_id = $1 AND guild_id IS NOT NULL"
+            query_params = [member.id, "bot"]
+            warn_params = [member.id]
 
-                    try:
-                        row = await conn.fetchrow(query, *query_params)
-                        xp, messages, level, money, total_xp = map(int, row)
-                        warn_rows = await conn.fetch(warn_query, *warn_params)
+        try:
+            row = await conn.fetchrow(query, *query_params)
+            xp, messages, level, money, total_xp = map(int, row)
+            warn_rows = await conn.fetch(warn_query, *warn_params)
 
-                    except TypeError:
-                        await self.levelling.create_user(member.id, member.guild.id)
-                        row = await conn.fetchrow(query, *query_params)
-                        xp, messages, level, money, total_xp = map(int, row)
-                        warn_rows = await conn.fetch(warn_query, *warn_params)
+        except TypeError:
+            await self.levelling.create_user(member.id, member.guild.id)
+            row = await conn.fetchrow(query, *query_params)
+            xp, messages, level, money, total_xp = map(int, row)
+            warn_rows = await conn.fetch(warn_query, *warn_params)
 
-                    warnings = sum(1 for row in warn_rows if row["warn_text"])
+        warnings = sum(1 for row in warn_rows if row["warn_text"])
 
-                    level_formula = int(level * (level * 10))
-                    xp_till_next_level = int(level_formula - xp)
+        level_formula = int(level * (level * 10))
+        xp_till_next_level = int(level_formula - xp)
 
-                    most_used_color = await get_avatar_dominant_color(member)
+        most_used_color = await get_avatar_dominant_color(member)
 
-                    #embed_hex_code = hex_code.replace('#', '0x')
+        #embed_hex_code = hex_code.replace('#', '0x')
 
-                    embed = discord.Embed(title="Statistics", color= most_used_color) #discord.Colour.to_rgb(most_used_color)
+        embed = discord.Embed(title="Statistics", color= most_used_color) #discord.Colour.to_rgb(most_used_color)
 
-                    if member == ctx.author:
-                        embed.set_author(name = f"Your personal information", icon_url = member.display_avatar)
+        if member == ctx.author:
+            embed.set_author(name = f"Your personal information", icon_url = member.display_avatar)
 
-                    else:
-                        name_l = member.name[-1].lower()
+        else:
+            name_l = member.name[-1].lower()
 
-                        if "s" == name_l: # GLOBAL 'S FUNCTION
-                            embed.set_author(name = f"{member.name}' personal information", icon_url = member.display_avatar)
+            if "s" == name_l: # GLOBAL 'S FUNCTION
+                embed.set_author(name = f"{member.name}' personal information", icon_url = member.display_avatar)
 
-                        else:
-                            embed.set_author(name = f"{member.name}'s personal information", icon_url = member.display_avatar)
+            else:
+                embed.set_author(name = f"{member.name}'s personal information", icon_url = member.display_avatar)
 
-                    embed.add_field(name=f"Current level", value=f"`{level}`", inline=True)
-                    embed.add_field(name="\u2800\u2800", value="\u2800", inline=True)
-                    embed.add_field(name=f"Money", value=f"`{money}`", inline=True)
-                    embed.add_field(name=f"Total messages sent", value=f"`{messages}`", inline=True)
-                    embed.add_field(name="\u2800\u2800", value="\u2800", inline=True)
-                    embed.add_field(name=f"Total xp count", value=f"`{total_xp}`", inline=True)
-                    embed.add_field(name=f"Total warnings", value=f"`{warnings}`", inline=True)
-                    embed.add_field(name="\u2800\u2800", value="\u2800", inline=True)
-                    embed.add_field(name=f"Xp until the next level", value=f"`{xp_till_next_level}`", inline=True)
+        embed.add_field(name=f"Current level", value=f"`{level}`", inline=True)
+        embed.add_field(name="\u2800\u2800", value="\u2800", inline=True)
+        embed.add_field(name=f"Money", value=f"`{money}`", inline=True)
+        embed.add_field(name=f"Total messages sent", value=f"`{messages}`", inline=True)
+        embed.add_field(name="\u2800\u2800", value="\u2800", inline=True)
+        embed.add_field(name=f"Total xp count", value=f"`{total_xp}`", inline=True)
+        embed.add_field(name=f"Total warnings", value=f"`{warnings}`", inline=True)
+        embed.add_field(name="\u2800\u2800", value="\u2800", inline=True)
+        embed.add_field(name=f"Xp until the next level", value=f"`{xp_till_next_level}`", inline=True)
 
-                    if ctx.guild:
-                        name, salary, description = await self.ge.server_job_info(ctx, member) # there is no self.ge -> import from guild_eco.py
-                        embed.add_field(name=f"Server job", value=f"`{name}`", inline=True)
-                        embed.add_field(name="\u2800\u2800", value="\u2800", inline=True)
-                        embed.add_field(name=f"Server job salary", value=f"`{salary}`", inline=True)
+        if ctx.guild:
+            name, salary, description = await self.ge.server_job_info(ctx, member) # there is no self.ge -> import from guild_eco.py
+            embed.add_field(name=f"Server job", value=f"`{name}`", inline=True)
+            embed.add_field(name="\u2800\u2800", value="\u2800", inline=True)
+            embed.add_field(name=f"Server job salary", value=f"`{salary}`", inline=True)
 
-                    embed.set_thumbnail(url = member.display_avatar)
+        embed.set_thumbnail(url = member.display_avatar)
 
-                    embed.set_footer(text=cs.footer)
+        embed.set_footer()
 
-            return await ctx.reply(embed=embed, mention_author = False)"""  # noqa: E501
+        return await ctx.reply(embed=embed, mention_author = False)"""  # noqa: E501
 
     # OPTIMIZE | TO PIL
     """@commands.hybrid_command(name = 'rank', description="Shows your rank or another member's rank.",with_app_command=True)

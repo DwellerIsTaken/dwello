@@ -1,17 +1,13 @@
 BEGIN;
 
 CREATE TABLE IF NOT EXISTS users(
-    user_id BIGINT,
-    guild_id BIGINT,
+    id BIGINT PRIMARY KEY,
     xp BIGINT DEFAULT 0,
     level BIGINT DEFAULT 1,
     messages BIGINT DEFAULT 0,
     total_xp BIGINT DEFAULT 0,
     money TEXT DEFAULT 0,
-    worked BIT DEFAULT 0,
-    event_type TEXT,
-    job_id BIGINT,
-    PRIMARY KEY (user_id, guild_id, event_type)
+    worked BIT NOT NULL DEFAULT B'0'
 ); -- shouldnt be bound to guild
 
 CREATE TABLE IF NOT EXISTS twitch_users(

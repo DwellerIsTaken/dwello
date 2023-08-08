@@ -82,6 +82,7 @@ async def translate(text: str, *, src: str = 'auto', dest: str = 'en', session: 
         )
     
 
+translated_command_descriptions = {}
 class NewTranslator(Translator):
     """
     Custom translator class inherrited from :class:`discord.Translator`.
@@ -122,7 +123,9 @@ class NewTranslator(Translator):
         its not nl -> return None
 
         """
-
+        """if context.location is TranslationContextLocation.command_name:
+            translated_command_descriptions[string.message] = {}"""
+            
         # check if the command description is being translated
         if context.location is TranslationContextLocation.command_description:
             """locale_str = str(locale)

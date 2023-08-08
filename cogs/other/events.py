@@ -1,30 +1,32 @@
 from __future__ import annotations
 
-from typing import Any
+from typing import Any, Literal
 
 import asyncpg
 import discord
+from string import Template
 from discord.ext import commands
 from typing_extensions import Self
 
+import constants as cs
+from utils import User
+from .tasks import update_counters
 from core import BaseCog, Context, Dwello
 
 
 class Events(BaseCog):
     def __init__(self, bot: Dwello, *args: Any, **kwargs: Any) -> None:
         super().__init__(bot, *args, **kwargs)
-
-    """@commands.hybrid_command(name="table", with_app_command=False)
-    async def test(self, ctx: Context):
-        await self.bot.listeners.bot_join(ctx.guild)"""
+        self.listeners = ListenersFunctions(self.bot)
 
     @commands.Cog.listener()
     async def on_guild_join(self, guild: discord.Guild):
-        await self.bot.listeners.bot_join(guild)
+        await self.listeners.bot_join(guild)
 
     @commands.Cog.listener()
     async def on_message(self, message: discord.Message) -> None:
-        await self.bot.levelling.increase_xp(message)
+        user = await self.bot.db.create_user(message.author.id)
+        await user.increase_xp(message) # user not being created in the func
 
         if message.content == f"<@{self.bot.user.id}>" and not message.author.bot:
             prefix: str = str(self.bot.DEFAULT_PREFIXES[0])
@@ -39,15 +41,13 @@ class Events(BaseCog):
         if message.author == self.bot.user:
             self.bot.reply_count += 1
 
-        # await levelling.get_user_data(message.author.id, message.guild.id)
-
     @commands.Cog.listener()
     async def on_command(self, ctx: Context) -> None:
         ...
 
     @commands.Cog.listener()
     async def on_command_completion(self, ctx: Context) -> None:
-        self.bot.commands_executed += 1
+        ctx.bot.commands_executed += 1
         return
 
     """@commands.Cog.listener()
@@ -85,12 +85,12 @@ class Events(BaseCog):
 
     @commands.Cog.listener()
     async def on_member_join(self, member: discord.Member):
-        await self.bot.levelling.create_user(member.id, member.guild.id)
-        await self.bot.listeners.join_leave_event(member, "welcome")
+        await User.create(member.id, self.bot)
+        await self.listeners.join_leave_event(member, "welcome")
 
     @commands.Cog.listener()
     async def on_member_remove(self, member: discord.Member):
-        await self.bot.listeners.join_leave_event(member, "leave")
+        await self.listeners.join_leave_event(member, "leave")
 
     @commands.Cog.listener()
     async def on_member_update(self, before, after):
@@ -99,3 +99,112 @@ class Events(BaseCog):
     @commands.Cog.listener()
     async def on_disconnect(self: Self) -> None:
         """return await self.bot.pool.close()"""  # THIS WAS CAUSING CLOSED POOL ISSUE
+
+
+class ListenersFunctions:
+    def __init__(self, bot: Dwello) -> None:
+        self.bot = bot
+
+    async def bot_join(self, guild: discord.Guild) -> None:
+        async with self.bot.pool.acquire() as conn:
+            conn: asyncpg.Connection
+            async with conn.transaction():
+                counter_names = ["all", "member", "bot", "category"]
+                event_types = ["welcome", "leave", "twitch"]
+                # counter_names = [counter if counter is not None else 'Not Specified' for counter in counter_names]
+                await conn.executemany(
+                    "INSERT INTO server_data(guild_id, counter_name, event_type) VALUES($1, $2, $3)",
+                    [(guild.id, "Disabled", event) for event in event_types],
+                )
+                return await conn.executemany(
+                    "INSERT INTO server_data(guild_id, counter_name, event_type) VALUES($1, $2, $3)",
+                    [(guild.id, counter, "counter") for counter in counter_names],
+                )
+                # ADD SOME WELCOME MESSAGE FROM BOT OR SMTH
+
+    # fix the whole func again?
+    # again: counter class maybe?
+    async def join_leave_event(self, member: discord.Member, name: Literal["welcome", "leave"]) -> discord.Message | None:
+        async with self.bot.pool.acquire() as conn:
+            conn: asyncpg.Connection
+            async with conn.transaction():
+                await update_counters(member.guild)
+
+                # adjust counters too in this event
+
+                result = await conn.fetchrow(
+                    "SELECT channel_id FROM server_data WHERE guild_id = $1 AND event_type = $2",
+                    member.guild.id,
+                    name,
+                )
+
+                if not (result[0] if result else None):
+                    return
+
+                send_channel = discord.utils.get(member.guild.channels, id=int(result[0]))  # type: ignore
+
+                guild = member.guild
+
+                second_result = await conn.fetchrow(
+                    "SELECT message_text FROM server_data WHERE guild_id = $1 AND event_type = $2",
+                    guild.id,
+                    name,
+                )
+
+                if str(name) == "welcome":
+                    member_welcome_embed = discord.Embed(
+                        title="You have successfully joined the guild!",
+                        description=(
+                            f"```Guild joined: {guild.name}\nMember joined: {member}\n"
+                            f"Guild id: {guild.id}\nMember id: {member.id}```"
+                        ),
+                        color=discord.Color.random(),
+                    )
+                    member_welcome_embed.set_thumbnail(
+                        url=guild.icon.url if guild.icon else self.bot.user.display_avatar.url  # type: ignore
+                    )
+                    member_welcome_embed.set_author(
+                        name=member.name,
+                        icon_url=member.display_avatar.url
+                        if member.display_avatar
+                        else self.bot.user.display_avatar.url,  # type: ignore
+                    )
+                    member_welcome_embed.set_footer(text=cs.FOOTER)
+                    member_welcome_embed.timestamp = discord.utils.utcnow()
+
+                    try:
+                        await member.send(embed=member_welcome_embed)
+
+                    except discord.HTTPException as e:
+                        print(e)
+
+                    if not second_result[0]:  # type: ignore
+                        _message = (
+                            f"You are the __*{len(list(member.guild.members))}th*__ user on this server.\n"
+                            "I hope that you will enjoy your time on this server. Have a good day!"
+                        )
+
+                    _title = f"Welcome to {member.guild.name}!"
+
+                elif str(name) == "leave":
+                    if not second_result[0]:
+                        _message = "If you left, you had a reason to do so. Farewell, dweller!"
+
+                    _title = f"Goodbye {member}!"
+
+                if second_result[0]:
+                    _message = Template(second_result[0]).safe_substitute(
+                        members=len(list(member.guild.members)),
+                        mention=member.mention,
+                        user=member.name,
+                        guild=member.guild.name,
+                        space="\n",
+                    )
+
+                _embed = discord.Embed(title=_title, description=_message, color=discord.Color.random())
+                _embed.set_thumbnail(url=member.display_avatar.url)
+                _embed.set_author(name=member.name, icon_url=member.display_avatar.url)
+                _embed.set_footer(text=cs.FOOTER)
+                _embed.timestamp = discord.utils.utcnow()
+
+        return await send_channel.send(embed=_embed)
