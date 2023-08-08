@@ -332,7 +332,6 @@ class RankData:
 
     def __init__(
         self,
-        puuid: Optional[str],
         current_tier: Optional[int],
         current_tier_patched: Optional[str],
         images: Optional[Dict[str, str]],
@@ -340,7 +339,6 @@ class RankData:
         change: Optional[int],
         elo: Optional[int],
     ) -> None:
-        self._puuid = puuid
         self._current_tier = current_tier
         self._current_tier_patched = current_tier_patched
         self._images = images
@@ -349,7 +347,7 @@ class RankData:
         self._elo = elo
 
     def __repr__(self) -> str:
-        return f"<RankData puuid='{self._puuid}', current_tier_patched='{self._current_tier_patched}', elo={self._elo}>"
+        return f"<RankData current_tier_patched='{self._current_tier_patched}', elo={self._elo}>"
 
     @classmethod
     def from_json(cls, json: JSON) -> Optional[Self]:
@@ -361,7 +359,7 @@ class RankData:
             json["currenttierpatched"],
             json["images"],
             Map.from_json(json["map"]),
-            json["mmr_change_since_last_game"],
+            json["mmr_change_to_last_game"],
             json["elo"],
         )
 
@@ -641,16 +639,17 @@ class Valorant(BaseCog):
                 )
             )
 
-            embed.add_field(
-                name="Shots",
-                value="Head: `{0[head]}`\nBody: `{0[body]}`\nLegs: `{0[leg]}`".format(match.shots),
-                inline=False,
-            )
-            embed.add_field(name="Damage", value="Dealt: `{0[made]}`\nReceived: `{0[received]}`".format(match.damage))
-            if standing:
+            if match.mode not in ("Deathmatch",):
                 embed.add_field(
-                    name="Standing", value="Team: `{0}`\nBlue **{1[blue]}** | **{1[red]}** Red".format(match.team, standing)
+                    name="Shots",
+                    value="Head: `{0[head]}`\nBody: `{0[body]}`\nLegs: `{0[leg]}`".format(match.shots),
+                    inline=False,
                 )
+                embed.add_field(name="Damage", value="Dealt: `{0[made]}`\nReceived: `{0[received]}`".format(match.damage))
+                if standing:
+                    embed.add_field(
+                        name="Standing", value="Team: `{0}`\nBlue **{1[blue]}** | **{1[red]}** Red".format(match.team, standing)
+                    )
 
             embeds.append(embed)
 
