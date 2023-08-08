@@ -37,7 +37,7 @@ class CommandErrorHandler(commands.Cog):
         perm_url = "https://discordpy.readthedocs.io/en/stable/api.html#discord.Permissions"
 
         # This prevents any commands with local handlers being handled here in on_command_error.
-        if hasattr(ctx.command, "on_error"):
+        if hasattr(ctx.command, "on_error") and ctx.command.on_error:
             return
 
         if (cog := ctx.cog) and cog._get_overridden_method(cog.cog_command_error) is not None:
