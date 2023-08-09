@@ -19,6 +19,7 @@ IT = TypeVar("IT", bound="Idea")
 
 
 class BasicORM:
+    # improve
     @classmethod
     async def get(
         cls: type[Self],
@@ -28,12 +29,6 @@ class BasicORM:
         return cls(record, bot)
 
 
-# this should be a global User, thus no event_type
-# maybe Member orm later or smh like UserJob (smht within eco)
-# GuildUser actually is the correct name
-# so, a leaderboard will be a global leaderbord (try to get the user, if no you exclude him from the leaderboard)
-# and here below is a global member that will have a global rank
-# to make a local leaderboard you can check for every user in guild what their rank is or smh
 class User(BasicORM):
     """
     Class representing an ORM (Object Relational Mapping) for a global bot user.
@@ -65,11 +60,28 @@ class User(BasicORM):
         Should be used in global economy or smh.
     _worked: :class:`asyncpg.BitString`
         Attribute representing whether the user already worked today (globally) or not.
-        Use :class:`.worked` instead.
+        Use :property:`.worked` instead.
+    bot: :class:`Dwello`
+
+    SQL Types
+    ---------
+    id: :sql:`BIGINT PRIMARY KEY`\n
+    xp: :sql:`BIGINT DEFAULT 0`\n
+    level: :sql:`BIGINT DEFAULT 1`\n
+    messages: :sql:`BIGINT DEFAULT 0`\n
+    total_xp: :sql:`BIGINT DEFAULT 0`\n
+    money: :sql:`BIGINT DEFAULT 0`\n
+    worked: :sql:`BIT NOT NULL DEFAULT B'0'`
 
     .. note::
-        -> event_type - removed
-        -> job_id - removed
+        # event_type - removed
+        # job_id - removed
+        # this should be a global User, thus no event_type
+        # maybe Member orm later or smh like UserJob (smht within eco)
+        # GuildUser actually is the correct name
+        # so, a leaderboard will be a global leaderbord (try to get the user, if no you exclude him from the leaderboard)
+        # and here below is a global member that will have a global rank
+        # to make a local leaderboard you can check for every user in guild what their rank is or smh
     """
 
     __slots__ = (
@@ -181,32 +193,6 @@ class User(BasicORM):
 
         return self.xp_until_next_level
 
-# ADD THIS TO USER CUSTOMISATION
-# THUS ONLY SEND IF ENABLED
-# https://discord.com/channels/822162578653577336/1081039402945478666/1138587797645697074
-#|xp until next level
-"""level_embed_dis = f"*Your new level is: {new_level}*\n*Xp until your next level: {xp_till_next_level}*"
-
-level_embed = discord.Embed(
-    title="Congratulations with your new level!",
-    description=string.Template(level_embed_dis).safe_substitute(member=message.author.name),
-)
-
-level_embed.set_thumbnail(url=f"{message.author.display_avatar}")
-level_embed.set_author(
-    name=f"{message.author.name}",
-    icon_url=f"{message.author.display_avatar}",
-)
-level_embed.set_footer(text=f"{message.guild.name}")
-level_embed.timestamp = discord.utils.utcnow()"""
-
-# async with suppress(discord.HTTPException): await message.author.send(embed=level_embed)
-
-"""try:
-    await message.author.send(embed=level_embed)
-
-except discord.HTTPException:
-    pass"""
 
 class TwitchUser(BasicORM):
     __slots__ = ("bot", "username", "user_id", "guild_id")
@@ -323,6 +309,44 @@ class Blacklist(BasicORM):
 
 
 class Idea:
+    """
+    Class representing an ORM (Object Relational Mapping) for an idea suggested by bot users.
+    These ideas are to be checked and implemented, or to be deleted.
+
+    Parameters
+    ----------
+    record: :class:`asyncpg.Record`
+        A record that is destributed across attributes.
+    bot: :class:`Dwello`
+        The bot instance mainly used, in this case, for working with the postgres database.
+    
+    Attributes
+    ----------
+    id: :class:`int`
+        ID of the idea.
+    author_id: :class:`int`
+        ID of the idea's author.
+    created_at: :class:`Optional[datetime.datetime]`
+        The datetime object for when the idea was suggested, excluding tzinfo.
+    content: :class:`Optional[str]`
+        The content of the idea, or, rather, the idea itself.
+    title: :class:`Optional[str]`
+        Title of the given idea.
+    bot: :class:`Dwello`
+
+    SQL Types
+    ---------
+    id: :sql:`SERIAL PRIMARY KEY`\n
+    author_id: :sql:`BIGINT NOT NULL`\n
+    created_at: :sql:`TIMESTAMP`\n
+    content: :sql:`TEXT`\n
+    title: :sql:`TEXT`
+
+    .. note::
+        # somehow check whether ideas are similair (?)
+        # check for bad words etc and dont suggest if found (?)
+        # maybe allow everything tho
+    """
     __slots__ = ("bot", "id", "author_id", "created_at", "content", "title", "voters")
 
     def __init__(self, record: Record, bot: Dwello) -> None:
@@ -395,7 +419,7 @@ class Idea:
     ) -> IT:
         async with bot.safe_connection() as conn:
             record: Record = await conn.fetchrow(
-                "INSERT INTO ideas(created_at, author_id, content, title) " "VALUES($1, $2, $3, $4) " "RETURNING *",
+                "INSERT INTO ideas(created_at, author_id, content, title) VALUES($1, $2, $3, $4) RETURNING *",
                 discord.utils.utcnow().replace(tzinfo=None),
                 author_id,
                 content,

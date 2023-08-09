@@ -6,7 +6,7 @@ CREATE TABLE IF NOT EXISTS users(
     level BIGINT DEFAULT 1,
     messages BIGINT DEFAULT 0,
     total_xp BIGINT DEFAULT 0,
-    money TEXT DEFAULT 0,
+    money BIGINT DEFAULT 0,
     worked BIT NOT NULL DEFAULT B'0'
 ); -- shouldnt be bound to guild
 

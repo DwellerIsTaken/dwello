@@ -17,11 +17,38 @@ from core import BaseCog, Context, Dwello
 class Events(BaseCog):
     def __init__(self, bot: Dwello, *args: Any, **kwargs: Any) -> None:
         super().__init__(bot, *args, **kwargs)
-        self.listeners = ListenersFunctions(self.bot)
+        self.listeners = ListenerFunctions(self.bot)
 
     @commands.Cog.listener()
     async def on_guild_join(self, guild: discord.Guild):
         await self.listeners.bot_join(guild)
+
+    # ADD THIS TO USER CUSTOMISATION
+    # THUS ONLY SEND IF ENABLED
+    # https://discord.com/channels/822162578653577336/1081039402945478666/1138587797645697074
+    #|xp until next level
+    """level_embed_dis = f"*Your new level is: {new_level}*\n*Xp until your next level: {xp_till_next_level}*"
+
+    level_embed = discord.Embed(
+        title="Congratulations with your new level!",
+        description=string.Template(level_embed_dis).safe_substitute(member=message.author.name),
+    )
+
+    level_embed.set_thumbnail(url=f"{message.author.display_avatar}")
+    level_embed.set_author(
+        name=f"{message.author.name}",
+        icon_url=f"{message.author.display_avatar}",
+    )
+    level_embed.set_footer(text=f"{message.guild.name}")
+    level_embed.timestamp = discord.utils.utcnow()"""
+
+    # async with suppress(discord.HTTPException): await message.author.send(embed=level_embed)
+
+    """try:
+        await message.author.send(embed=level_embed)
+
+    except discord.HTTPException:
+        pass"""
 
     @commands.Cog.listener()
     async def on_message(self, message: discord.Message) -> None:
@@ -101,7 +128,7 @@ class Events(BaseCog):
         """return await self.bot.pool.close()"""  # THIS WAS CAUSING CLOSED POOL ISSUE
 
 
-class ListenersFunctions:
+class ListenerFunctions:
     def __init__(self, bot: Dwello) -> None:
         self.bot = bot
 
