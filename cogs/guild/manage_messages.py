@@ -20,7 +20,7 @@ class Messages(BaseCog):  # RENAME CLASS
     )
     @commands.bot_has_permissions(manage_messages=True)
     @commands.has_permissions(manage_messages=True)
-    async def clear(self, ctx: Context, limit: int = 5, member: discord.Member = None) -> discord.Message | None:
+    async def clear(self, ctx: Context, limit: int = 5, member: discord.Member | None = None) -> discord.Message | None:
         async with ctx.typing(ephemeral=True):
             msg = []
 

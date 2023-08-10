@@ -57,7 +57,7 @@ class OptionSelectView(discord.ui.View):
         self.category_select.options = []
 
         for label, embed in self.options:
-            self.category_select.add_option(label=label, value=embed, emoji="🏠")
+            self.category_select.add_option(label=label, value=embed, emoji="\N{HOUSE BUILDING}")
 
     async def interaction_check(self, interaction: discord.Interaction) -> bool:
         if interaction.user and interaction.user == self.ctx.author:

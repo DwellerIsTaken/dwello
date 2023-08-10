@@ -30,29 +30,31 @@ class Info(BaseCog):
             invite_link = invites[0].url
 
         embed: Embed = (
-            Embed(
-                timestamp=discord.utils.utcnow(),
-                title=f"Info on {guild.name}",
-                description=guild.description,
-                url=guild.vanity_url or invite_link,
+            (
+                Embed(
+                    timestamp=discord.utils.utcnow(),
+                    title=f"Info on {guild.name}",
+                    description=guild.description,
+                    url=guild.vanity_url or invite_link,
+                )
+                .set_footer(
+                    text=f"ID: {guild.id}",
+                    icon_url=guild.icon.url if guild.icon else None,
+                )
+                .set_thumbnail(
+                    url=guild.icon.url if guild.icon else None,
+                )
             )
-            .set_footer(
-                text=f"ID: {guild.id}",
-                icon_url=guild.icon.url if guild.icon else None,
-            )
-            .set_thumbnail(
-                url=guild.icon.url if guild.icon else None,
-            )
+            .add_field(name="Owner", value=getattr(guild.owner, "name", "None"))  # owner could be None
+            .add_field(name="Created at", value=discord.utils.format_dt(guild.created_at, style="D"))
+            .add_field(name="Total Members", value=guild.member_count or len(guild.members))  # member_count could be None
+            .add_field(name="MFA Level", value=str(guild.mfa_level)[9:])
+            .add_field(name="NSFW Level", value=str(guild.nsfw_level)[10:])
+            .add_field(name="Nitro Level", value=guild.premium_tier)
+            .add_field(name="Text Channels", value=len(guild.text_channels))
+            .add_field(name="Voice Channels", value=len(guild.voice_channels))
+            .add_field(name="Public Threads", value=len(guild.threads))
         )
-        embed.add_field(name="Owner", value=guild.owner.name)
-        embed.add_field(name="Created at", value=discord.utils.format_dt(guild.created_at, style="D"))
-        embed.add_field(name="Total Members", value=guild.member_count if guild.member_count else len(guild.members))
-        embed.add_field(name="MFA Level", value=str(guild.mfa_level)[9:])
-        embed.add_field(name="NSFW Level", value=str(guild.nsfw_level)[10:])
-        embed.add_field(name="Nitro Level", value=guild.premium_tier)
-        embed.add_field(name="Text Channels", value=len(guild.text_channels))
-        embed.add_field(name="Voice Channels", value=len(guild.voice_channels))
-        embed.add_field(name="Public Threads", value=len(guild.threads))
         if guild.rules_channel:
             embed.add_field(name="Rules", value=guild.rules_channel.mention)
         embed.add_field(name="Emoji Limit", value=guild.emoji_limit)
@@ -76,4 +78,3 @@ class Info(BaseCog):
                 ),
             )
         return await ctx.reply(embed=embed)
-

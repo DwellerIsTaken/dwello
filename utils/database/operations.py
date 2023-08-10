@@ -246,7 +246,7 @@ class DataBaseOperations:
         return [Prefix(record, self.bot) for record in records]
 
     # @functools.lru_cache(maxsize=1)
-    async def get_prefixes(self, guild: discord.Guild) -> list[Prefix]:
+    async def get_prefixes(self, guild: discord.Guild | None) -> list[Prefix]:
         async with self.bot.safe_connection() as conn:
             records: list[Record] = await conn.fetch(
                 "SELECT * FROM prefixes WHERE guild_id = $1",

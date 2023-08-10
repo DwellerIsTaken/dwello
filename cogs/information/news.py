@@ -204,7 +204,7 @@ class NewsViewer(discord.ui.View):
             self.news = news
 
         if self.old_view and self.embed:
-            self.go_back = NewsGoBackButton(emoji="🏠", style=discord.ButtonStyle.blurple)
+            self.go_back = NewsGoBackButton(emoji="\N{HOUSE BUILDING}", style=discord.ButtonStyle.blurple)
 
             self.add_item(self.go_back)
 

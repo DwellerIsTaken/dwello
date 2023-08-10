@@ -50,7 +50,7 @@ class HelpCentre(discord.ui.View):
         self.bot: Dwello = self.ctx.bot
         self.other_view = other_view
 
-    @discord.ui.button(emoji="🏠", label="Go Back", style=discord.ButtonStyle.blurple)
+    @discord.ui.button(emoji="\N{HOUSE BUILDING}", label="Go Back", style=discord.ButtonStyle.blurple)
     async def go_back(self, interaction: discord.Interaction, _):
         await interaction.response.edit_message(embed=self.embed, view=self.other_view)
         self.stop()
@@ -91,7 +91,7 @@ class HelpCentre(discord.ui.View):
             value="Means that this argument can be __**either X, Y or Z**__",
             inline=False,
         )
-        embed.set_footer(text="To continue browsing the help menu, press 🏠Go Back")
+        embed.set_footer(text="To continue browsing the help menu, press \N{HOUSE BUILDING}Go Back")
         embed.set_author(name="About this Help Command", icon_url=self.bot.user.display_avatar.url)
         self.embed = interaction.message.embeds[0]
         self.add_item(discord.ui.Button(label="Support Server", url="https://discord.gg/8FKNF8pC9u"))
@@ -127,7 +127,7 @@ class HelpView(discord.ui.View):
         self.data = data
         self.current_page = 0
         self.help_command = help_command
-        self.message: discord.Message = None
+        self.message: discord.Message | None = None
         self.main_embed = self.build_main_page()
         self.embeds: list[Embed] = [self.main_embed]
         self.owner_cmds: list[commands.Command] = self.construct_owner_commands()
@@ -146,7 +146,9 @@ class HelpView(discord.ui.View):
             self._update_buttons()
             return await interaction.response.edit_message(embed=self.embeds[self.current_page], view=self)
         else:
-            return await interaction.response.send_message("Somehow, that category was not found? 🤔", ephemeral=True)
+            return await interaction.response.send_message(
+                "Somehow, that category was not found? \N{THINKING FACE}", ephemeral=True
+            )
 
     def construct_owner_commands(self) -> list[commands.Command]:
         owner_cmds: list[commands.Command] = []
@@ -164,7 +166,7 @@ class HelpView(discord.ui.View):
 
         return owner_cmds + hidden_cmds
 
-    def clean_command_count(self, cog: commands.Cog, commands: list[commands.Command, app_commands.Command]) -> int:
+    def clean_command_count(self, cog: commands.Cog, commands: list[commands.Command | app_commands.Command]) -> int:
         if cog.qualified_name == "Owner":
             return len(self.owner_cmds)
 
@@ -228,10 +230,11 @@ class HelpView(discord.ui.View):
                 embeds.append(embed)
 
             return embeds
+        return embeds
 
     def build_select(self) -> None:
         self.category_select.options = []
-        self.category_select.add_option(label="Main Page", value="index", emoji="🏠")
+        self.category_select.add_option(label="Main Page", value="index", emoji="\N{HOUSE BUILDING}")
         for cog, comm in self.data.items():
             if cog.qualified_name == "Owner":
                 comm = self.owner_cmds
@@ -262,7 +265,7 @@ class HelpView(discord.ui.View):
             inline=False,
             value="To get help or __**suggest features**__, you can join my"
             "\nsupport server: **__<https://discord.gg/8FKNF8pC9u>__**"
-            "\n📨 You can also DM me for help if you prefer to,"
+            "\n\N{INCOMING ENVELOPE} You can also DM me for help if you prefer to,"
             "\nbut please join the support server for suggestions.",
         )
         embed.add_field(
@@ -285,7 +288,7 @@ class HelpView(discord.ui.View):
         embed.set_author(name=self.bot.user.name, icon_url=self.bot.user.display_avatar.url)
         return embed
 
-    @button(emoji="❓", label="help", row=1, style=discord.ButtonStyle.green)
+    @button(emoji="\N{BLACK QUESTION MARK ORNAMENT}", label="help", row=1, style=discord.ButtonStyle.green)
     async def help(self, interaction: Interaction, _):
         view = HelpCentre(self.ctx, self)
         await view.start(interaction)  # make better buttons later
@@ -298,7 +301,8 @@ class HelpView(discord.ui.View):
 
     @button(emoji="🗑", row=1, style=discord.ButtonStyle.red)
     async def _end(self, interaction: Interaction, _):
-        await interaction.message.delete(delay=0)
+        if interaction.message:
+            await interaction.message.delete(delay=0)
         """if self.ctx.channel.permissions_for(self.ctx.me).add_reactions:
             await self.ctx.message.add_reaction(random.choice(constants.DONE))"""
 
@@ -308,7 +312,7 @@ class HelpView(discord.ui.View):
         self._update_buttons()
         await interaction.response.edit_message(embed=self.embeds[self.current_page], view=self)
 
-    @discord.ui.button(emoji="📰", label="news", row=1, style=discord.ButtonStyle.green)
+    @discord.ui.button(emoji="\N{NEWSPAPER}", label="news", row=1, style=discord.ButtonStyle.green)
     async def vote(self, interaction: Interaction, _):
         news = await self.bot.pool.fetch("SELECT * FROM news ORDER BY news_id DESC")
         await NewsViewer.from_interaction(interaction, news, embed=self.embeds[self.current_page], old_view=self)
@@ -590,7 +594,7 @@ class MyHelp(commands.HelpCommand):
                 delete_after_timeout=True,
                 delete_after_cancel=True,
                 buttons=(
-                    ("✅", f"See {matches[0]}"[:80], discord.ButtonStyle.blurple),
+                    ("\N{WHITE HEAVY CHECK MARK}", f"See {matches[0]}"[:80], discord.ButtonStyle.blurple),
                     ("🗑", None, discord.ButtonStyle.red),
                 ),
                 timeout=15,
@@ -617,7 +621,7 @@ class MyHelp(commands.HelpCommand):
                     delete_after_cancel=True,
                     buttons=(
                         (
-                            "✅",
+                            "\N{WHITE HEAVY CHECK MARK}",
                             f"See {matches[0]}"[:80],
                             discord.ButtonStyle.blurple,
                         ),
@@ -951,7 +955,7 @@ class About(commands.Cog):
         typing_ms = (typing_end - typing_start) * 1000
 
         start = time.perf_counter()
-        message = await ctx.send("🏓 pong!")
+        message = await ctx.send("\N{TABLE TENNIS PADDLE AND BALL} pong!")
         end = time.perf_counter()
         message_ms = (end - start) * 1000
 
@@ -993,46 +997,35 @@ class About(commands.Cog):
         postgres_end = time.perf_counter()
         postgres_ms = (postgres_end - postgres_start) * 1000
 
-        average = self.get_average_latency(typing_ms, latency_ms, postgres_ms)
+        self.get_average_latency(typing_ms, latency_ms, postgres_ms)
 
-        total_members = 0
         total_unique = len(self.bot.users)
 
-        memory_usage = self.process.memory_full_info().uss / 1024**2
-        cpu_usage = self.process.cpu_percent() / psutil.cpu_count()
+        self.process.memory_full_info().uss / 1024**2
+        self.process.cpu_percent() / psutil.cpu_count()
 
         author: discord.User = self.bot.get_user(548846436570234880)
 
-        guilds = 0
-        for guild in self.bot.guilds:
-            guilds += 1
-            if guild.unavailable:
-                continue
-
-            total_members += guild.member_count or 0
-
+        total_members = sum(len(guild.members) for guild in self.bot.guilds if not guild.unavailable)
         links = f"-> {cs.GITHUB_EMOJI} [Source]({self.bot.repo})\n" f"-> {cs.EARLY_DEV_EMOJI} [Website]({cs.WEBSITE})\n" "\n"
         revision = self.get_last_commits()
-        embed: Embed = Embed(
-            title=f"{self.bot.user.name} Statistics",
-            description=links + "**Latest Changes:**\n" + revision,
-            url=cs.INVITE_LINK,
+        embed: Embed = (
+            Embed(
+                title=f"{self.bot.user.name} Statistics",
+                description=links + "**Latest Changes:**\n" + revision,
+                url=cs.INVITE_LINK,
+            )
+            .set_thumbnail(url=self.bot.user.display_avatar.url)
+            .set_footer(text=f"{self.bot.main_prefix}about for more")
+            .set_author(
+                name=author.name,
+                icon_url=author.display_avatar.url,
+                url="https://github.com/DwellerIsTaken/",
+            )
+            .add_field(name="Members", value=f"{total_members} total\n{total_unique} unique")
+            .add_field(name="Guilds", value=len(self.bot.guilds))
         )
-        embed.set_thumbnail(url=self.bot.user.display_avatar.url)
-        embed.set_footer(text=f"{self.bot.main_prefix}about for more")
-        embed.set_author(
-            name=author.name,
-            icon_url=author.display_avatar.url,
-            url="https://github.com/DwellerIsTaken/",
-        )
-
-        embed.add_field(name="Members", value=f"{total_members} total\n{total_unique} unique")
-        embed.add_field(name="Guilds", value=len(self.bot.guilds))  # len(self.bot.guilds)
-        embed.add_field(name="Process", value=f"{memory_usage:.2f} MiB\n{cpu_usage:.2f}% CPU")
-        embed.add_field(name="Responses", value=self.bot.reply_count or 1)
-        embed.add_field(name="Lines", value=self.bot.total_lines)
-        embed.add_field(name="Latency", value=f"{round(average, 3)}ms")
-        embed.add_field(name="Uptime", value=self.get_uptime(complete=True))
+        # len(self.bot.guilds).add_field(name="Process", value=f"{memory_usage:.2f} MiB\n{cpu_usage:.2f}% CPU").add_field(name="Responses", value=self.bot.reply_count or 1).add_field(name="Lines", value=self.bot.total_lines).add_field(name="Latency", value=f"{round(average, 3)}ms").add_field(name="Uptime", value=self.get_uptime(complete=True))
 
         embed.timestamp = discord.utils.utcnow()
         # embed.add_field(name='Total Commands', value=len(self.bot.commands)) ?
@@ -1046,7 +1039,6 @@ class About(commands.Cog):
 
         bot_name: str = self.bot.user.name.lower()
         bot_guild_name: str = self.bot.user.display_name.lower()
-        _bot_guild_name: list[str] = bot_guild_name.split()
         _bot_name: list[str] = bot_name.split()
 
         _base_words: list[str] = [
@@ -1062,23 +1054,18 @@ class About(commands.Cog):
 
         if bot_guild_name != bot_name:
             _matches.append(bot_guild_name)
+            _bot_guild_name: list[str] = bot_guild_name.split()
             if _bot_guild_name[0] != _bot_name[0]:
                 _matches.append(_bot_guild_name[0])
 
-        for command in self.bot.walk_commands():
-            _matches.append(command.qualified_name.lower())
-
-        for cog in self.bot.cogs.values():
-            if cog.qualified_name == "Jishaku":
-                continue
-            _matches.append(cog.qualified_name.lower())
-
+        _matches.extend(command.qualified_name.lower() for command in self.bot.walk_commands())
+        _matches.extend(cog.qualified_name.lower() for cog in self.bot.cogs.values() if cog.qualified_name != "Jishaku")
         # ADD A CHECK FOR BOT.PY TO DISPLAY WHOLE FILE
 
         if _command_name == "help":
             target = type(self.bot.help_command)
 
-        elif _command_name in ["context", "ctx"]:
+        elif _command_name in {"context", "ctx"}:
             target = ctx.__class__
 
         elif _command_name in _base_words:
@@ -1121,7 +1108,8 @@ class About(commands.Cog):
             description=source_link,
         )
 
-        return await SourceView.start(ctx, embed, lines, filename=f"{command_name}.py")
+        await SourceView.start(ctx, embed, lines, filename=f"{command_name}.py")
+
 
 # I DONT LIKE THIS AT ALL | maybe redo
 class IdeaPaginator(DefaultPaginator):

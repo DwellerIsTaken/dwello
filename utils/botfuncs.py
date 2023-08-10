@@ -41,7 +41,7 @@ def get_unix_timestamp(_date_string: str, _format: str, /, style: discord.utils.
     return f"<t:{int(_seconds)}:{style}>"
 
 
-async def get_avatar_dominant_color(member: discord.Member | discord.User) -> discord.Colour | None:
+async def get_avatar_dominant_color(member: discord.Member | discord.User | discord.ClientUser) -> discord.Colour | None:
     image = Image.open(BytesIO(await member.display_avatar.read()))
     colours = [
         colour

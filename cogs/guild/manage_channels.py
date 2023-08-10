@@ -28,7 +28,7 @@ class ChannelsFunctions:
                 count = ctx.guild.member_count
 
                 bot_counter = sum(bool(member.bot) for member in ctx.guild.members)
-                member_counter = int(ctx.guild.member_count) - bot_counter
+                member_counter = len(ctx.guild.members) - bot_counter
 
                 query = (
                     "SELECT channel_id FROM server_data WHERE guild_id = $1 AND event_type = 'counter' AND counter_name = $2"
@@ -47,13 +47,16 @@ class ChannelsFunctions:
 
                 elif name == "category":
                     if counter_category_id:
-                        return await ctx.reply(
+                        await ctx.reply(
                             "This category already exists.",
                             mention_author=True,
                             ephemeral=True,
                         )
+                        return None
 
-                    counter_channel = await ctx.guild.create_category("📊 Server Counters 📊", reason=None)
+                    counter_channel = await ctx.guild.create_category(
+                        "\N{BAR CHART} Server Counters\N{BAR CHART}", reason=None
+                    )
                     await counter_channel.edit(position=0)
                     await conn.execute(
                         "UPDATE server_data SET channel_id = $1 WHERE counter_name = $2 AND event_type = 'counter' AND guild_id = $3",  # noqa: E501
@@ -80,21 +83,23 @@ class ChannelsFunctions:
                     counter_category = None"""
 
                 if channel_id:
-                    return await ctx.reply(
+                    await ctx.reply(
                         "This counter already exists! Please provide another type of counter if you need to, "
                         "otherwise __**please don`t create a counter that already exists**__.",
                         user_mistake=True,
                     )  # return embed instead (?)
+                    return None
 
                 if not deny_result and not counter_category_id:
                     embed: Embed = Embed(
                         description="**Do you want to create a category for your counters?**",
                     ).set_footer(text=cs.FOOTER)
-                    return await ctx.reply(
+                    await ctx.reply(
                         embed=embed,
                         view=Stats_View(self.bot, ctx, name),
                         user_mistake=True,
                     )
+                    return None
 
                 # elif deny_result is None and counter_category is not None: # ?
                 # await conn.execute("UPDATE server_data SET deny_clicked = $1 WHERE guild_id = $2", 1, ctx.guild.id)
@@ -102,7 +107,7 @@ class ChannelsFunctions:
                 if not channel_id:
                     counter_category: discord.CategoryChannel = ctx.guild.get_channel(int(counter_category_id))
                     counter_channel = await ctx.guild.create_voice_channel(
-                        f"📊 {name.capitalize()} counter: {count}",
+                        f"\N{BAR CHART} {name.capitalize()} counter: {count}",
                         reason=None,
                         category=counter_category,
                     )

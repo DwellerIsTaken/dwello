@@ -423,7 +423,7 @@ class Dwello(commands.AutoShardedBot):
         if args[0] <= 0:
             return None
 
-        return get_function(*args) or await fetch_function(**kwargs)
+        return get_function(*args, **kwargs) or await fetch_function(*args, **kwargs)
 
 
 async def runner():
