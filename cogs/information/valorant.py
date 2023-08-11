@@ -569,7 +569,7 @@ class Valorant(BaseCog):
     async def get_matches(self, player: Player, *, amount: int = 1) -> Union[Match, List[Match]]:
         if amount > 10:
             raise ValueError("You can only get 10 matches at a time.")
-        
+
         elif player is None:
             raise NotFound(str(player))
 
@@ -651,7 +651,8 @@ class Valorant(BaseCog):
                 embed.add_field(name="Damage", value="Dealt: `{0[made]}`\nReceived: `{0[received]}`".format(match.damage))
                 if standing:
                     embed.add_field(
-                        name="Standing", value="Team: `{0}`\nBlue **{1[blue]}** | **{1[red]}** Red".format(match.team, standing)
+                        name="Standing",
+                        value="Team: `{0}`\nBlue **{1[blue]}** | **{1[red]}** Red".format(match.team, standing),
                     )
 
             embeds.append(embed)
@@ -664,9 +665,11 @@ class Valorant(BaseCog):
         if hasattr(error, "original"):
             if isinstance(error.original, ParsingError):
                 return await ctx.send("Couldn't parse that username or PUUID, please make sure it's correct and try again.")
-            
-            elif  isinstance(error.original, NotFound):
-                return await ctx.send("Couldn't find that player, make sure that player exists and the account is not private.")
-            
+
+            elif isinstance(error.original, NotFound):
+                return await ctx.send(
+                    "Couldn't find that player, make sure that player exists and the account is not private."
+                )
+
         else:
             ctx.command.on_error = None  # Triggers global error handler if we don't handle it here
