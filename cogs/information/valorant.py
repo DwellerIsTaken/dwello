@@ -496,7 +496,7 @@ class Player:
         return self._rank_data
 
 
-PUUID_PATTERN = re.compile("^[A-Z0-9]{8}-[A-Z0-9]{4}-[A-Z0-9]{4}-[A-Z0-9]{4}-[A-Z0-9]{12}$", flags=re.IGNORECASE)
+PUUID_PATTERN = re.compile(r"^[a-f\d]{8}(-[a-f\d]{4}){3}-[a-f\d]{12}$")
 
 
 class PlayerConverter(commands.Converter):
