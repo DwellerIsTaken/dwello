@@ -996,13 +996,7 @@ class About(commands.Cog):
         await self.bot.pool.fetch("SELECT 1")
         postgres_end = time.perf_counter()
         postgres_ms = (postgres_end - postgres_start) * 1000
-
-        self.get_average_latency(typing_ms, latency_ms, postgres_ms)
-
-        total_unique = len(self.bot.users)
-
-        self.process.memory_full_info().uss / 1024**2
-        self.process.cpu_percent() / psutil.cpu_count()
+        # maybe just return average instead, thus use some other func
 
         author: discord.User = self.bot.get_user(548846436570234880)
 
@@ -1013,6 +1007,7 @@ class About(commands.Cog):
             Embed(
                 title=f"{self.bot.user.name} Statistics",
                 description=links + "**Latest Changes:**\n" + revision,
+                timestamp=discord.utils.utcnow(),
                 url=cs.INVITE_LINK,
             )
             .set_thumbnail(url=self.bot.user.display_avatar.url)
@@ -1022,12 +1017,20 @@ class About(commands.Cog):
                 icon_url=author.display_avatar.url,
                 url="https://github.com/DwellerIsTaken/",
             )
-            .add_field(name="Members", value=f"{total_members} total\n{total_unique} unique")
+            .add_field(name="Members", value=f"{total_members} total\n{len(self.bot.users)} unique")
             .add_field(name="Guilds", value=len(self.bot.guilds))
+            .add_field(
+                name="Process",
+                value=(
+                    f"{self.process.memory_full_info().uss / 1024**2:.2f} MiB"
+                    f"\n{self.process.cpu_percent() / psutil.cpu_count():.2f}% CPU"
+                ),
+            )
+            .add_field(name="Responses", value=self.bot.reply_count or 1)
+            .add_field(name="Lines", value=self.bot.total_lines)
+            .add_field(name="Latency", value=f"{round(self.get_average_latency(typing_ms, latency_ms, postgres_ms), 3)}ms")
+            .add_field(name="Uptime", value=self.get_uptime(complete=True))
         )
-        # len(self.bot.guilds).add_field(name="Process", value=f"{memory_usage:.2f} MiB\n{cpu_usage:.2f}% CPU").add_field(name="Responses", value=self.bot.reply_count or 1).add_field(name="Lines", value=self.bot.total_lines).add_field(name="Latency", value=f"{round(average, 3)}ms").add_field(name="Uptime", value=self.get_uptime(complete=True))
-
-        embed.timestamp = discord.utils.utcnow()
         # embed.add_field(name='Total Commands', value=len(self.bot.commands)) ?
         return await ctx.reply(embed=embed)
 
