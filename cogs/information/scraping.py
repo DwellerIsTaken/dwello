@@ -10,6 +10,7 @@ import aiofiles
 import discord
 import wikipediaapi
 from aiospotify import Artist, Image, ObjectType, PartialAlbum, SearchResult, SpotifyClient, Track, http
+from datetime import datetime
 from discord import app_commands
 from discord.ext import commands
 from typing_extensions import Self
@@ -711,3 +712,39 @@ class Scraping(BaseCog):
         )
 
         return await ctx.reply(embed=weather_embed, ephemeral=False)
+    
+    @commands.hybrid_command(name="urban", help="Searches urban dictionary.", with_app_command=True)
+    async def _urban(self, ctx: Context, *, word: str):
+        """Searches urban dictionary."""
+
+        url = 'http://api.urbandictionary.com/v0/define'
+        async with ctx.bot.http_session.get(url, params={'term': word}) as resp:
+            if resp.status != 200:
+                return await ctx.send(f'An error occurred: {resp.status} {resp.reason}')
+
+            js = await resp.json()
+            data = js.get('list', [])
+            if not data:
+                return await ctx.send('No results found, sorry.')
+
+        embeds: list[Embed] = [
+            Embed(
+                title=f"Word: {i['word']}",
+                timestamp=datetime.strptime(i['written_on'], "%Y-%m-%dT%H:%M:%S.%fZ"),
+                description=(
+                    f"**Definition**\n{i['definition']}\n\n"
+                    f"**Example**\n{i['example']}"
+                )[:4096]
+            )
+            .set_author(name="Urban Dictionary", url=i['permalink']).set_footer(text=f"by {i['author']}")
+            .add_field(
+                name="Votes",
+                value=f"\N{THUMBS UP SIGN}: {i['thumbs_up']}  \N{THUMBS DOWN SIGN}: {i['thumbs_down']}",
+                inline=False,
+            )
+            for i in data[:5]
+        ]
+        return await DefaultPaginator.start(ctx, embeds)
+
+
+
