@@ -135,7 +135,7 @@ class DataBaseOperations:
     ) -> Warning:
         async with self.bot.safe_connection() as conn:
             record: Record = await conn.fetchrow(
-                "INSERT INTO warnings(guild_id, user_id, warn_text, created_at, warned_by) "
+                "INSERT INTO warnings(guild_id, user_id, reason, created_at, warned_by) "
                 "VALUES($1, $2, $3, $4, $5) "
                 "RETURNING *",
                 guild.id,
@@ -151,13 +151,13 @@ class DataBaseOperations:
             records: list[Record]
             if all:
                 records = await conn.fetch(
-                    "DELETE FROM warnings " "WHERE (guild_id, user_id) IN (($1, $2)) " "RETURNING *",
+                    "DELETE FROM warnings WHERE (guild_id, user_id) IN (($1, $2)) RETURNING *",
                     guild.id,
                     user_id,
                 )
             else:
                 records = await conn.fetch(
-                    "DELETE FROM warnings " "WHERE (warn_id, guild_id, user_id) IN (($1, $2, $3)) " "RETURNING *",
+                    "DELETE FROM warnings WHERE (id, guild_id, user_id) IN (($1, $2, $3)) RETURNING *",
                     warn_id,
                     guild.id,
                     user_id,
@@ -177,7 +177,7 @@ class DataBaseOperations:
     async def get_warning_by_id(self, warn_id: int, user_id: int, guild: discord.Guild) -> Warning | None:
         async with self.bot.safe_connection() as conn:
             record: Record | None = await conn.fetchrow(
-                "SELECT * FROM warnings WHERE (warn_id, guild_id, user_id) IN (($1, $2, $3))",
+                "SELECT * FROM warnings WHERE (id, guild_id, user_id) IN (($1, $2, $3))",
                 warn_id,
                 guild.id,
                 user_id,

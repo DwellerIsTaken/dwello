@@ -9,13 +9,15 @@ import discord
 if TYPE_CHECKING:
     from datetime import datetime
 
-    from asyncpg import Record, BitString
+    from asyncpg import Record
 
     from core import Dwello
 
+
+GT = TypeVar("GT", bound="Guild")
+IT = TypeVar("IT", bound="Idea")
 UT = TypeVar("UT", bound="User")
 WT = TypeVar("WT", bound="Warning")
-IT = TypeVar("IT", bound="Idea")
 
 
 class BasicORM:
@@ -27,6 +29,349 @@ class BasicORM:
         bot: Dwello,
     ) -> Self:
         return cls(record, bot)
+
+
+class Blacklist(BasicORM):
+    __slots__ = ("bot", "user_id", "reason")
+
+    def __init__(self, record: Record, bot: Dwello) -> None:
+        self.bot: Dwello = bot
+        self.user_id: int = record["user_id"]
+        self.reason: str | None = record.get("reason")
+
+
+class Guild(BasicORM):
+    """
+    Class representing an ORM (Object Relational Mapping) for a configured (by user) guild.
+    Fetches information from different tables in one.
+
+    Note: Use :function:`.get` to call the class, otherwise it wouldn't work properly.
+
+    Parameters
+    ----------
+    For :function:`.get` classmethod.
+
+    id: :class:`int`
+        The ID of a(n) (existing) guild for which the data will be fetched and distributed.
+    bot: :class:`Dwello`
+        The bot instance mainly used, in this case, for working with the postgres database.
+    
+    Attributes
+    ----------
+    If activated with :function:`.get`.
+
+    id: :class:`int`
+        ID of the guild.
+    counter_category_denied: :class:`Optional[bool]`
+        Whether to suggest a counter category when creating a counter or no.
+        .. note::
+            # I think when category is created we set it to True.
+            # But if counter category is deleted we should set it to NULL ig,
+            # because if they create a counter in the future this option wouldn't be suggested.
+    counters: :class:`List[int]`
+        The list of counter channels' IDs.
+    twitch_users: :class:`dict[int, TwitchUser]`
+        Dictionary that uses twitch user's twitch ID as a key and :class:`TwitchUser` ORM as a value.
+    welcome_channel_id: :class:`Optional[int]`
+        Discord ID of a welcome channel if a user set one.
+    leave_channel_id: :class:`Optional[int]`
+        Discord ID of a leave channel if a user set one.
+    twitch_channel_id: :class:`Optional[int]`
+        Discord ID of a twitch channel if a user set one.
+    bot: :class:`Dwello`
+
+    SQL Types
+    ---------
+    guild_channels:
+        - guild_id: :sql:`BIGINT`
+        - channel_name: :sql:`TEXT`
+        - channel_id: :sql:`BIGINT`
+        - counter: :sql:`BOOLEAN DEFAULT FALSE`
+        - welcome: :sql:`BOOLEAN DEFAULT FALSE`
+        - leave: :sql:`BOOLEAN DEFAULT FALSE`
+        - twitch: :sql:`BOOLEAN DEFAULT FALSE`
+        - text: :sql:`TEXT`
+        - PRIMARY KEYS: :sql:`guild_id`, :sql:`channel_name`
+
+    guild_config:
+        - guild_id: :sql:`BIGINT`
+        - counter_category_denied: :sql:`BOOLEAN DEFAULT NULL`
+
+    twitch_users:
+        - username: :sql:`TEXT`
+        - user_id: :sql:`BIGINT`
+        - guild_id: :sql:`BIGINT`
+        - PRIMARY KEYS: :sql:`username`, :sql:`user_id`, :sql:`guild_id`
+
+    .. note::
+        # maybe bind this with custom discord.Guild class
+        # trouble with asyncio tho
+        # also: if leave channel isn't set use welcome channel as leave channel too
+        # but what if the user doesn't want to send either leave or welcome messages?
+        # then a third option?
+    """
+    __slots__ = (
+        "id",
+        "bot",
+        "counters",
+        "twitch_users",
+        "leave_channel_id",
+        "twitch_channel_id",
+        "welcome_channel_id",
+        "counter_category_denied",
+    )
+
+    # General
+    bot: Dwello
+    id: int # id of the guild
+
+    # Config Table
+    counter_category_denied: bool | None
+
+    # Channels Table
+    counters: list[int]
+    welcome_channel_id: int | None
+    leave_channel_id: int | None
+    twitch_channel_id: int | None
+
+    # Twitch Table
+    twitch_users: dict[int, TwitchUser]
+
+    @property
+    def category_denied(self) -> bool:
+        return self.counter_category_denied
+
+    @classmethod
+    async def get(
+        cls: type[GT],
+        id: int,
+        bot: Dwello,
+    ) -> GT:
+        self = cls()
+        async with bot.safe_connection() as conn:
+            guild_config_record: Record = await conn.fetchrow(
+                "SELECT * FROM guild_config WHERE guild_id = $1",
+                id,
+            )
+            channel_records: list[Record] = await conn.fetch(
+                "SELECT * FROM guild_channels WHERE guild_id = $1",
+                id,
+            )
+            twitch_records: list[Record] = await conn.fetch(
+                "SELECT * FROM twitch_users WHERE guild_id = $1",
+                id,
+            )
+        if guild_config_record:
+            self.counter_category_denied = guild_config_record.get("counter_category_denied")
+        else:
+            self.counter_category_denied = None
+
+        self.counters = []
+        self.welcome_channel_id = None
+        self.leave_channel_id = None
+        self.twitch_channel_id = None
+        for channel_record in channel_records:
+            cr = channel_record
+            channel_id = cr.get("channel_id")
+            if cr["welcome"]:
+                self.welcome_channel_id = channel_id
+            if cr["leave"]:
+                self.leave_channel_id = channel_id
+            if cr["twitch"]:
+                self.twitch_channel_id = channel_id
+            if cr["counter"]:
+                self.counters.append(channel_id)
+
+        self.twitch_users = {}
+        for twitch_record in twitch_records:
+            self.twitch_users[twitch_record["user_id"]] = await TwitchUser.get(twitch_record, bot)
+
+        self.id = id
+        self.bot = bot
+        return self
+
+
+class Idea:
+    """
+    Class representing an ORM (Object Relational Mapping) for an idea suggested by bot users.
+    These ideas are to be checked and implemented, or to be deleted.
+
+    Note: Use :function:`.get` or :function:`.create` classmethods to get proper :class:`Idea` in return,
+    otherwise :attribute:`.voters` and :attribute:`.votes` will be :type:`None`.
+
+    Parameters
+    ----------
+    record: :class:`asyncpg.Record`
+        A record that is destributed across attributes.
+    bot: :class:`Dwello`
+        The bot instance mainly used, in this case, for working with the postgres database.
+    
+    Attributes
+    ----------
+    id: :class:`int`
+        ID of the idea.
+    author_id: :class:`int`
+        ID of the idea's author.
+    created_at: :class:`Optional[datetime.datetime]`
+        The datetime object for when the idea was suggested, excluding tzinfo.
+    content: :class:`Optional[str]`
+        The content of the idea, or, rather, the idea itself.
+    title: :class:`Optional[str]`
+        Title of the given idea.
+    bot: :class:`Dwello`
+
+    SQL Types
+    ---------
+    id: :sql:`SERIAL PRIMARY KEY`\n
+    author_id: :sql:`BIGINT NOT NULL`\n
+    created_at: :sql:`TIMESTAMP`\n
+    content: :sql:`TEXT`\n
+    title: :sql:`TEXT`
+
+    .. note::
+        # somehow check whether ideas are similair (?)
+        # check for bad words etc and dont suggest if found (?)
+        # maybe allow everything tho
+    """
+    __slots__ = ("bot", "id", "author_id", "created_at", "content", "title", "voters")
+
+    def __init__(self, record: Record, bot: Dwello) -> None:
+        self.bot: Dwello = bot
+        self.id: int = record["id"]
+        self.author_id: int = record["author_id"]
+        self.created_at: datetime | None = record.get("created_at")
+        self.content: str | None = record.get("content")
+        self.title: str | None = record.get("title")
+
+        self.voters: List[str] | None = None
+
+    @property
+    def name(self) -> str:
+        return self.title
+
+    @property
+    def text(self) -> str:
+        return self.content
+    
+    @property
+    def votes(self) -> int | None:
+        try:
+            _votes = len(self.voters)
+        except TypeError:
+            _votes = 0
+        return _votes
+
+    async def _get_voters(self) -> List[int]:
+        async with self.bot.safe_connection() as conn:
+            records: List[Record] = await conn.fetch(
+                "SELECT * FROM idea_voters WHERE id = $1",
+                self.id,
+            )
+        return [int(record['voter_id']) for record in records]
+
+    async def remove(self) -> None:
+        async with self.bot.safe_connection() as conn:
+            return await conn.execute(
+                "DELETE FROM ideas WHERE id = $1",
+                self.id,
+            )
+        
+    def voted(self, voter_id: int) -> bool:
+        return voter_id in self.voters
+
+    async def upvote(self, voter_id: int) -> None:
+        async with self.bot.safe_connection() as conn:
+            await conn.execute(
+                "INSERT INTO idea_voters(id, voter_id) VALUES($1, $2)",
+                self.id,
+                voter_id,
+            )
+        self.voters.append(voter_id)
+        return
+    
+    @classmethod
+    async def get(
+        cls: type[IT],
+        record: Record,
+        bot: Dwello,
+    ) -> IT:
+        self = cls(record, bot)
+        self.voters = await self._get_voters()
+        return self
+
+    @classmethod
+    async def suggest(
+        cls: type[IT],
+        bot: Dwello,
+        title: str,
+        content: str,
+        author_id: int,
+    ) -> IT:
+        async with bot.safe_connection() as conn:
+            record: Record = await conn.fetchrow(
+                "INSERT INTO ideas(created_at, author_id, content, title) VALUES($1, $2, $3, $4) RETURNING *",
+                discord.utils.utcnow().replace(tzinfo=None),
+                author_id,
+                content,
+                title,
+            )
+        self = cls(record, bot)
+        self.voters = await self._get_voters()
+        return self
+    
+
+class Job(BasicORM):
+    __slots__ = ("bot", "guild_id", "name", "id", "salary", "description")
+
+    def __init__(self, record: Record, bot: Dwello) -> None:
+        self.bot: Dwello = bot
+        self.id: int = record["id"]
+        self.guild_id: int = record["guild_id"]
+        self.name: str | None = record.get("name")
+        self.salary: int | None = record.get("salary")
+        self.description: str | None = record.get("description")
+
+
+class News(BasicORM):
+    __slots__ = ("bot", "title", "message_id", "channel_id", "id")
+
+    def __init__(self, record: Record, bot: Dwello) -> None:
+        self.bot: Dwello = bot
+        self.id: int = record["news_id"]
+        self.title: str | None = record.get("title")
+        self.message_id: int | None = record.get("message_id")
+        self.channel_id: int | None = record.get("channel_id")
+
+
+class Prefix(BasicORM):
+    __slots__ = ("bot", "guild_id", "prefix")
+
+    def __init__(self, record: Record, bot: Dwello) -> None:
+        self.bot: Dwello = bot
+        self.guild_id: int = record["guild_id"]
+        self.prefix: str = record["prefix"]  # VARCHAR
+
+    @property
+    def name(self) -> str:
+        return self.prefix
+
+    async def remove(self) -> list[Record]:
+        async with self.bot.safe_connection() as conn:
+            return await conn.fetch(
+                "DELETE FROM prefixes WHERE (prefix, guild_id) IN (($1, $2)) RETURNING *",
+                self.prefix,
+                self.guild_id,
+            )
+
+
+class TwitchUser(BasicORM):
+    __slots__ = ("bot", "username", "user_id", "guild_id")
+
+    def __init__(self, record: Record, bot: Dwello) -> None:
+        self.bot: Dwello = bot
+        self.username: str = record["username"]
+        self.user_id: int = record["user_id"]
+        self.guild_id: int = record["guild_id"]
 
 
 class User(BasicORM):
@@ -58,9 +403,8 @@ class User(BasicORM):
     money: :class:`int`
         User's money shared across guilds where both the bot and the user are present.
         Should be used in global economy or smh.
-    _worked: :class:`asyncpg.BitString`
+    worked: :class:`bool`
         Attribute representing whether the user already worked today (globally) or not.
-        Use :property:`.worked` instead.
     bot: :class:`Dwello`
 
     SQL Types
@@ -71,7 +415,7 @@ class User(BasicORM):
     messages: :sql:`BIGINT DEFAULT 0`\n
     total_xp: :sql:`BIGINT DEFAULT 0`\n
     money: :sql:`BIGINT DEFAULT 0`\n
-    worked: :sql:`BIT NOT NULL DEFAULT B'0'`
+    worked: :sql:`BOOLEAN NOT NULL DEFAULT FALSE`
 
     .. note::
         # event_type - removed
@@ -103,12 +447,7 @@ class User(BasicORM):
         self.money: int = record["money"]
         self.messages: int = record["messages"]
         self.total_xp: int = record["total_xp"]
-
-        self._worked: BitString = record["worked"]
-
-    @property # probaly temporary
-    def worked(self) -> bool:
-        return bool(self._worked.to_int())
+        self.worked: bool = record["worked"]
 
     @property
     def current_xp(self) -> int:
@@ -194,16 +533,6 @@ class User(BasicORM):
         return self.xp_until_next_level
 
 
-class TwitchUser(BasicORM):
-    __slots__ = ("bot", "username", "user_id", "guild_id")
-
-    def __init__(self, record: Record, bot: Dwello) -> None:
-        self.bot: Dwello = bot
-        self.username: str = record["username"]
-        self.user_id: int = record["user_id"]
-        self.guild_id: int = record["guild_id"]
-
-
 class Warning(BasicORM):
     __slots__ = (
         "id",
@@ -217,9 +546,9 @@ class Warning(BasicORM):
 
     def __init__(self, record: Record, bot: Dwello) -> None:
         self.bot: Dwello = bot
-        self.id: int = record["warn_id"]
+        self.id: int = record["id"]
         self.user_id: int | None = record.get("user_id")
-        self.reason: str | None = record.get("warn_text")
+        self.reason: str | None = record.get("reason")
         self.guild_id: int | None = record.get("guild_id")
         self.warned_by: int | None = record.get("warned_by")
         self.created_at: datetime | None = record.get("created_at")
@@ -227,204 +556,8 @@ class Warning(BasicORM):
     async def remove(self) -> list[Record]:
         async with self.bot.safe_connection() as conn:
             return await conn.fetch(
-                "DELETE FROM warnings WHERE (warn_id, guild_id, user_id) IN (($1, $2, $3)) RETURNING *",
+                "DELETE FROM warnings WHERE (id, guild_id, user_id) IN (($1, $2, $3)) RETURNING *",
                 self.id,
                 self.guild_id,
                 self.user_id,
             )
-
-# different table for counters?
-class ServerData(BasicORM):
-    __slots__ = (
-        "bot",
-        "guild_id",
-        "message_text",
-        "channel_id",
-        "event_type",
-        "counter_name",
-        "deny_clicked",
-    )
-
-    def __init__(self, record: Record, bot: Dwello) -> None:
-        self.bot: Dwello = bot
-        self.guild_id: int = record["guild_id"]
-        self.event_type: str = record["event_type"]
-        self.counter_name: str = record["counter_name"]
-        self.message_text: str | None = record.get("message_text")
-        self.channel_id: int | None = record.get("channel_id")
-        self.deny_clicked: int | None = record.get("deny_clicked")  # BIT
-
-
-class Prefix(BasicORM):
-    __slots__ = ("bot", "guild_id", "prefix")
-
-    def __init__(self, record: Record, bot: Dwello) -> None:
-        self.bot: Dwello = bot
-        self.guild_id: int = record["guild_id"]
-        self.prefix: str = record["prefix"]  # VARCHAR
-
-    @property
-    def name(self) -> str:
-        return self.prefix
-
-    async def remove(self) -> list[Record]:
-        async with self.bot.safe_connection() as conn:
-            return await conn.fetch(
-                "DELETE FROM prefixes WHERE (prefix, guild_id) IN (($1, $2)) RETURNING *",
-                self.prefix,
-                self.guild_id,
-            )
-
-
-class Job(BasicORM):
-    __slots__ = ("bot", "guild_id", "name", "id", "salary", "description")
-
-    def __init__(self, record: Record, bot: Dwello) -> None:
-        self.bot: Dwello = bot
-        self.id: int = record["id"]
-        self.guild_id: int = record["guild_id"]
-        self.name: str | None = record.get("name")
-        self.salary: int | None = record.get("salary")
-        self.description: str | None = record.get("description")
-
-
-class News(BasicORM):
-    __slots__ = ("bot", "title", "message_id", "channel_id", "id")
-
-    def __init__(self, record: Record, bot: Dwello) -> None:
-        self.bot: Dwello = bot
-        self.id: int = record["news_id"]
-        self.title: str | None = record.get("title")
-        self.message_id: int | None = record.get("message_id")
-        self.channel_id: int | None = record.get("channel_id")
-
-
-class Blacklist(BasicORM):
-    __slots__ = ("bot", "user_id", "reason")
-
-    def __init__(self, record: Record, bot: Dwello) -> None:
-        self.bot: Dwello = bot
-        self.user_id: int = record["user_id"]
-        self.reason: str | None = record.get("reason")
-
-
-class Idea:
-    """
-    Class representing an ORM (Object Relational Mapping) for an idea suggested by bot users.
-    These ideas are to be checked and implemented, or to be deleted.
-
-    Parameters
-    ----------
-    record: :class:`asyncpg.Record`
-        A record that is destributed across attributes.
-    bot: :class:`Dwello`
-        The bot instance mainly used, in this case, for working with the postgres database.
-    
-    Attributes
-    ----------
-    id: :class:`int`
-        ID of the idea.
-    author_id: :class:`int`
-        ID of the idea's author.
-    created_at: :class:`Optional[datetime.datetime]`
-        The datetime object for when the idea was suggested, excluding tzinfo.
-    content: :class:`Optional[str]`
-        The content of the idea, or, rather, the idea itself.
-    title: :class:`Optional[str]`
-        Title of the given idea.
-    bot: :class:`Dwello`
-
-    SQL Types
-    ---------
-    id: :sql:`SERIAL PRIMARY KEY`\n
-    author_id: :sql:`BIGINT NOT NULL`\n
-    created_at: :sql:`TIMESTAMP`\n
-    content: :sql:`TEXT`\n
-    title: :sql:`TEXT`
-
-    .. note::
-        # somehow check whether ideas are similair (?)
-        # check for bad words etc and dont suggest if found (?)
-        # maybe allow everything tho
-    """
-    __slots__ = ("bot", "id", "author_id", "created_at", "content", "title", "voters")
-
-    def __init__(self, record: Record, bot: Dwello) -> None:
-        self.bot: Dwello = bot
-        self.id: int = record["id"]
-        self.author_id: int = record["author_id"]
-        self.created_at: datetime | None = record.get("created_at")
-        self.content: str | None = record.get("content")
-        self.title: str | None = record.get("title")
-
-        self.voters: List[str] | None = None
-
-    @property
-    def name(self) -> str:
-        return self.title
-
-    @property
-    def text(self) -> str:
-        return self.content
-    
-    @property
-    def votes(self) -> int:
-        return len(self.voters)
-
-    async def _get_voters(self) -> List[int]:
-        async with self.bot.safe_connection() as conn:
-            records: List[Record] = await conn.fetch(
-                "SELECT * FROM idea_voters WHERE id = $1",
-                self.id,
-            )
-        return [int(record['voter_id']) for record in records]
-
-    async def remove(self) -> None:
-        async with self.bot.safe_connection() as conn:
-            return await conn.execute(
-                "DELETE FROM ideas WHERE id = $1",
-                self.id,
-            )
-        
-    def voted(self, voter_id: int) -> bool:
-        return voter_id in self.voters
-
-    async def upvote(self, voter_id: int) -> None:
-        async with self.bot.safe_connection() as conn:
-            await conn.execute(
-                "INSERT INTO idea_voters(id, voter_id) VALUES($1, $2)",
-                self.id,
-                voter_id,
-            )
-        self.voters.append(voter_id)
-        return
-    
-    @classmethod
-    async def get(
-        cls: type[IT],
-        record: Record,
-        bot: Dwello,
-    ) -> IT:
-        self = cls(record, bot)
-        self.voters = await self._get_voters()
-        return self
-
-    @classmethod
-    async def suggest(
-        cls: type[IT],
-        bot: Dwello,
-        title: str,
-        content: str,
-        author_id: int,
-    ) -> IT:
-        async with bot.safe_connection() as conn:
-            record: Record = await conn.fetchrow(
-                "INSERT INTO ideas(created_at, author_id, content, title) VALUES($1, $2, $3, $4) RETURNING *",
-                discord.utils.utcnow().replace(tzinfo=None),
-                author_id,
-                content,
-                title,
-            )
-        self = cls(record, bot)
-        self.voters = await self._get_voters()
-        return self
