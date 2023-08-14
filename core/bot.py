@@ -171,7 +171,6 @@ class Dwello(commands.AutoShardedBot):
 
         self._was_ready = False
         self.test_instance = False
-        self.main_prefix: str = self.DEFAULT_PREFIXES[0]
         self.total_lines: int = countlines("G:\My Drive\discordbot", skip_blank=True)  # noqa: W605
         # wont work on host, somehow automatically determine the directory
 
@@ -200,6 +199,10 @@ class Dwello(commands.AutoShardedBot):
     @property
     def colour(self) -> discord.Colour | None:
         return self.default_color
+    
+    @property
+    def main_prefix(self) -> str:
+        return self.DEFAULT_PREFIXES[0]
 
     async def setup_hook(self) -> None:
         try:

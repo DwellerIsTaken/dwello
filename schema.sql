@@ -5,21 +5,23 @@ CREATE TABLE IF NOT EXISTS blacklist(
     reason TEXT
 );
 
-CREATE TABLE IF NOT EXISTS guild_channels(
-    guild_id BIGINT,
-    channel_name TEXT,
-    channel_id BIGINT,
-    counter BOOLEAN DEFAULT FALSE, --whether a channel is a counter or not
-    welcome BOOLEAN DEFAULT FALSE,
-    leave BOOLEAN DEFAULT FALSE,
-    twitch BOOLEAN DEFAULT FALSE,
-    text TEXT, --can be NULL
-    PRIMARY KEY (guild_id, channel_name)
+CREATE TABLE IF NOT EXISTS guilds(
+    id BIGINT PRIMARY KEY,
+    all_counter BIGINT, --whether a channel is a counter or not
+    bot_counter BIGINT,
+    member_counter BIGINT,
+    category_counter BIGINT,
+    welcome_channel BIGINT,
+    leave_channel BIGINT,
+    twitch_channel BIGINT,
+    welcome_text TEXT,
+    leave_text TEXT,
+    twitch_text TEXT
 );
 
 -- modconfig part of customisation table or separate?
 CREATE TABLE IF NOT EXISTS guild_config( --contains booleans only
-    guild_id BIGINT PRIMARY KEY,
+    guild_id BIGINT PRIMARY KEY REFERENCES guilds(id),
     counter_category_denied BOOLEAN DEFAULT NULL
 );
 
@@ -74,7 +76,7 @@ CREATE TABLE IF NOT EXISTS todo(
 CREATE TABLE IF NOT EXISTS twitch_users(
     username TEXT,
     user_id BIGINT,
-    guild_id BIGINT,
+    guild_id BIGINT REFERENCES guilds(id),
     PRIMARY KEY (username, user_id, guild_id)
 );
 
@@ -96,16 +98,6 @@ CREATE TABLE IF NOT EXISTS warnings(
     created_at TIMESTAMP,
     warned_by BIGINT
 );
-
-/*CREATE TABLE IF NOT EXISTS server_data(
-    guild_id BIGINT,
-    message_text TEXT,
-    channel_id BIGINT,
-    event_type TEXT,
-    counter_name TEXT,
-    deny_clicked BIT,
-    PRIMARY KEY (guild_id, event_type, counter_name)
-);*/
 
 ALTER SEQUENCE jobs_id_seq START 10000000 INCREMENT BY 1;
 ALTER SEQUENCE warnings_id_seq START 10000000 INCREMENT BY 1;
