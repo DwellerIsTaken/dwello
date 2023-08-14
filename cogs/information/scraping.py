@@ -653,7 +653,7 @@ class Scraping(BaseCog):
             data = await response.json()
 
         if data["cod"] == "404":
-            async with aiofiles.open("datasets/countries.json") as file:
+            async with aiofiles.open("storage/datasets/countries.json") as file:
                 data: dict = json.loads(await file.read())
 
             matches = []

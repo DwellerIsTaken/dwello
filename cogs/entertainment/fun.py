@@ -179,7 +179,7 @@ class Fun(BaseCog):
     # maybe add difflib later to search based on query or just use some api
     @commands.hybrid_command(name="quote", help="Returns a random quote.", with_app_command=True)
     async def quote(self, ctx: Context) -> discord.Message: # *, query: str | None
-        async with aiofiles.open("datasets/quotes.json") as file:
+        async with aiofiles.open("storage/datasets/quotes.json") as file:
             data: list = json.loads(await file.read())
         choice: dict = random.choice(data)
         text = choice["quoteText"]

@@ -6,7 +6,7 @@ import requests
 from PIL import Image, ImageDraw, ImageFont
 
 # rename folder and store datasets and pillow within
-DIR = "datasets/pillow/"
+DIR = "storage/pillow/"
 
 
 def get_center(size: Tuple[int, int], bbsize: Tuple[int, int, int, int]) -> List[float]:
