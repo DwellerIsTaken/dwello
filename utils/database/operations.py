@@ -272,6 +272,9 @@ class DataBaseOperations:
         async with self.bot.safe_connection() as conn:
             row: Record = await conn.fetchrow("SELECT * FROM guilds WHERE id = $1", guild.id)
 
+        if not row:
+            return
+
         bot_count = sum(member.bot for member in guild.members)
         member_count = len(guild.members) - bot_count  # type: ignore
 
@@ -300,3 +303,9 @@ class DataBaseOperations:
                 query = f"UPDATE guilds SET {_guild.counters_dict[channel.id]} = NULL WHERE id = $1"
                 await conn.execute(query, guild.id)
         return
+    
+    async def update_guild_config(self, guild_id: int, _dict: dict[str, bool]) -> Guild:
+        _guild = await Guild.get(guild_id, self.bot)
+        await _guild.update_config(_dict)
+        return _guild
+

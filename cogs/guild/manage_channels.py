@@ -2,14 +2,13 @@ from __future__ import annotations
 
 from typing import Any, Literal
 
-import asyncpg
 import discord
 from discord.ext import commands
-from discord.ui import Button, View, button
+from discord.ui import button
 
 import constants as cs
-from core import BaseCog, Context, Dwello, Embed
-from utils import HandleHTTPException
+from core import BaseCog, Context, Dwello, Embed, View
+from utils import HandleHTTPException, Guild
 
 
 class ChannelsFunctions:
@@ -19,185 +18,121 @@ class ChannelsFunctions:
     async def counter_func(
         self,
         ctx: Context,
-        name: Literal["all", "member", "bot", "category"],
-    ) -> discord.VoiceChannel | discord.CategoryChannel | None:
-        # Optional[Tuple[discord.Message, Union[discord.VoiceChannel, discord.CategoryChannel]]]
-        async with self.bot.pool.acquire() as conn:
-            conn: asyncpg.Connection
-            async with conn.transaction():
-                count = ctx.guild.member_count
+        _type: Literal["all", "member", "bot", "category"],
+    ) -> discord.abc.GuildChannel | None:
+                
+        _guild = await Guild.get(ctx.guild.id, self.bot)
 
-                bot_counter = sum(bool(member.bot) for member in ctx.guild.members)
-                member_counter = len(ctx.guild.members) - bot_counter
+        bot_counter = sum(bool(member.bot) for member in ctx.guild.members)
+        member_counter = len(ctx.guild.members) - bot_counter
 
-                query = (
-                    "SELECT channel_id FROM server_data WHERE guild_id = $1 AND event_type = 'counter' AND counter_name = $2"
+        count = {
+            "all": ctx.guild.member_count or len(ctx.guild.members),
+            "bot": bot_counter,
+            "member": member_counter,
+        }.get(_type)
+
+        if _type == "category":
+            if _guild.category_counter.id:
+                await ctx.reply(
+                    "This category already exists.",
+                    mention_author=True,
+                    ephemeral=True,
                 )
-                row = await conn.fetchrow(query, ctx.guild.id, "category")
-                counter_category_id = row[0] if row else None
+                return
+            channel = await ctx.guild.create_category(
+                "\N{BAR CHART} Server Counters\N{BAR CHART}", reason=None,
+            )
+            await channel.edit(position=0)
+            await _guild.add_counter("category", channel.id)
+        else:
+            # if not removed when channel is deleted by user this might trigger
+            # then they won't be able to create a new counter
+            _channel = _guild.get_channel_by_type(_type)
+            if _channel.id if _channel else _channel:
+                await ctx.reply(
+                    "Sorry, you can't create this counter because it already exists",
+                    user_mistake=True,
+                )
+                return
 
-                if name == "all":
-                    count = count
-
-                if name == "member":
-                    count = member_counter
-
-                elif name == "bot":
-                    count = bot_counter
-
-                elif name == "category":
-                    if counter_category_id:
-                        await ctx.reply(
-                            "This category already exists.",
-                            mention_author=True,
-                            ephemeral=True,
-                        )
-                        return None
-
-                    counter_channel = await ctx.guild.create_category(
-                        "\N{BAR CHART} Server Counters\N{BAR CHART}", reason=None
-                    )
-                    await counter_channel.edit(position=0)
-                    await conn.execute(
-                        "UPDATE server_data SET channel_id = $1 WHERE counter_name = $2 AND event_type = 'counter' AND guild_id = $3",  # noqa: E501
-                        counter_channel.id,
-                        name,
-                        ctx.guild.id,
-                    )
-                    await ctx.reply(
-                        f"The **{counter_channel.name}** is successfully created!",
-                        mention_author=False,
-                    )
-                    return counter_channel
-
-                # maybe create a category func after all (?)
-                query = "SELECT channel_id, deny_clicked FROM server_data WHERE guild_id = $1 AND event_type = 'counter' AND counter_name = $2"  # noqa: E501
-                row = await conn.fetchrow(query, ctx.guild.id, name)
-                channel_id, deny_result = (row[0], row[1]) if row else (None, None)
-
-                # should be checked in a channel_delete event
-                """try:
-                    counter_category = discord.utils.get(ctx.guild.categories, id = int(category_record))
-
-                except TypeError:
-                    counter_category = None"""
-
-                if channel_id:
-                    await ctx.reply(
-                        "This counter already exists! Please provide another type of counter if you need to, "
-                        "otherwise __**please don`t create a counter that already exists**__.",
-                        user_mistake=True,
-                    )  # return embed instead (?)
-                    return None
-
-                if not deny_result and not counter_category_id:
-                    embed: Embed = Embed(
+            if not _guild.counter_category_denied and not _guild.category_counter.id:
+                await ctx.reply(
+                    embed=Embed(
                         description="**Do you want to create a category for your counters?**",
-                    ).set_footer(text=cs.FOOTER)
-                    await ctx.reply(
-                        embed=embed,
-                        view=Stats_View(self.bot, ctx, name),
-                        user_mistake=True,
-                    )
-                    return None
+                    ),
+                    view=CategoryAskView(ctx, _type),
+                    user_mistake=True,
+                )
+                return
 
-                # elif deny_result is None and counter_category is not None: # ?
-                # await conn.execute("UPDATE server_data SET deny_clicked = $1 WHERE guild_id = $2", 1, ctx.guild.id)
-
-                if not channel_id:
-                    counter_category: discord.CategoryChannel = ctx.guild.get_channel(int(counter_category_id))
-                    counter_channel = await ctx.guild.create_voice_channel(
-                        f"\N{BAR CHART} {name.capitalize()} counter: {count}",
-                        reason=None,
-                        category=counter_category,
-                    )
-                    await conn.execute(
-                        "UPDATE server_data SET channel_id = $1 WHERE event_type = 'counter' AND counter_name = $2 AND guild_id = $3",  # noqa: E501
-                        counter_channel.id,
-                        name,
-                        ctx.guild.id,
-                    )
+            channel = await ctx.guild.create_voice_channel(
+                f"\N{BAR CHART} {_type.capitalize()} counter: {count}",
+                reason=None,
+                category=_guild.category_counter.instance,
+            )
+            await _guild.add_counter(_type, channel.id)
 
         await ctx.reply(
             embed=Embed(
-                description=f"**{counter_channel.name}** is successfully created!",
+                description=f"{channel.mention} is successfully created!",
             ),
             permission_cmd=True,
-        )  # DISPLAEYD IN DISCORD LOGS
-        return counter_channel
+        )
+        return channel
 
-    async def move_channel(self, ctx: Context, category: discord.CategoryChannel, *args: str) -> None:
-        async with self.bot.pool.acquire() as conn:
-            conn: asyncpg.Connection
-            async with conn.transaction():
-                placeholders = ",".join([f"${i + 2}" for i in range(len(args))])
-                query = f"SELECT channel_id FROM server_data WHERE guild_id = $1 AND event_type = 'counter' AND counter_name IN ({placeholders})"  # noqa: E501
+    async def move_channel(self, ctx: Context, category: discord.CategoryChannel) -> None:
+        _guild = await Guild.get(ctx.guild.id, self.bot)
 
-                rows = await conn.fetch(query, ctx.guild.id, *args)
-
-                for row in rows:
-                    channel = ctx.guild.get_channel(row[0])
-                    async with HandleHTTPException(ctx, title=f"Failed to move {channel} into {category}"):
-                        await channel.move(category=category, beginning=True)
+        for counter in _guild.counters:
+            channel = counter.instance
+            async with HandleHTTPException(ctx, title=f"Failed to move {channel.name} into {category}"):
+                await channel.move(category=category, beginning=True)
         return
 
 
-class Stats_View(View):
-    def __init__(self, bot: Dwello, ctx: Context, name: str, *, timeout: int = None) -> None:
+class CategoryAskView(View):
+    """Asks the person if they would like to have a category for their counters."""
+    def __init__(self, ctx: Context, name: str, *, timeout: int = None) -> None:
         super().__init__(timeout=timeout)
-        self.bot = bot
+        self.bot = ctx.bot
         self.ctx = ctx
         self.name = name
 
         self.cf_: ChannelsFunctions = ChannelsFunctions(self.bot)
 
-    # DO A MORE USER-FRIENDLY INTERACTION CHECK
-    async def interaction_check(self, interaction: discord.Interaction) -> discord.Message | None:
-        if interaction.user.id == self.ctx.author.id:
-            return True
-
-        missing_permissions_embed = Embed(
-            title="Permission Denied.",
-            description="You can't interact with someone else's buttons.",
-        )
-        missing_permissions_embed.set_footer(text=cs.FOOTER)
-        return await interaction.response.send_message(embed=missing_permissions_embed, ephemeral=True)
-
     @button(
         style=discord.ButtonStyle.green,
         label="Approve",
-        disabled=False,
         custom_id="approve_button",
     )
-    async def approve(self, interaction: discord.interactions.Interaction, button: Button) -> discord.Message | None:
-        async with self.bot.pool.acquire() as conn:
-            conn: asyncpg.Connection
-            async with conn.transaction():
-                counter_category = await self.cf_.counter_func(self.ctx, "category")
-                await self.cf_.counter_func(self.ctx, self.name)
-                return await interaction.response.edit_message(
-                    embed=None,
-                    content=f"The **{counter_category.name}** is successfully created by **{interaction.user}**!",
-                    view=None,
-                )
+    async def approve(self, interaction: discord.Interaction, _) -> None:
+        """
+        When you accept, a category channel is created
+        and then your previously requested counter is created and moved into it.
+        """
+        await self.bot.db.update_guild_config(self.ctx.guild.id, {"counter_category_denied": True})
+        category = await self.cf_.counter_func(self.ctx, "category")
+        await self.cf_.counter_func(self.ctx, self.name)
+        return await interaction.response.edit_message(
+            content=f"The **{category.name}** is successfully created by **{interaction.user}**!",
+            embed=None,
+            view=None,
+        )
 
     @button(
         style=discord.ButtonStyle.red,
         label="Deny",
-        disabled=False,
         custom_id="deny_button",
     )
-    async def deny(self, interaction: discord.interactions.Interaction, button: Button) -> None:
-        async with self.bot.pool.acquire() as conn:
-            conn: asyncpg.Connection
-            async with conn.transaction():
-                await conn.execute(
-                    "UPDATE server_data SET deny_clicked = $1 WHERE guild_id = $2",
-                    1,
-                    interaction.guild.id,
-                )
-                await self.cf_.counter_func(self.ctx, self.name)
-                return await interaction.response.edit_message(content=None, view=None)
+    async def deny(self, interaction: discord.Interaction, _) -> None:
+        """
+        If you deny however, a category channel isn't created
+        and then your previously requested counter is created.
+        """
+        await self.bot.db.update_guild_config(self.ctx.guild.id, {"counter_category_denied": False})
+        await self.cf_.counter_func(self.ctx, self.name)
+        return await interaction.response.edit_message(content=None, view=None)
 
 
 class Channels(BaseCog):
@@ -242,7 +177,7 @@ class Channels(BaseCog):
     @counter.command(name="category", help="Creates a category where your counter(s) will be stored.")
     async def category(self, ctx: Context):
         category = await self.cf.counter_func(ctx, "category")
-        return await self.cf.move_channel(ctx, category[1], "all", "member", "bot")
+        return await self.cf.move_channel(ctx, category)
 
     @counter.command(name="list", aliases=["show", "display"], help="Shows a list of counters you can create.")
     async def list(self, ctx: Context):

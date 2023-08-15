@@ -55,6 +55,8 @@ class Events(BaseCog):
     async def on_message(self, message: discord.Message) -> None:
         user = await self.bot.db.create_user(message.author.id)
         await user.increase_xp(message) # user not being created in the func
+        with contextlib.suppress(AttributeError):
+            await Guild.create(message.guild.id, self.bot) # for now
 
         if message.content == f"<@{self.bot.user.id}>" and not message.author.bot:
             prefix: str = str(self.bot.DEFAULT_PREFIXES[0])
@@ -110,15 +112,16 @@ class ListenerFunctions:
         self.bot = bot
 
     # again: counter class maybe?
-    async def join_leave_event(self, member: discord.Member, name: Literal["welcome", "leave"]) -> discord.Message | None:
+    async def join_leave_event(self, member: discord.Member, _type: Literal["welcome", "leave"]) -> discord.Message | None:
         guild = member.guild
-        welcome = name == "welcome"
+        welcome = _type == "welcome"
 
         await self.bot.db.update_counters(guild)
 
         _guild = await Guild.get(guild.id, self.bot)
+        _channel = _guild.get_channel_by_type(_type)
 
-        _message = _guild.welcome_message if welcome else _guild.leave_message or None
+        _message = _channel.message if _channel else None
         if _message:
             _message = Template(_message).safe_substitute(
                 members=len(list(member.guild.members)),
@@ -146,7 +149,7 @@ class ListenerFunctions:
                         icon_url=member.display_avatar.url if member.display_avatar else self.bot.user.display_avatar.url,
                     )
                 )
-            if not _guild.welcome_message:
+            if not _message:
                 _message = (
                     f"You are the __*{len(list(member.guild.members))}th*__ user on this server.\n"
                     "I hope that you will enjoy your time on this server. Have a good day!" # maybe randomize it a bit | ->
@@ -160,11 +163,11 @@ class ListenerFunctions:
             buffer.seek(0)
             file: discord.File = discord.File(buffer, "welcome.png")
         else:
-            if not _guild.leave_message:
+            if not _message:
                 _message = "If you left, you had a reason to do so. Farewell, dweller!" # better sentence
             _title = f"Goodbye {member.name}!"
 
-        channel = guild.get_channel(_guild.welcome_channel_id if welcome else _guild.leave_channel_id) #fix config.py
+        channel = guild.get_channel(_channel.id)
         return await channel.send(
             embed=Embed(
                 title=_title,

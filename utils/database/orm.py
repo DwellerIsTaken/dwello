@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, List, Literal, TypeVar, Union
+from typing import TYPE_CHECKING, List, TypeVar
 
 import discord
 from typing_extensions import Self
@@ -138,58 +138,30 @@ class Guild(BasicORM):
         "counter_category_denied",
     )
 
-    CHANNEL_DICT = {
-        "welcome_channel": {"text": "welcome_text"},
-        "leave_channel": {"text": "leave_text"},
-        "twitch_channel": {"text": "twitch_text"},
-        "welcome": {"text": "welcome_text"},
-        "leave": {"text": "leave_text"},
-        "twitch": {"text": "twitch_text"},
+    CHANNEL_DICT = { # this should get the correct sql column names from gives string
+        "welcome_channel": {"text": "welcome_text", "channel": "welcome_channel"},
+        "leave_channel": {"text": "leave_text", "channel": "leave_channel"},
+        "twitch_channel": {"text": "twitch_text", "channel": "twitch_channel"},
+        "welcome": {"text": "welcome_text", "channel": "welcome_channel"},
+        "leave": {"text": "leave_text", "channel": "leave_channel"},
+        "twitch": {"text": "twitch_text", "channel": "twitch_channel"},
     }
 
-    ALL_CHANNEL_TYPES = Literal[
-        "all_counter",
-        "bot_counter",
-        "member_counter",
-        "category_counter",
-        "welcome_channel",
-        "leave_channel",
-        "twitch_channel",
-    ]
+    COUNTER_DICT = {
+        "all_counter": {"channel": "all_counter"},
+        "bot_counter": {"channel": "bot_counter"},
+        "member_counter": {"channel": "member_counter"},
+        "category_counter": {"channel": "category_counter"},
+        "all": {"channel": "all_counter"},
+        "bot": {"channel": "bot_counter"},
+        "member": {"channel": "member_counter"},
+        "category": {"channel": "category_counter"},
+    }
 
-    _CHANNEL_TYPES = Literal[
-        "welcome_channel",
-        "leave_channel",
-        "twitch_channel",
-    ]
-
-    USER_CHANNEL_TYPES = Literal[
-        "welcome",
-        "leave",
-        "twitch",
-    ]
-    # user oriented channel types
-    # so you would just pass 'welcome'
-    # when adding a message for example
-    # instead of doing the entire 'welcome_channel'
-
-    _COUNTER_TYPES = Literal[
-        "all_counter",
-        "bot_counter",
-        "member_counter",
-        "category_counter",
-    ]
-
-    USER_COUNTER_TYPES = Literal[
-        "all",
-        "bot",
-        "member",
-        "category",
-    ]
-
-    CHANNEL_TYPES = Union[_CHANNEL_TYPES, USER_CHANNEL_TYPES]
-    COUNTER_TYPES = Union[_COUNTER_TYPES, USER_COUNTER_TYPES]
-    ALL_USER_TYPES = Union[CHANNEL_TYPES, COUNTER_TYPES]
+    CONFIG_PARAMS_DICT = {
+        "counter_category_denied": "counter_category_denied",
+        "category_denied": "counter_category_denied",
+    }
 
     # General
     bot: Dwello
@@ -260,33 +232,69 @@ class Guild(BasicORM):
             ]
             if key is not None
         }
+    
+    def _update_configuration(self, record: Record | None) -> None:
+        """Updates attributes related to 'guild_config' sql table."""
+        
+        if record:
+            self.counter_category_denied = record.get("counter_category_denied")
+        else:
+            self.counter_category_denied = None
+        return
 
-    def _update_channels(self, record: Record, bot: Dwello) -> None:
+    def _update_channels(self, record: Record) -> None:
+        """
+        Updates guild's channel attributes, such as :attr:`welcome_channel`.
+        Channel attributes are updated to :class:`GuildChannel`; all its attributes are thus updated too.
+        """
+
         self.welcome_channel = GuildChannel(
             "welcome_channel",
-            bot,
+            self,
             id=record.get("welcome_channel"),
             text=record.get("welcome_text"),
         )
         self.leave_channel = GuildChannel(
             "leave_channel",
-            bot,
+            self,
             id=record.get("leave_channel"),
             text=record.get("leave_text"),
         )
         self.twitch_channel = GuildChannel(
             "twitch_channel",
-            bot,
+            self,
             id=record.get("twitch_channel"),
             text=record.get("twitch_text"),
         )
         return
 
-    def _update_counters(self, record: Record, bot: Dwello) -> None:
-        self.all_counter = GuildCounter("all_counter", bot, id=record.get("all_counter"))
-        self.bot_counter = GuildCounter("bot_counter", bot, id=record.get("bot_counter"))
-        self.member_counter = GuildCounter("member_counter", bot, id=record.get("member_counter"))
-        self.category_counter = GuildCounter("category_counter", bot, id=record.get("category_counter"))
+    def _update_counters(self, record: Record) -> None:
+        """Similiar to :func:`_update_channels`, but for guild counters."""
+
+        self.all_counter = GuildCounter("all_counter", self, id=record.get("all_counter"))
+        self.bot_counter = GuildCounter("bot_counter", self, id=record.get("bot_counter"))
+        self.member_counter = GuildCounter("member_counter", self, id=record.get("member_counter"))
+        self.category_counter = GuildCounter("category_counter", self, id=record.get("category_counter"))
+        return
+    
+    async def update_config(self, _dict: dict[str, bool]) -> None:
+        updates = []
+        for _type, value in _dict.items():
+            try:
+                param_name = self.CONFIG_PARAMS_DICT[_type]
+            except KeyError as e:
+                raise ValueError(f"Invalid (channel) type: {_type}") from e
+
+            updates.append(f"{param_name} = {'TRUE' if value is True else 'FALSE'}")
+        
+        if not updates:
+            return
+
+        query = f"UPDATE guilds SET {', '.join(updates)} WHERE id = $1 RETURNING *"
+        async with self.bot.safe_connection() as conn:
+            row: Record = await conn.fetchrow(query, self.id)
+
+        self._update_configuration(row)
         return
 
     def get_channel_by_type(self, _type: str) -> GuildChannel | GuildCounter | None:
@@ -301,18 +309,44 @@ class Guild(BasicORM):
 
         return getattr(self, _type, None)  # type: ignore
 
-    async def add_message(self, channel: str, text: str) -> None:
+    async def add_message(self, _type: str, text: str) -> None:
         try:
-            self.CHANNEL_DICT[channel]
+            self.CHANNEL_DICT[_type]
         except KeyError as e:
-            raise ValueError(f"Invalid channel type: {channel}") from e
+            raise ValueError(f"Invalid (channel) type: {_type}") from e
 
         async with self.bot.safe_connection() as conn:  # store queries instead?
-            query = f"UPDATE guilds SET {self.CHANNEL_DICT[channel]['text']} = $1 WHERE guild_id = $2 RETURNING *"
+            query = f"UPDATE guilds SET {self.CHANNEL_DICT[_type]['text']} = $1 WHERE id = $2 RETURNING *"
             row: Record = await conn.fetchrow(query, text, self.id)
 
-        self._update_channels(row, self.bot)
+        self._update_channels(row)
         return
+    
+    async def add_channel(self, _type: str, channel_id: int) -> GuildChannel | None:
+        try:
+            self.CHANNEL_DICT[_type]
+        except KeyError as e:
+            raise ValueError(f"Invalid (channel) type: {_type}") from e
+        
+        async with self.bot.safe_connection() as conn:
+            query = f"UPDATE guilds SET {self.CHANNEL_DICT[_type]['channel']} = $1 WHERE id = $2 RETURNING *"
+            row: Record = await conn.fetchrow(query, channel_id, self.id)
+
+        self._update_channels(row)
+        return self.get_channel_by_type(_type)
+    
+    async def add_counter(self, _type: str, channel_id: int) -> GuildCounter | None:
+        try:
+            self.COUNTER_DICT[_type]
+        except KeyError as e:
+            raise ValueError(f"Invalid (channel) type: {_type}") from e
+        
+        async with self.bot.safe_connection() as conn:
+            query = f"UPDATE guilds SET {self.COUNTER_DICT[_type]['channel']} = $1 WHERE id = $2 RETURNING *"
+            row: Record = await conn.fetchrow(query, channel_id, self.id)
+
+        self._update_counters(row)
+        return self.get_channel_by_type(_type)
 
     @classmethod
     async def get(
@@ -325,7 +359,7 @@ class Guild(BasicORM):
         self.bot = bot
 
         async with bot.safe_connection() as conn:
-            guild_config_record: Record = await conn.fetchrow(
+            config_record: Record = await conn.fetchrow(
                 "SELECT * FROM guild_config WHERE guild_id = $1",
                 id,
             )
@@ -337,13 +371,9 @@ class Guild(BasicORM):
                 "SELECT * FROM twitch_users WHERE guild_id = $1",
                 id,
             )
-        if guild_config_record:
-            self.counter_category_denied = guild_config_record.get("counter_category_denied")
-        else:
-            self.counter_category_denied = None
-
-        self._update_channels(record, bot)
-        self._update_counters(record, bot)
+        self._update_configuration(config_record)
+        self._update_channels(record)
+        self._update_counters(record)
 
         self.twitch_users = {}
         for twitch_record in twitch_records:
@@ -373,10 +403,9 @@ class Guild(BasicORM):
             config_record: Record = await conn.fetchrow("SELECT * FROM guild_config WHERE guild_id = $1", id)
             twitch_records: list[Record] = await conn.fetch("SELECT * FROM twitch_users WHERE guild_id = $1", id)
 
-        self.counter_category_denied = config_record.get("counter_category_denied") if config_record else None
-
-        self._update_channels(record, bot)
-        self._update_counters(record, bot)
+        self._update_configuration(config_record)
+        self._update_channels(record)
+        self._update_counters(record)
 
         self.twitch_users = {}
         for twitch_record in twitch_records:
@@ -386,21 +415,35 @@ class Guild(BasicORM):
 
 
 class _GuildChannel:
-    def __init__(self, id: int | None, bot: Dwello) -> None:
+    """Class representing any db guild channel. Should be subclassed."""
+    def __init__(self, _type: str, id: int | None, guild: Guild) -> None:
+        self.type: str = _type
         self.id: int | None = id
-        self.bot: Dwello = bot
+        self.guild: Guild = guild
+
+        self.bot: Dwello = guild.bot
+
+    @property
+    def name(self) -> str:
+        return self.type.capitalize().replace('_', ' ')
 
     @property
     def instance(self) -> discord.abc.GuildChannel | None:
         return self.bot.get_channel(self.id) if self.id else None  # type: ignore
+    
+    async def remove(self) -> None:
+        async with self.bot.safe_connection() as conn:
+            query = f"UPDATE guilds SET {self.type} = NULL WHERE id = $1"
+            await conn.execute(query, self.guild.id)
+        return
 
 
-# Up to YOU Willi
 class GuildChannel(_GuildChannel):
-    def __init__(self, type: Guild._CHANNEL_TYPES, bot: Dwello, /, id: int | None, text: str | None) -> None:
-        super().__init__(id, bot)
+    """Class representing db guild channel that isn't a counter and is related to other db columns."""
+    def __init__(self, _type: str, guild: Guild, /, id: int | None, text: str | None) -> None:
+        super().__init__(_type, id, guild)
 
-        self.type = type
+        self.type = _type
         self.text: str | None = text
 
     @property
@@ -408,23 +451,22 @@ class GuildChannel(_GuildChannel):
         return self.text
 
     @property
-    def text_type(self) -> Literal | None:
+    def text_type(self) -> str | None:
         try:
             return Guild.CHANNEL_DICT[self.type]["text"]
         except KeyError:
             return None
 
     @property
-    def message_type(self) -> Literal | None:
-        if not isinstance(self.type, Guild._CHANNEL_TYPES):
-            return None
-        return Guild.CHANNEL_DICT.get(self.type)["text"]
+    def message_type(self) -> str | None:
+        return self.text_type
 
 
 class GuildCounter(_GuildChannel):
-    def __init__(self, type: Guild._COUNTER_TYPES, bot: Dwello, /, id: int | None) -> None:
-        super().__init__(id, bot)
-        self.type = type
+    """Class representing a db guild counter."""
+    def __init__(self, _type: str, guild: Guild, /, id: int | None) -> None:
+        super().__init__(_type, id, guild)
+        self.type = _type
 
 
 class Idea:

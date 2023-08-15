@@ -2,7 +2,6 @@ from __future__ import annotations
 
 from typing import Any
 
-import asyncpg
 import discord
 from discord.app_commands import Choice  # noqa: F401
 from discord.ext import commands
@@ -16,12 +15,136 @@ class Config(BaseCog):
     def __init__(self, bot: Dwello, *args: Any, **kwargs: Any) -> None:
         super().__init__(bot, *args, **kwargs)
 
-        self._channel: ChannelConfig = ChannelConfig(bot)
-
         self.extra_help: dict[str, str] = {}  # add later for each group
 
     async def cog_check(self, ctx: Context) -> bool:
         return ctx.guild is not None
+    
+    async def _add_message(self, ctx: Context, _type: str, text: str) -> discord.Message | None:
+        _guild = await Guild.get(ctx.guild.id, self.bot) # add modals here if app cmd
+        _channel = _guild.get_channel_by_type(_type)
+
+        if not _channel or not _channel.id:
+            return await ctx.reply(
+                content=f"{_type.capitalize()} channel isn't yet set.",
+                embed=Embed(
+                    description=(
+                        "## But how do I set it?\n"
+                        "Like this:"
+                        f"```{self.bot.main_prefix}{_type} channel set```"
+                    ),
+                ),
+                user_mistake=True,
+            ) # i mean, u should be able to set a message without a channel, but this is like a reminder smh
+        await _guild.add_message(_type, text)
+        return await ctx.reply(
+            embed=Embed(
+                description=f"{_type.capitalize()} message has been {'updated' if _channel.text else 'set'} to: ```{text}```"
+            ),
+            permission_cmd=True,
+        )
+
+    async def _add_channel(
+        self,
+        ctx: Context,
+        _type: str,
+        channel: discord.TextChannel | commands.CurrentChannel,
+        /,
+        notify_in_channel: bool = False,
+    ) -> discord.Message | None:
+        _guild = await Guild.get(ctx.guild.id, self.bot)
+        _channel = _guild.get_channel_by_type(_type)
+
+        _channel_id = _channel.id if _channel else None
+
+        string = f"The channel has been {'updated' if _channel_id else 'set'} to {channel.mention}."
+
+        if _channel_id == channel.id:
+            return await ctx.reply(
+                f"{_type.capitalize()} channel has already been set to this channel!",
+                user_mistake=True,
+            )
+        await _guild.add_channel(_type, channel.id)
+        if notify_in_channel:
+            await channel.send(
+                embed=Embed(
+                    description=f"This channel has been set as a *{_channel.name.lower()}* channel.",
+                )
+            )
+        return await ctx.reply(embed=Embed(description=string), permission_cmd=True)
+
+    async def _message_display(self, ctx: Context, _type: str) -> discord.Message | None:
+        _guild = await Guild.get(ctx.guild.id, self.bot)
+        _channel = _guild.get_channel_by_type(_type)
+        _message = _channel.text if _channel else None
+
+        if not _message:
+            return await ctx.reply(
+                content=f"{_type.capitalize()} message isn't yet set.",
+                embed=Embed(
+                    description=(
+                        "## But how do I set it?\n"
+                        "Like this:"
+                        f"```{self.bot.main_prefix}{_type} message set```"
+                    ),
+                ),
+                user_mistake=True,
+            )
+        return await ctx.reply(
+            embed=Embed(
+                title=f"{_type.capitalize()} message",
+                description=f"```{_message}```", # maybe different output style?
+            ),
+            permission_cmd=True,
+        )
+
+    async def _channel_display(self, ctx: Context, _type: str) -> discord.Message | None:
+        _guild = await Guild.get(ctx.guild.id, self.bot)
+        _channel = _guild.get_channel_by_type(_type)
+        _id = _channel.id if _channel else None
+
+        if not _id:
+            return await ctx.reply(
+                content=f"{_type.capitalize()} channel isn't yet set.",
+                embed=Embed(
+                    description=(
+                        "## But how do I set it?\n"
+                        "Like this:"
+                        f"```{self.bot.main_prefix}{_type} channel set```"
+                    ),
+                ),
+                user_mistake=True,
+            )
+        return await ctx.reply(
+            embed=Embed(
+                description=f"{_type.capitalize()} channel is currently set to <#{_channel.id}>.",
+            ),
+            permission_cmd=True,
+        )
+
+    async def _remove(self, ctx: Context, _type: str) -> discord.Message | None:
+        _guild = await Guild.get(ctx.guild.id, self.bot)
+        
+        if _channel:= _guild.get_channel_by_type(_type):
+            await _channel.remove()
+        else:
+            return await ctx.reply(
+                content=f"{_type.capitalize()} channel isn't yet set.",
+                embed=Embed(
+                    description=(
+                        "## But how do I set it?\n"
+                        "Like this:"
+                        f"```{self.bot.main_prefix}{_type} channel set```"
+                    ),
+                ),
+                user_mistake=True,
+            )
+        return await ctx.reply(
+            embed=Embed(
+                description=f"{_channel.name} channel has been removed.",
+            ),
+            permission_cmd=True,
+        )
 
     @commands.hybrid_group(invoke_without_command=True, with_app_command=True)
     @commands.has_permissions(manage_channels=True, manage_messages=True)
@@ -43,29 +166,29 @@ class Config(BaseCog):
         ctx: Context,
         channel: discord.TextChannel | None = commands.CurrentChannel,
     ):
-        return await self._channel.add_channel(ctx, "welcome", channel)
+        return await self._add_channel(ctx, "welcome", channel)
 
-    @welcome_mesage.command(name="set", description="You can use this command to set a welcome message.")
-    async def welcome_message_set(self, ctx: Context, *, text: str):  # ,* (?)
-        return await self._channel.add_message(ctx, "welcome", text)
+    @welcome_mesage.command(name="edit", description="You can use this command to set a welcome message.")
+    async def welcome_message_set(self, ctx: Context, *, text: str = None):  # if not text trigger modal
+        return await self._add_message(ctx, "welcome", text)
 
     @welcome_mesage.command(
         name="display",
         description="Displays the current welcome message if there is one.",
     )
     async def welcome_message_display(self, ctx: Context):
-        return await self._channel.message_display(ctx, "welcome")
+        return await self._message_display(ctx, "welcome")
 
     @welcome_channel.command(
         name="display",
         description="Displays the current welcome channel if there is one.",
     )
     async def welcome_channel_display(self, ctx: Context):
-        return await self._channel.channel_display(ctx, "welcome")
+        return await self._channel_display(ctx, "welcome")
 
     @welcome_channel.command(name="remove", description="Removes the welcome channel.")
     async def welcome_channel_remove(self, ctx: Context):
-        return await self._channel.remove(ctx, "welcome")
+        return await self._remove(ctx, "welcome")
 
     """@welcome.command(name="help", description="Welcome help.")
     async def help(self, ctx: Context): # maybe add a dict attribute to this class and save it like {'welcome': "extra description on formatting etc"}  # noqa: E501
@@ -103,29 +226,29 @@ class Config(BaseCog):
         ctx: Context,
         channel: discord.TextChannel | None = commands.CurrentChannel,
     ):
-        return await self._channel.add_channel(ctx, "leave", channel)
+        return await self._add_channel(ctx, "leave", channel)
 
-    @leave_message.command(name="set", description="You can use this command to set a leave message.")
+    @leave_message.command(name="edit", description="You can use this command to set a leave message.")
     async def leave_message_set(self, ctx: Context, *, text: str):
-        return await self._channel.add_message(ctx, "leave", text)
+        return await self._add_message(ctx, "leave", text)
 
     @leave_message.command(
         name="display",
         description="Displays the current leave message if there is one.",
     )
     async def leave_message_display(self, ctx: Context):
-        return await self._channel.message_display(ctx, "leave")
+        return await self._message_display(ctx, "leave")
 
     @leave_channel.command(
         name="display",
         description="Displays the current leave channel if there is one.",
     )
     async def leave_channel_display(self, ctx: Context):
-        return await self._channel.channel_display(ctx, "leave")
+        return await self._channel_display(ctx, "leave")
 
     @leave_channel.command(name="remove", description="Removes the leave channel.")
     async def leave_channel_remove(self, ctx: Context):
-        return await self._channel.remove(ctx, "leave")
+        return await self._remove(ctx, "leave")
 
     @commands.hybrid_group(invoke_without_command=True, with_app_command=True)
     @commands.has_permissions(manage_channels=True, manage_messages=True)  # change to admin maybe
@@ -150,29 +273,29 @@ class Config(BaseCog):
         ctx: Context,
         channel: discord.TextChannel | None = commands.CurrentChannel,
     ):
-        return await self._channel.add_channel(ctx, "twitch", channel)
+        return await self._add_channel(ctx, "twitch", channel)
 
-    @twitch_message.command(name="set", help="Sets a notification message.")
+    @twitch_message.command(name="edit", help="Sets a notification message.")
     async def twitch_message_set(self, ctx: Context, *, text: str):
-        return await self._channel.add_message(ctx, "twitch", text)
+        return await self._add_message(ctx, "twitch", text)
 
     @twitch_message.command(
         name="display",
         description="Displays the current twitch message if there is one.",
     )
     async def twitch_message_display(self, ctx: Context):
-        return await self._channel.message_display(ctx, "twitch")
+        return await self._message_display(ctx, "twitch")
 
     @twitch_channel.command(
         name="display",
         description="Displays the current twitch channel if there is one.",
     )
     async def twitch_channel_display(self, ctx: Context):
-        return await self._channel.channel_display(ctx, "twitch")
+        return await self._channel_display(ctx, "twitch")
 
     @twitch_channel.command(name="remove", description="Removes the twitch channel.")
     async def twitch_channel_remove(self, ctx: Context):
-        return await self._channel.remove(ctx, "twitch")  # MAYBE REMOVE CHANNEL_REMOVE COMMS
+        return await self._remove(ctx, "twitch")  # MAYBE REMOVE CHANNEL_REMOVE COMMS
 
     @twitch.command(
         name="add",
@@ -190,7 +313,7 @@ class Config(BaseCog):
         return await self.bot.twitch.twitch_unsubscribe_from_streamer(ctx, username)
 
     @twitch_streamer_remove.autocomplete("username")
-    async def autocomplete_callback_twitch_remove(self, interaction: discord.Interaction, current: str):
+    async def autocomplete_callback_twitch_remove(self, _: discord.Interaction, current: str):
         return await self.bot.db.autocomplete(current, "twitch_users", "username", "user_id", all=True)
 
 
@@ -202,148 +325,3 @@ class Config(BaseCog):
 # MAYBE A LIST OF EVENTSUBS PER TWITCH USER (LET PEOPLE SUBSCRIBE TO OTHER EVENTS INSTEAD OF JUST SUBSCRIBING TO ON_STREAM)
 # SOME IDEAS ^
 # SWITCH TO TWITCHAPI LIB
-
-
-# counter class (?)
-class ChannelConfig:
-    def __init__(self, bot: Dwello) -> None:
-        self.bot: Dwello = bot
-
-    async def add_message(self, ctx: Context, name: str, text: str) -> discord.Message | None:
-        _guild = await Guild.get(ctx.guild.id, self.bot)
-        _channel = _guild.get_channel_by_type(name)
-
-        if not _channel or not _channel.id:
-            return await ctx.reply(
-                f"Please use `${name} channel` first.",
-                ephemeral=True,
-                mention_author=True,
-            )
-
-        string = f"{name.capitalize()} message has been {'updated' if _channel.text else 'set'} to: ```{text}```"
-        # checking if message was already set before updating
-
-        await _guild.add_message(name, text)
-        return await ctx.reply(embed=Embed(description=string), permission_cmd=True)
-
-    async def add_channel(
-        self,
-        ctx: Context,
-        name: str,
-        channel: discord.TextChannel = commands.CurrentChannel,
-    ) -> discord.Message | None:
-        async with self.bot.pool.acquire() as conn:
-            conn: asyncpg.Connection
-            async with conn.transaction():
-                result = await conn.fetchrow(
-                    "SELECT channel_id FROM server_data WHERE guild_id = $1 AND event_type = $2",
-                    ctx.guild.id,
-                    name,
-                )
-
-                status = "updated" if (result[0] if result else None) else "set"
-                string = f"The channel has been {status} to {channel.mention}"
-
-                if (result[0] if result else None) == channel.id:
-                    return await ctx.reply(
-                        f"{name.capitalize()} channel has already been set to this channel!",
-                        user_mistake=True,
-                    )
-
-                # await conn.execute("UPDATE server_data SET channel_id = $1, event_type = COALESCE(event_type, $2)
-                # WHERE guild_id = $3 AND COALESCE(event_type, $2) = $2", channel.id, name, ctx.guild.id)
-
-                await conn.execute(
-                    "UPDATE server_data SET channel_id = $1 WHERE guild_id = $2 AND event_type = $3",
-                    channel.id,
-                    ctx.guild.id,
-                    name,
-                )
-
-        await channel.send(
-            embed=Embed(
-                description=f"This channel has been set as a *{name}* channel.",
-            )
-        )
-        return await ctx.reply(
-            embed=Embed(description=string),
-            permission_cmd=True,
-        )
-
-    async def message_display(self, ctx: Context, name: str) -> discord.Message | None:
-        async with self.bot.pool.acquire() as conn:
-            conn: asyncpg.Connection
-            async with conn.transaction():
-                result = await conn.fetchrow(
-                    "SELECT message_text FROM server_data WHERE guild_id = $1 AND event_type = $2",
-                    ctx.guild.id,
-                    name,
-                )
-
-                if not (result[0] if result else None) or not result:
-                    return await ctx.reply(
-                        f"{name.capitalize()} message isn't yet set. \n```/{name} message set```",
-                        user_mistake=True,
-                    )
-
-        return await ctx.reply(
-            embed=Embed(
-                title=f"{name.capitalize()} channel message",
-                description=f"```{result[0]}```",
-            ),
-            permission_cmd=True,
-        )
-
-    async def channel_display(self, ctx: Context, name: str) -> discord.Message | None:
-        async with self.bot.pool.acquire() as conn:
-            conn: asyncpg.Connection
-            async with conn.transaction():
-                result = await conn.fetchrow(
-                    "SELECT channel_id FROM server_data WHERE guild_id = $1 AND event_type = $2",
-                    ctx.guild.id,
-                    name,
-                )
-
-                if (result[0] if result else None) is None:
-                    return await ctx.reply(
-                        f"{name.capitalize()} channel isn't yet set. \n```/{name} channel set```",
-                        user_mistake=True,
-                    )
-
-                # channel = discord.Object(int(result[0]))
-                channel = ctx.guild.get_channel(result[0])
-
-        return await ctx.reply(
-            embed=Embed(
-                description=f"{name.capitalize()} channel is currently set to {channel.mention}",
-            ),
-            permission_cmd=True,
-        )
-
-    async def remove(self, ctx: Context, name: str) -> discord.Message | None:
-        async with self.bot.pool.acquire() as conn:
-            conn: asyncpg.Connection
-            async with conn.transaction():
-                result = await conn.fetchrow(
-                    "SELECT channel_id FROM server_data WHERE guild_id = $1 AND event_type = $2",
-                    ctx.guild.id,
-                    name,
-                )
-
-                if (result[0] if result else None) is None:
-                    return await ctx.reply(
-                        f"{name.capitalize()} channel isn't yet set. \n```/{name} channel set```",
-                        user_mistake=True,
-                    )
-
-                await conn.execute(
-                    "UPDATE server_data SET channel_id = NULL WHERE guild_id = $1 AND event_type = $2",
-                    ctx.guild.id,
-                    name,
-                )
-        return await ctx.reply(
-            embed=Embed(
-                description=f"{name.capitalize()} channel has been removed.",
-            ),
-            permission_cmd=True,
-        )
