@@ -8,6 +8,7 @@ from discord.app_commands import Choice  # noqa: F401
 from discord.ext import commands
 
 import constants as cs  # noqa: F401
+from utils import Guild
 from core import BaseCog, Context, Dwello, Embed
 
 
@@ -208,52 +209,30 @@ class ChannelConfig:
     def __init__(self, bot: Dwello) -> None:
         self.bot: Dwello = bot
 
-    async def add_message(self, ctx: Context, name: str, text: str) -> discord.Message | None:
-        async with self.bot.pool.acquire() as conn:
-            conn: asyncpg.Connection
-            async with conn.transaction():
-                record = await conn.fetchrow(
-                    "SELECT channel_id FROM server_data WHERE guild_id = $1 AND event_type = $2",
-                    ctx.guild.id,
-                    name,
-                )
+    async def add_message(self, ctx: Context, name: Guild.MESSAGE_TYPES, text: str) -> discord.Message | None:
+        _guild = await Guild.get(ctx.guild.id, self.bot)
+        _channel = _guild.get_channel_by_type(name)
 
-                if (record[0] if record else None) is None:
-                    return await ctx.reply(
-                        f"Please use `${name} channel` first.",
-                        ephemeral=True,
-                        mention_author=True,
-                    )  # adjust based on group/subgroup
+        if not _channel.id:
+            return await ctx.reply(
+                f"Please use `${name} channel` first.",
+                ephemeral=True,
+                mention_author=True,
+            )  # adjust based on group/subgroup
 
-                if not text:  # check will only work in ctx.prefix case
-                    return await ctx.reply(
-                        f"Please enter the {name} message, if you want to be able to use this command properly.",
-                        ephemeral=True,
-                        mention_author=True,
-                    )
+        # not needed since missing argument will be triggered instead
+        '''if not text:  # check will only work in ctx.prefix case
+            return await ctx.reply(
+                f"Please enter the {name} message, if you want to be able to use this command properly.",
+                ephemeral=True,
+                mention_author=True,
+            )'''
 
-                result = await conn.fetchrow(
-                    "SELECT message_text FROM server_data WHERE guild_id = $1 AND event_type = $2",
-                    ctx.guild.id,
-                    name,
-                )
+        string = f"{name.capitalize()} message has been {'updated' if _channel.text else 'set'} to: ```{text}```"
+        # checking if message was already set before updating
 
-                query: str = """
-                    UPDATE server_data SET message_text = $1, event_type = COALESCE(event_type, $2)
-                    WHERE guild_id = $3 AND COALESCE(event_type, $2) = $2
-                    """
-                await conn.execute(
-                    query,
-                    text,
-                    name,
-                    ctx.guild.id,
-                )
-                string = f"{name.capitalize()} message has been {'updated' if result[0] else 'set'} to: ```{text}```"
-
-        return await ctx.reply(
-            embed=Embed(description=string),
-            permission_cmd=True,
-        )
+        await _guild.add_message(name, text)
+        return await ctx.reply(embed=Embed(description=string), permission_cmd=True)
 
     async def add_channel(
         self,

@@ -11,7 +11,6 @@ from typing_extensions import Self
 from asyncio import to_thread
 
 from utils import User, Guild, get_welcome_card
-from .tasks import update_counters
 from core import BaseCog, Context, Dwello, Embed
 
 
@@ -85,14 +84,7 @@ class Events(BaseCog):
 
     @commands.Cog.listener()
     async def on_guild_channel_delete(self, channel: discord.abc.GuildChannel) -> None:
-        guild = channel.guild
-        _guild = await Guild.get(guild.id, self.bot)
-
-        if channel.id in _guild.counters_dict:
-            async with self.bot.safe_connection() as conn: # shouldn't use f-strings in sql maybe fix very later
-                query = f"UPDATE guilds SET {_guild.counters_dict[channel.id]} = NULL WHERE id = $1"
-                await conn.execute(query, guild.id)
-        return
+        await self.bot.db.remove_counter(channel)
 
     @commands.Cog.listener()
     async def on_member_join(self, member: discord.Member):
@@ -120,12 +112,13 @@ class ListenerFunctions:
     # again: counter class maybe?
     async def join_leave_event(self, member: discord.Member, name: Literal["welcome", "leave"]) -> discord.Message | None:
         guild = member.guild
+        welcome = name == "welcome"
 
-        #await update_counters(guild) fix later
+        await self.bot.db.update_counters(guild)
 
         _guild = await Guild.get(guild.id, self.bot)
 
-        _message = _guild.welcome_message if name == "welcome" else _guild.leave_message or None
+        _message = _guild.welcome_message if welcome else _guild.leave_message or None
         if _message:
             _message = Template(_message).safe_substitute(
                 members=len(list(member.guild.members)),
@@ -135,7 +128,8 @@ class ListenerFunctions:
                 space="\n",
             ) # write a clear help guide on this
 
-        if name == "welcome":
+        file = None
+        if welcome:
             with contextlib.suppress(discord.HTTPException):
                 await member.send(
                     embed=Embed(
@@ -159,19 +153,18 @@ class ListenerFunctions:
                     #pick random one from constants
                 )
             _title = f"Welcome to {member.guild.name} {member.name}!"
+
+            buffer = io.BytesIO()
+            image = await to_thread(get_welcome_card, _title, member.display_avatar.url)
+            image.save(buffer, format="PNG")
+            buffer.seek(0)
+            file: discord.File = discord.File(buffer, "welcome.png")
         else:
             if not _guild.leave_message:
                 _message = "If you left, you had a reason to do so. Farewell, dweller!" # better sentence
             _title = f"Goodbye {member.name}!"
 
-        buffer = io.BytesIO()
-        image = await to_thread(get_welcome_card, _title, member.display_avatar.url)
-        image.save(buffer, format="PNG")
-        buffer.seek(0)
-        file: discord.File = discord.File(buffer, "welcome.png")
-
-        #channel = guild.get_channel(_guild.welcome_channel_id if name == "welcome" else _guild.leave_channel_id) fix config.py
-        channel = guild.get_channel(1080884328923414619)
+        channel = guild.get_channel(_guild.welcome_channel_id if welcome else _guild.leave_channel_id) #fix config.py
         return await channel.send(
             embed=Embed(
                 title=_title,

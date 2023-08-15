@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, List, TypeVar
+from typing import TYPE_CHECKING, List, TypeVar, Literal, Union
 
 from typing_extensions import Self
 
@@ -127,33 +127,81 @@ class Guild(BasicORM):
     __slots__ = (
         "id",
         "bot",
-        "leave_text",
-        "twitch_text",
+        "all_counter",
+        "bot_counter",
         "twitch_users",
-        "welcome_text",
-        "all_counter_id",
-        "bot_counter_id",
-        "leave_channel_id",
-        "member_counter_id",
-        "twitch_channel_id",
-        "welcome_channel_id",
-        "category_counter_id",
+        "leave_channel",
+        "member_counter",
+        "twitch_channel",
+        "welcome_channel",
+        "category_counter",
         "counter_category_denied",
     )
+
+    CHANNEL_DICT = {
+        "welcome_channel": {"text": "welcome_text"},
+        "leave_channel": {"text": "leave_text"},
+        "twitch_channel": {"text": "twitch_text"},
+        "welcome": {"text": "welcome_text"},
+        "leave": {"text": "leave_text"},
+        "twitch": {"text": "twitch_text"},
+    }
+
+    ALL_CHANNEL_TYPES = Literal[
+        "all_counter",
+        "bot_counter",
+        "member_counter",
+        "category_counter",
+        "welcome_channel",
+        "leave_channel",
+        "twitch_channel",
+    ]
+
+    _CHANNEL_TYPES = Literal[
+        "welcome_channel",
+        "leave_channel",
+        "twitch_channel",
+    ]
+
+    USER_CHANNEL_TYPES = Literal[
+        "welcome",
+        "leave",
+        "twitch",
+    ]
+    MESSAGE_TYPES = USER_CHANNEL_TYPES
+    # user oriented channel types
+    # so you would just pass 'welcome'
+    # when adding a message for example
+    # instead of doing the entire 'welcome_channel'
+
+    _COUNTER_TYPES = Literal[
+        "all_counter",
+        "bot_counter",
+        "member_counter",
+        "category_counter",
+    ]
+
+    USER_COUNTER_TYPES = Literal[
+        "all",
+        "bot",
+        "member",
+        "category",
+    ]
+
+    CHANNEL_TYPES = Union[_CHANNEL_TYPES, USER_CHANNEL_TYPES]
+    COUNTER_TYPES = Union[_COUNTER_TYPES, USER_COUNTER_TYPES]
+    ALL_USER_TYPES = Union[CHANNEL_TYPES, COUNTER_TYPES]
 
     # General
     bot: Dwello
     id: int
-    all_counter_id: int | None
-    bot_counter_id: int | None
-    member_counter_id: int | None
-    category_counter_id: int | None
-    welcome_channel_id: int | None
-    leave_channel_id: int | None
-    twitch_channel_id: int | None
-    welcome_text: str | None
-    leave_text: str | None
-    twitch_text: str | None
+    all_counter: GuildCounter
+    bot_counter: GuildCounter
+    member_counter: GuildCounter
+    category_counter: GuildCounter
+    welcome_channel: GuildChannel
+    leave_channel: GuildChannel
+    twitch_channel: GuildChannel
 
     # Config Table
     counter_category_denied: bool | None
@@ -166,35 +214,33 @@ class Guild(BasicORM):
         return self.counter_category_denied
     
     @property
-    def welcome_message(self) -> str | None:
-        return self.welcome_text
-    
-    @property
-    def leave_message(self) -> str | None:
-        return self.leave_text
-    
-    @property
-    def twitch_message(self) -> str | None:
-        return self.twitch_text
-    
-    @property
-    def counters(self) -> list[int | None]:
-        """Returns a list of filtered counters' IDs."""
+    def counters(self) -> list[GuildCounter]:
+        """Returns a list of ucounters."""
         return [
-            self.all_counter_id,
-            self.bot_counter_id,
-            self.member_counter_id,
-            self.category_counter_id,
+            self.all_counter,
+            self.bot_counter,
+            self.member_counter,
+            self.category_counter,
         ]
     
     @property
-    def filtered_counters(self) -> list[int]:
+    def counter_ids(self) -> list[int | None]:
+        """Returns a list of un-filtered counters' IDs."""
+        return [
+            self.all_counter.id,
+            self.bot_counter.id,
+            self.member_counter.id,
+            self.category_counter.id,
+        ]
+    
+    @property
+    def filtered_counter_ids(self) -> list[int]:
         """Returns a list of filtered counters' IDs."""
         return list(filter(None, [
-            self.all_counter_id,
-            self.bot_counter_id,
-            self.member_counter_id,
-            self.category_counter_id,
+            self.all_counter.id,
+            self.bot_counter.id,
+            self.member_counter.id,
+            self.category_counter.id,
         ]))
     
     @property
@@ -202,13 +248,60 @@ class Guild(BasicORM):
         """Returns a dictionary of counters' sql names with their ID a the key."""
         return dict(
             (key, value) for key, value in [
-                (self.all_counter_id, "all_counter"),
-                (self.bot_counter_id, "bot_counter"),
-                (self.member_counter_id, "member_counter"),
-                (self.category_counter_id, "category_counter"),
+                (self.all_counter.id, "all_counter"),
+                (self.bot_counter.id, "bot_counter"),
+                (self.member_counter.id, "member_counter"),
+                (self.category_counter.id, "category_counter"),
             ] if key is not None
         )
     
+    def _update_channels(self, record: Record, bot: Dwello) -> None:
+        self.welcome_channel = GuildChannel(
+            'welcome_channel', bot, id=record.get("welcome_channel"), text=record.get("welcome_text"),
+        )
+        self.leave_channel = GuildChannel(
+            'leave_channel', bot, id=record.get("leave_channel"), text=record.get("leave_text"),
+        )
+        self.twitch_channel = GuildChannel(
+            'twitch_channel', bot, id=record.get("twitch_channel"), text=record.get("twitch_text"),
+        )
+        return
+    
+    def _update_counters(self, record: Record, bot: Dwello) -> None:
+        self.all_counter = GuildCounter('all_counter', bot, id=record.get("all_counter"))
+        self.bot_counter = GuildCounter('bot_counter', bot, id=record.get("bot_counter"))
+        self.member_counter = GuildCounter('member_counter', bot, id=record.get("member_counter"))
+        self.category_counter = GuildCounter('category_counter', bot, id=record.get("category_counter"))
+        return
+    
+    def get_channel_by_type(self, _type: str) -> GuildChannel | GuildCounter:
+        return {
+            'welcome_channel': self.welcome_channel,
+            'leave_channel': self.leave_channel,
+            'twitch_channel': self.twitch_channel,
+            'welcome': self.welcome_channel,
+            'leave': self.leave_channel,
+            'twitch': self.twitch_channel,
+            'all_counter': self.all_counter,
+            'bot_counter': self.bot_counter,
+            'member_counter': self.member_counter,
+            'category_counter': self.category_counter,
+            'all': self.all_counter,
+            'bot': self.bot_counter,
+            'member': self.member_counter,
+            'category': self.category_counter,
+        }.get(_type)
+    
+    async def add_message(self, channel: MESSAGE_TYPES, text: str) -> None:
+        if not isinstance(channel, self.MESSAGE_TYPES):
+            raise TypeError # ig?
+        async with self.bot.safe_connection() as conn: # store queries instead?
+            query = f"UPDATE guilds SET {self.CHANNEL_DICT[channel]['text']} = $1 WHERE guild_id = $2 RETURNING *"
+            row: Record = await conn.fetchrow(query, text, self.id)
+
+        self._update_channels(row)
+        return
+
     @classmethod
     async def get(
         cls: type[GT],
@@ -216,12 +309,15 @@ class Guild(BasicORM):
         bot: Dwello,
     ) -> GT:
         self = cls()
+        self.id = id
+        self.bot = bot
+
         async with bot.safe_connection() as conn:
             guild_config_record: Record = await conn.fetchrow(
                 "SELECT * FROM guild_config WHERE guild_id = $1",
                 id,
             )
-            guild_record: Record = await conn.fetchrow(
+            record: Record = await conn.fetchrow(
                 "SELECT * FROM guilds WHERE id = $1",
                 id,
             )
@@ -234,23 +330,13 @@ class Guild(BasicORM):
         else:
             self.counter_category_denied = None
 
-        self.all_counter_id = guild_record.get("all_counter")
-        self.bot_counter_id = guild_record.get("bot_counter")
-        self.member_counter_id = guild_record.get("member_counter")
-        self.category_counter_id = guild_record.get("category_counter")
-        self.welcome_channel_id = guild_record.get("welcome_channel")
-        self.leave_channel_id = guild_record.get("leave_channel")
-        self.twitch_channel_id = guild_record.get("twitch_channel")
-        self.welcome_text = guild_record.get("welcome_text")
-        self.leave_text = guild_record.get("leave_text")
-        self.twitch_text = guild_record.get("twitch_text")
+        self._update_channels(record, bot)
+        self._update_counters(record, bot)
 
         self.twitch_users = {}
         for twitch_record in twitch_records:
             self.twitch_users[twitch_record["user_id"]] = await TwitchUser.get(twitch_record, bot)
 
-        self.id = id
-        self.bot = bot
         return self
     
     @classmethod
@@ -260,6 +346,8 @@ class Guild(BasicORM):
         bot: Dwello,
     ) -> GT:
         self = cls()
+        self.id = id
+        self.bot = bot
 
         async with bot.safe_connection() as conn:
             record: Record = await conn.fetchrow(
@@ -274,71 +362,55 @@ class Guild(BasicORM):
 
         self.counter_category_denied = config_record.get("counter_category_denied") if config_record else None
 
-        self.all_counter_id = record.get("all_counter")
-        self.bot_counter_id = record.get("bot_counter")
-        self.member_counter_id = record.get("member_counter")
-        self.category_counter_id = record.get("category_counter")
-        self.welcome_channel_id = record.get("welcome_channel")
-        self.leave_channel_id = record.get("leave_channel")
-        self.twitch_channel_id = record.get("twitch_channel")
-        self.welcome_text = record.get("welcome_text")
-        self.leave_text = record.get("leave_text")
-        self.twitch_text = record.get("twitch_text")
+        self._update_channels(record, bot)
+        self._update_counters(record, bot)
 
         self.twitch_users = {}
         for twitch_record in twitch_records:
             self.twitch_users[twitch_record["user_id"]] = await TwitchUser.get(twitch_record, bot)
 
-        self.id = id
-        self.bot = bot
         return self
-    
-    def _get_channel(self, _id: int | None) -> discord.abc.GuildChannel | None:
-        return self.bot.get_channel(_id) if _id else None
+     
+
+class _GuildChannel:
+    def __init__(self, id: int | None, bot: Dwello) -> None:
+        self.id: int | None = id
+        self.bot: Dwello = bot
+
+    @property
+    def instance(self) -> discord.abc.GuildChannel:
+        return self.bot.get_channel(self.id) if self.id else None
+
+
+# Up to YOU Willi
+class GuildChannel(_GuildChannel):
+    def __init__(self, type: Guild._CHANNEL_TYPES, bot: Dwello, /, id: int | None, text: str | None) -> None:
+        super().__init__(id, bot)
+
+        self.type = type
+        self.text: str | None = text
+
+    @property
+    def message(self) -> str | None:
+        return self.text
     
     @property
-    def all_counter(self) -> discord.abc.GuildChannel | None:
-        return self._get_channel(self.all_counter_id)
+    def text_type(self) -> Literal | None:
+        if not isinstance(self.type, Guild._CHANNEL_TYPES):
+            return None
+        return Guild.CHANNEL_DICT.get(self.type)['text']
     
     @property
-    def all_counter_channel(self) -> discord.abc.GuildChannel | None:
-        return self.all_counter
+    def message_type(self) -> Literal | None:
+        if not isinstance(self.type, Guild._CHANNEL_TYPES):
+            return None
+        return Guild.CHANNEL_DICT.get(self.type)['text']
     
-    @property
-    def bot_counter(self) -> discord.abc.GuildChannel | None:
-        return self._get_channel(self.bot_counter_id)
-    
-    @property
-    def bot_counter_channel(self) -> discord.abc.GuildChannel | None:
-        return self.bot_counter
-    
-    @property
-    def member_counter(self) -> discord.abc.GuildChannel | None:
-        return self._get_channel(self.member_counter_id)
-    
-    @property
-    def member_counter_channel(self) -> discord.abc.GuildChannel | None:
-        return self.member_counter
-    
-    @property
-    def category_counter(self) -> discord.abc.GuildChannel | None:
-        return self._get_channel(self.category_counter_id)
-    
-    @property
-    def category_counter_channel(self) -> discord.abc.GuildChannel | None:
-        return self.category_counter
-    
-    @property
-    def welcome_channel(self) -> discord.abc.GuildChannel | None:
-        return self._get_channel(self.welcome_channel_id)
-    
-    @property
-    def leave_channel(self) -> discord.abc.GuildChannel | None:
-        return self._get_channel(self.leave_channel_id)
-    
-    @property
-    def twitch_channel(self) -> discord.abc.GuildChannel | None:
-        return self._get_channel(self.twitch_channel_id)
+
+class GuildCounter(_GuildChannel):
+    def __init__(self, type: Guild._COUNTER_TYPES, bot: Dwello, /, id: int | None) -> None:
+        super().__init__(id, bot)
+        self.type = type
 
 
 class Idea:

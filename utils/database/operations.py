@@ -9,7 +9,7 @@ import aiofiles
 
 from discord.app_commands import Choice
 
-from .orm import Idea, Prefix, Warning, User
+from .orm import Guild, Idea, Prefix, User, Warning
 
 # import functools
 
@@ -266,3 +266,37 @@ class DataBaseOperations:
         async with self.bot.safe_connection() as conn:
             records: list[Record] = await conn.fetch("SELECT * FROM ideas")
         return [await Idea.get(record, self.bot) for record in records]
+    
+    # maybe make a counter class and add this there
+    async def update_counters(self, guild: discord.Guild) -> None:
+        async with self.bot.safe_connection() as conn:
+            row: Record = await conn.fetchrow("SELECT * FROM guilds WHERE id = $1", guild.id)
+
+        bot_count = sum(member.bot for member in guild.members)
+        member_count = len(guild.members) - bot_count  # type: ignore
+
+        counters_to_update: list[tuple[str, int | None]] = [
+            ("all_counter", guild.member_count),
+            ("bot_counter", bot_count),
+            ("member_counter", member_count),
+        ]
+        for counter, count_value in counters_to_update:
+            channel_id = row.get(counter)
+            if channel_id:
+                try:
+                    channel = self.bot.get_channel(channel_id)
+                    if count_value:
+                        await channel.edit(name=f"\N{BAR CHART} {counter.capitalize().replace('_', ' ')}: {count_value}")
+                except Exception as e:
+                    print(e, "update_counters (utils/other.py)")
+        return
+
+    async def remove_counter(self, channel: discord.abc.GuildChannel) -> None:
+        guild = channel.guild
+        _guild = await Guild.get(guild.id, self.bot)
+
+        if channel.id in _guild.counters_dict:
+            async with self.bot.safe_connection() as conn: # shouldn't use f-strings in sql maybe fix very later
+                query = f"UPDATE guilds SET {_guild.counters_dict[channel.id]} = NULL WHERE id = $1"
+                await conn.execute(query, guild.id)
+        return
