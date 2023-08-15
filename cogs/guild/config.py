@@ -8,8 +8,8 @@ from discord.app_commands import Choice  # noqa: F401
 from discord.ext import commands
 
 import constants as cs  # noqa: F401
-from utils import Guild
 from core import BaseCog, Context, Dwello, Embed
+from utils import Guild
 
 
 class Config(BaseCog):
@@ -209,24 +209,16 @@ class ChannelConfig:
     def __init__(self, bot: Dwello) -> None:
         self.bot: Dwello = bot
 
-    async def add_message(self, ctx: Context, name: Guild.MESSAGE_TYPES, text: str) -> discord.Message | None:
+    async def add_message(self, ctx: Context, name: str, text: str) -> discord.Message | None:
         _guild = await Guild.get(ctx.guild.id, self.bot)
         _channel = _guild.get_channel_by_type(name)
 
-        if not _channel.id:
+        if not _channel or not _channel.id:
             return await ctx.reply(
                 f"Please use `${name} channel` first.",
                 ephemeral=True,
                 mention_author=True,
-            )  # adjust based on group/subgroup
-
-        # not needed since missing argument will be triggered instead
-        '''if not text:  # check will only work in ctx.prefix case
-            return await ctx.reply(
-                f"Please enter the {name} message, if you want to be able to use this command properly.",
-                ephemeral=True,
-                mention_author=True,
-            )'''
+            )
 
         string = f"{name.capitalize()} message has been {'updated' if _channel.text else 'set'} to: ```{text}```"
         # checking if message was already set before updating
@@ -238,7 +230,7 @@ class ChannelConfig:
         self,
         ctx: Context,
         name: str,
-        channel: discord.TextChannel | None = commands.CurrentChannel,
+        channel: discord.TextChannel = commands.CurrentChannel,
     ) -> discord.Message | None:
         async with self.bot.pool.acquire() as conn:
             conn: asyncpg.Connection
@@ -288,7 +280,7 @@ class ChannelConfig:
                     name,
                 )
 
-                if not (result[0] if result else None):
+                if not (result[0] if result else None) or not result:
                     return await ctx.reply(
                         f"{name.capitalize()} message isn't yet set. \n```/{name} message set```",
                         user_mistake=True,

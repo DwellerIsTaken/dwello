@@ -301,7 +301,7 @@ class Guild(BasicORM):
 
         return getattr(self, _type, None)  # type: ignore
 
-    async def add_message(self, channel: USER_CHANNEL_TYPES, text: str) -> None:
+    async def add_message(self, channel: str, text: str) -> None:
         try:
             self.CHANNEL_DICT[channel]
         except KeyError as e:
