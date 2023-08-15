@@ -1,15 +1,14 @@
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, List, TypeVar, Literal, Union
-
-from typing_extensions import Self
+from typing import TYPE_CHECKING, List, Literal, TypeVar, Union
 
 import discord
+from typing_extensions import Self
 
 if TYPE_CHECKING:
     from datetime import datetime
 
-    from asyncpg import Record
+    from asyncpg.protocol import Record
 
     from core import Dwello
 
@@ -55,7 +54,7 @@ class Guild(BasicORM):
         The ID of a(n) (existing) guild for which the data will be fetched and distributed.
     bot: :class:`Dwello`
         The bot instance mainly used, in this case, for working with the postgres database.
-    
+
     Attributes
     ----------
     If activated with :function:`.get`.
@@ -124,6 +123,7 @@ class Guild(BasicORM):
         # but what if the user doesn't want to send either leave or welcome messages?
         # then a third option?
     """
+
     __slots__ = (
         "id",
         "bot",
@@ -168,7 +168,6 @@ class Guild(BasicORM):
         "leave",
         "twitch",
     ]
-    MESSAGE_TYPES = USER_CHANNEL_TYPES
     # user oriented channel types
     # so you would just pass 'welcome'
     # when adding a message for example
@@ -210,9 +209,9 @@ class Guild(BasicORM):
     twitch_users: dict[int, TwitchUser]
 
     @property
-    def category_denied(self) -> bool:
+    def category_denied(self) -> bool | None:
         return self.counter_category_denied
-    
+
     @property
     def counters(self) -> list[GuildCounter]:
         """Returns a list of ucounters."""
@@ -222,7 +221,7 @@ class Guild(BasicORM):
             self.member_counter,
             self.category_counter,
         ]
-    
+
     @property
     def counter_ids(self) -> list[int | None]:
         """Returns a list of un-filtered counters' IDs."""
@@ -232,74 +231,87 @@ class Guild(BasicORM):
             self.member_counter.id,
             self.category_counter.id,
         ]
-    
+
     @property
     def filtered_counter_ids(self) -> list[int]:
         """Returns a list of filtered counters' IDs."""
-        return list(filter(None, [
-            self.all_counter.id,
-            self.bot_counter.id,
-            self.member_counter.id,
-            self.category_counter.id,
-        ]))
-    
+        return list(
+            filter(
+                None,
+                [
+                    self.all_counter.id,
+                    self.bot_counter.id,
+                    self.member_counter.id,
+                    self.category_counter.id,
+                ],
+            )
+        )
+
     @property
     def counters_dict(self) -> dict[int, str]:
         """Returns a dictionary of counters' sql names with their ID a the key."""
-        return dict(
-            (key, value) for key, value in [
+        return {
+            key: value
+            for key, value in [
                 (self.all_counter.id, "all_counter"),
                 (self.bot_counter.id, "bot_counter"),
                 (self.member_counter.id, "member_counter"),
                 (self.category_counter.id, "category_counter"),
-            ] if key is not None
-        )
-    
+            ]
+            if key is not None
+        }
+
     def _update_channels(self, record: Record, bot: Dwello) -> None:
         self.welcome_channel = GuildChannel(
-            'welcome_channel', bot, id=record.get("welcome_channel"), text=record.get("welcome_text"),
+            "welcome_channel",
+            bot,
+            id=record.get("welcome_channel"),
+            text=record.get("welcome_text"),
         )
         self.leave_channel = GuildChannel(
-            'leave_channel', bot, id=record.get("leave_channel"), text=record.get("leave_text"),
+            "leave_channel",
+            bot,
+            id=record.get("leave_channel"),
+            text=record.get("leave_text"),
         )
         self.twitch_channel = GuildChannel(
-            'twitch_channel', bot, id=record.get("twitch_channel"), text=record.get("twitch_text"),
+            "twitch_channel",
+            bot,
+            id=record.get("twitch_channel"),
+            text=record.get("twitch_text"),
         )
         return
-    
+
     def _update_counters(self, record: Record, bot: Dwello) -> None:
-        self.all_counter = GuildCounter('all_counter', bot, id=record.get("all_counter"))
-        self.bot_counter = GuildCounter('bot_counter', bot, id=record.get("bot_counter"))
-        self.member_counter = GuildCounter('member_counter', bot, id=record.get("member_counter"))
-        self.category_counter = GuildCounter('category_counter', bot, id=record.get("category_counter"))
+        self.all_counter = GuildCounter("all_counter", bot, id=record.get("all_counter"))
+        self.bot_counter = GuildCounter("bot_counter", bot, id=record.get("bot_counter"))
+        self.member_counter = GuildCounter("member_counter", bot, id=record.get("member_counter"))
+        self.category_counter = GuildCounter("category_counter", bot, id=record.get("category_counter"))
         return
-    
-    def get_channel_by_type(self, _type: str) -> GuildChannel | GuildCounter:
-        return {
-            'welcome_channel': self.welcome_channel,
-            'leave_channel': self.leave_channel,
-            'twitch_channel': self.twitch_channel,
-            'welcome': self.welcome_channel,
-            'leave': self.leave_channel,
-            'twitch': self.twitch_channel,
-            'all_counter': self.all_counter,
-            'bot_counter': self.bot_counter,
-            'member_counter': self.member_counter,
-            'category_counter': self.category_counter,
-            'all': self.all_counter,
-            'bot': self.bot_counter,
-            'member': self.member_counter,
-            'category': self.category_counter,
-        }.get(_type)
-    
-    async def add_message(self, channel: MESSAGE_TYPES, text: str) -> None:
-        if not isinstance(channel, self.MESSAGE_TYPES):
-            raise TypeError # ig?
-        async with self.bot.safe_connection() as conn: # store queries instead?
+
+    def get_channel_by_type(self, _type: str) -> GuildChannel | GuildCounter | None:
+        _channels = ("welcome", "leave", "twitch")
+        _counters = ("all", "bot", "member", "category")
+
+        if _type.lower().startswith(_channels):
+            _type = f"{_type.replace('_channel', '')}_channel"
+
+        elif _type.lower().startswith(_counters):
+            _type = f"{_type.replace('_counter', '')}_counter"
+
+        return getattr(self, _type, None)  # type: ignore
+
+    async def add_message(self, channel: USER_CHANNEL_TYPES, text: str) -> None:
+        try:
+            self.CHANNEL_DICT[channel]
+        except KeyError as e:
+            raise ValueError(f"Invalid channel type: {channel}") from e
+
+        async with self.bot.safe_connection() as conn:  # store queries instead?
             query = f"UPDATE guilds SET {self.CHANNEL_DICT[channel]['text']} = $1 WHERE guild_id = $2 RETURNING *"
             row: Record = await conn.fetchrow(query, text, self.id)
 
-        self._update_channels(row)
+        self._update_channels(row, self.bot)
         return
 
     @classmethod
@@ -338,7 +350,7 @@ class Guild(BasicORM):
             self.twitch_users[twitch_record["user_id"]] = await TwitchUser.get(twitch_record, bot)
 
         return self
-    
+
     @classmethod
     async def create(
         cls: type[GT],
@@ -355,7 +367,8 @@ class Guild(BasicORM):
                 INSERT INTO guilds (id) VALUES ($1)
                 ON CONFLICT (id) DO UPDATE SET id = excluded.id
                 RETURNING *;
-                """, id,
+                """,
+                id,
             )
             config_record: Record = await conn.fetchrow("SELECT * FROM guild_config WHERE guild_id = $1", id)
             twitch_records: list[Record] = await conn.fetch("SELECT * FROM twitch_users WHERE guild_id = $1", id)
@@ -370,7 +383,7 @@ class Guild(BasicORM):
             self.twitch_users[twitch_record["user_id"]] = await TwitchUser.get(twitch_record, bot)
 
         return self
-     
+
 
 class _GuildChannel:
     def __init__(self, id: int | None, bot: Dwello) -> None:
@@ -378,8 +391,8 @@ class _GuildChannel:
         self.bot: Dwello = bot
 
     @property
-    def instance(self) -> discord.abc.GuildChannel:
-        return self.bot.get_channel(self.id) if self.id else None
+    def instance(self) -> discord.abc.GuildChannel | None:
+        return self.bot.get_channel(self.id) if self.id else None  # type: ignore
 
 
 # Up to YOU Willi
@@ -393,19 +406,20 @@ class GuildChannel(_GuildChannel):
     @property
     def message(self) -> str | None:
         return self.text
-    
+
     @property
     def text_type(self) -> Literal | None:
-        if not isinstance(self.type, Guild._CHANNEL_TYPES):
+        try:
+            return Guild.CHANNEL_DICT[self.type]["text"]
+        except KeyError:
             return None
-        return Guild.CHANNEL_DICT.get(self.type)['text']
-    
+
     @property
     def message_type(self) -> Literal | None:
         if not isinstance(self.type, Guild._CHANNEL_TYPES):
             return None
-        return Guild.CHANNEL_DICT.get(self.type)['text']
-    
+        return Guild.CHANNEL_DICT.get(self.type)["text"]
+
 
 class GuildCounter(_GuildChannel):
     def __init__(self, type: Guild._COUNTER_TYPES, bot: Dwello, /, id: int | None) -> None:
@@ -427,7 +441,7 @@ class Idea:
         A record that is destributed across attributes.
     bot: :class:`Dwello`
         The bot instance mainly used, in this case, for working with the postgres database.
-    
+
     Attributes
     ----------
     id: :class:`int`
@@ -455,6 +469,7 @@ class Idea:
         # check for bad words etc and dont suggest if found (?)
         # maybe allow everything tho
     """
+
     __slots__ = ("bot", "id", "author_id", "created_at", "content", "title", "voters")
 
     def __init__(self, record: Record, bot: Dwello) -> None:
@@ -465,16 +480,16 @@ class Idea:
         self.content: str | None = record.get("content")
         self.title: str | None = record.get("title")
 
-        self.voters: List[str] | None = None
+        self.voters: List[int] = []
 
     @property
-    def name(self) -> str:
+    def name(self) -> str | None:
         return self.title
 
     @property
-    def text(self) -> str:
+    def text(self) -> str | None:
         return self.content
-    
+
     @property
     def votes(self) -> int | None:
         try:
@@ -489,15 +504,13 @@ class Idea:
                 "SELECT * FROM idea_voters WHERE id = $1",
                 self.id,
             )
-        return [int(record['voter_id']) for record in records]
+        return [int(record["voter_id"]) for record in records]
 
     async def remove(self) -> None:
         async with self.bot.safe_connection() as conn:
-            return await conn.execute(
-                "DELETE FROM ideas WHERE id = $1",
-                self.id,
-            )
-        
+            await conn.execute("DELETE FROM ideas WHERE id = $1", self.id)
+            return
+
     def voted(self, voter_id: int) -> bool:
         return voter_id in self.voters
 
@@ -510,7 +523,7 @@ class Idea:
             )
         self.voters.append(voter_id)
         return
-    
+
     @classmethod
     async def get(
         cls: type[IT],
@@ -540,7 +553,7 @@ class Idea:
         self = cls(record, bot)
         self.voters = await self._get_voters()
         return self
-    
+
 
 class Job(BasicORM):
     __slots__ = ("bot", "guild_id", "name", "id", "salary", "description")
@@ -607,7 +620,7 @@ class User(BasicORM):
         A record that is destributed across attributes.
     bot: :class:`Dwello`
         The bot instance mainly used, in this case, for working with the postgres database.
-    
+
     Attributes
     ----------
     id: :class:`int`
@@ -674,19 +687,19 @@ class User(BasicORM):
     @property
     def current_xp(self) -> int:
         return self.xp
-    
+
     @property
     def experience(self) -> int:
         return self.xp
-    
+
     @property
     def message_count(self) -> int:
         return self.messages
-    
+
     @property
     def xp_formula(self) -> int:
-        return int(self.level ** 2 * 50)
-    
+        return int(self.level**2 * 50)
+
     @property
     def xp_until_next_level(self) -> int:
         return self.xp_formula - self.xp
@@ -707,7 +720,7 @@ class User(BasicORM):
                 user_id,
             )
         return cls(record, bot)
-    
+
     async def remove(self) -> None:
         async with self.bot.safe_connection() as conn:
             await conn.execute("DELETE FROM users WHERE id = $1", self.id)
@@ -715,7 +728,7 @@ class User(BasicORM):
 
     async def get_rank(self) -> int | None:
         async with self.bot.safe_connection() as conn:
-            #records: list[Record] = await conn.fetch("SELECT * FROM users ORDER BY total_xp DESC")
+            # records: list[Record] = await conn.fetch("SELECT * FROM users ORDER BY total_xp DESC")
             query = """
                 SELECT (SELECT COUNT(*) + 1
                         FROM users AS u2
@@ -726,17 +739,18 @@ class User(BasicORM):
             """
             rank: int | None = await conn.fetchval(query, self.id)
         return rank
-    
-    async def increase_xp(self, message: discord.Message, rate: int = 5) -> int:
+
+    async def increase_xp(self, message: discord.Message, rate: int = 5) -> int | None:
         if message.author.bot or not message.guild:
-            return
-        xp = self.xp+rate
+            return None
+
+        xp = self.xp + rate
         level = self.level
-        total = self.total_xp+rate
-        messages = self.messages+1
+        total = self.total_xp + rate
+        messages = self.messages + 1
 
         if xp >= self.xp_formula:
-            xp, level = 0, level+1
+            xp, level = 0, level + 1
 
         async with self.bot.safe_connection() as conn:
             await conn.execute(
