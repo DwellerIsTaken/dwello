@@ -56,7 +56,7 @@ class ChannelsFunctions:
                 )
                 return
 
-            if not _guild.counter_category_denied and not _guild.category_counter.id:
+            if _guild.counter_category_denied is None and not _guild.category_counter.id:
                 await ctx.reply(
                     embed=Embed(
                         description="**Do you want to create a category for your counters?**",
@@ -93,11 +93,9 @@ class ChannelsFunctions:
 
 class CategoryAskView(View):
     """Asks the person if they would like to have a category for their counters."""
-    def __init__(self, ctx: Context, name: str, *, timeout: int = None) -> None:
-        super().__init__(timeout=timeout)
-        self.bot = ctx.bot
-        self.ctx = ctx
-        self.name = name
+    def __init__(self, ctx: Context, _type: str) -> None:
+        super().__init__(ctx)
+        self.type = _type
 
         self.cf_: ChannelsFunctions = ChannelsFunctions(self.bot)
 
@@ -113,7 +111,7 @@ class CategoryAskView(View):
         """
         await self.bot.db.update_guild_config(self.ctx.guild.id, {"counter_category_denied": True})
         category = await self.cf_.counter_func(self.ctx, "category")
-        await self.cf_.counter_func(self.ctx, self.name)
+        await self.cf_.counter_func(self.ctx, self.type)
         return await interaction.response.edit_message(
             content=f"The **{category.name}** is successfully created by **{interaction.user}**!",
             embed=None,
@@ -131,7 +129,7 @@ class CategoryAskView(View):
         and then your previously requested counter is created.
         """
         await self.bot.db.update_guild_config(self.ctx.guild.id, {"counter_category_denied": False})
-        await self.cf_.counter_func(self.ctx, self.name)
+        await self.cf_.counter_func(self.ctx, self.type)
         return await interaction.response.edit_message(content=None, view=None)
 
 

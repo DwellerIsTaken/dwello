@@ -17,7 +17,76 @@ from core import BaseCog, Context, Dwello, Embed
 class Events(BaseCog):
     def __init__(self, bot: Dwello, *args: Any, **kwargs: Any) -> None:
         super().__init__(bot, *args, **kwargs)
-        self.listeners = ListenerFunctions(self.bot)
+
+    async def send_welcome_or_leave_message(
+        self, member: discord.Member, _type: Literal["welcome", "leave"],
+    ) -> discord.Message | None:
+        guild = member.guild
+        welcome = _type == "welcome"
+
+        await self.bot.db.update_counters(guild)
+
+        _guild = await Guild.get(guild.id, self.bot)
+        _channel = _guild.get_channel_by_type(_type)
+
+        _message = _channel.message if _channel else None
+        if _message:
+            _message = Template(_message).safe_substitute(
+                members=len(list(member.guild.members)),
+                mention=member.mention,
+                user=member.name,
+                guild=member.guild.name,
+                space="\n",
+            ) # write a clear help guide on this
+
+        file = None
+        if welcome:
+            with contextlib.suppress(discord.HTTPException):
+                await member.send(
+                    embed=Embed(
+                        title="You have successfully joined the guild!",
+                        timestamp=discord.utils.utcnow(),
+                        description=(
+                            f"```Guild joined: {guild.name}\nMember joined: {member.name}\n"
+                            f"Guild id: {guild.id}\nMember id: {member.id}```"
+                        ),
+                    )
+                    .set_thumbnail(url=guild.icon.url if guild.icon else self.bot.user.display_avatar.url)
+                    .set_author(
+                        name=member.name,
+                        icon_url=member.display_avatar.url if member.display_avatar else self.bot.user.display_avatar.url,
+                    )
+                )
+            if not _message:
+                _message = (
+                    f"You are the __*{len(list(member.guild.members))}th*__ user on this server.\n"
+                    "I hope that you will enjoy your time on this server. Have a good day!" # maybe randomize it a bit | ->
+                    #pick random one from constants
+                )
+            _title = f"Welcome to {member.guild.name} {member.name}!"
+
+            buffer = io.BytesIO()
+            image = await to_thread(get_welcome_card, _title, member.display_avatar.url)
+            image.save(buffer, format="PNG")
+            buffer.seek(0)
+            file: discord.File = discord.File(buffer, "welcome.png")
+        else:
+            if not _message:
+                _message = "If you left, you had a reason to do so. Farewell, dweller!" # better sentence
+            _title = f"Goodbye {member.name}!"
+
+        channel = guild.get_channel(_channel.id)
+        return await channel.send(
+            embed=Embed(
+                title=_title,
+                description=_message,
+                timestamp=discord.utils.utcnow(),
+            )
+            .set_thumbnail(url=member.display_avatar.url)
+            .set_author(name=member.name, icon_url=member.display_avatar.url)
+            .set_image(url="attachment://welcome.png"),
+            file=file,
+        )
 
     @commands.Cog.listener()
     async def on_guild_join(self, guild: discord.Guild):
@@ -91,12 +160,11 @@ class Events(BaseCog):
     @commands.Cog.listener()
     async def on_member_join(self, member: discord.Member):
         await User.create(member.id, self.bot)
-        await Guild.create(member.guild.id, self.bot) # for now
-        await self.listeners.join_leave_event(member, "welcome")
+        await self.send_welcome_or_leave_message(member, "welcome")
 
     @commands.Cog.listener()
     async def on_member_remove(self, member: discord.Member):
-        await self.listeners.join_leave_event(member, "leave")
+        await self.send_welcome_or_leave_message(member, "leave")
 
     @commands.Cog.listener()
     async def on_member_update(self, before, after):
@@ -105,77 +173,4 @@ class Events(BaseCog):
     @commands.Cog.listener()
     async def on_disconnect(self: Self) -> None:
         """return await self.bot.pool.close()"""  # THIS WAS CAUSING CLOSED POOL ISSUE
-
-
-class ListenerFunctions:
-    def __init__(self, bot: Dwello) -> None:
-        self.bot = bot
-
-    # again: counter class maybe?
-    async def join_leave_event(self, member: discord.Member, _type: Literal["welcome", "leave"]) -> discord.Message | None:
-        guild = member.guild
-        welcome = _type == "welcome"
-
-        await self.bot.db.update_counters(guild)
-
-        _guild = await Guild.get(guild.id, self.bot)
-        _channel = _guild.get_channel_by_type(_type)
-
-        _message = _channel.message if _channel else None
-        if _message:
-            _message = Template(_message).safe_substitute(
-                members=len(list(member.guild.members)),
-                mention=member.mention,
-                user=member.name,
-                guild=member.guild.name,
-                space="\n",
-            ) # write a clear help guide on this
-
-        file = None
-        if welcome:
-            with contextlib.suppress(discord.HTTPException):
-                await member.send(
-                    embed=Embed(
-                        title="You have successfully joined the guild!",
-                        timestamp=discord.utils.utcnow(),
-                        description=(
-                            f"```Guild joined: {guild.name}\nMember joined: {member.name}\n"
-                            f"Guild id: {guild.id}\nMember id: {member.id}```"
-                        ),
-                    )
-                    .set_thumbnail(url=guild.icon.url if guild.icon else self.bot.user.display_avatar.url)
-                    .set_author(
-                        name=member.name,
-                        icon_url=member.display_avatar.url if member.display_avatar else self.bot.user.display_avatar.url,
-                    )
-                )
-            if not _message:
-                _message = (
-                    f"You are the __*{len(list(member.guild.members))}th*__ user on this server.\n"
-                    "I hope that you will enjoy your time on this server. Have a good day!" # maybe randomize it a bit | ->
-                    #pick random one from constants
-                )
-            _title = f"Welcome to {member.guild.name} {member.name}!"
-
-            buffer = io.BytesIO()
-            image = await to_thread(get_welcome_card, _title, member.display_avatar.url)
-            image.save(buffer, format="PNG")
-            buffer.seek(0)
-            file: discord.File = discord.File(buffer, "welcome.png")
-        else:
-            if not _message:
-                _message = "If you left, you had a reason to do so. Farewell, dweller!" # better sentence
-            _title = f"Goodbye {member.name}!"
-
-        channel = guild.get_channel(_channel.id)
-        return await channel.send(
-            embed=Embed(
-                title=_title,
-                description=_message,
-                timestamp=discord.utils.utcnow(),
-            )
-            .set_thumbnail(url=member.display_avatar.url)
-            .set_author(name=member.name, icon_url=member.display_avatar.url)
-            .set_image(url="attachment://welcome.png"),
-            file=file,
-        )
+    

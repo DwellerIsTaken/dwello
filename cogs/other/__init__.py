@@ -7,13 +7,12 @@ from discord import Message
 from .botconfig import BotConfig
 from .events import Events
 from .tasks import Tasks
-from .todo import Todo
 
 if TYPE_CHECKING:
     from core import Dwello
 
 
-class Other(Events, Tasks, BotConfig, Todo):
+class Other(Events, Tasks, BotConfig):
     def __init__(self, *args, **kwargs) -> None:
         super().__init__(*args, **kwargs)
         self.message_cache: dict[int, Message] = {}

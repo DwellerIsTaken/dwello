@@ -3,16 +3,14 @@ from __future__ import annotations
 from typing import TYPE_CHECKING
 
 from .config import Config
-from .customisation import Customisation
 from .info import Info
 from .manage_channels import Channels
-from .manage_messages import Messages
 
 if TYPE_CHECKING:
     from core import Dwello
 
 
-class Guild(Config, Info, Channels, Messages, Customisation, name="Guild Management"):
+class Guild(Config, Info, Channels, name="Guild Management"):
     """
     📝
     Includes commands and tools for managing guilds or communities, such as guild creation and configuration tools, role

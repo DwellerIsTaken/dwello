@@ -12,8 +12,6 @@ from discord import app_commands
 from discord.ext import commands
 from discord.ui import Button, Modal, TextInput, View
 
-from core import BaseCog
-
 if TYPE_CHECKING:
     from asyncpg import Record
 
@@ -21,6 +19,9 @@ if TYPE_CHECKING:
 
 Interaction = DiscordInteraction["Dwello"]
 
+
+async def setup(bot: Dwello) -> None:
+    await bot.add_cog(Todo(bot))
 
 class EditDueDateButton(Button):
     def __init__(self, todo: TodoItem, cog: Todo, *, label: str = "Add Due Date"):
@@ -425,9 +426,18 @@ class EditTodoModal(Modal, title="Edit Todo"):
         await interaction.response.send_message(f"Successfully edited `Todo #{self.todo.id}`.", ephemeral=True)
 
 
-class Todo(BaseCog):
-    def __init__(self, bot: Dwello, *args: Any, **kwargs: Any) -> None:
-        super().__init__(bot, *args, **kwargs)
+class Todo(commands.Cog):
+    """
+    ✅
+    Commands that allow you to create, view, edit and delete your todos.
+    """
+
+    def __init__(self, bot: Dwello) -> None:
+        self.bot: Dwello = bot
+        self.db = bot.db
+
+        self.select_emoji = "\N{CLIPBOARD}"
+        self.select_brief = "Guild Customisation commands."
 
     message_cache: Dict[int, discord.Message]
 

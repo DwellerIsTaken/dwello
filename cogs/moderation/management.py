@@ -7,8 +7,10 @@ from discord.ext import commands
 
 from core import BaseCog, Context, Dwello
 
+# manage messages, roles, members...
 
-class Messages(BaseCog):  # RENAME CLASS
+
+class Management(BaseCog):  # RENAME CLASS
     def __init__(self, bot: Dwello, *args: Any, **kwargs: Any) -> None:
         super().__init__(bot, *args, **kwargs)
 

@@ -8,6 +8,7 @@ from .automod import AutoMod
 from .standard import StandardModeration
 from .timeout import Timeout
 from .warnings import Warnings
+from .management import Management
 
 if TYPE_CHECKING:
     from core import Dwello
@@ -18,6 +19,7 @@ class Moderation(
     StandardModeration,
     Timeout,
     Warnings,
+    Management,
     name="Moderation",
 ):
     """

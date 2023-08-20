@@ -717,9 +717,9 @@ class About(commands.Cog):
         commits = list(itertools.islice(self.repo.walk(self.repo.head.target, pygit2.GIT_SORT_TOPOLOGICAL), count))
         return "\n".join(self.format_commit(c) for c in commits)
 
-    @commands.command(name="test")
+    """@commands.command(name="test")
     async def bla(self, ctx: Context) -> discord.Message | None:
-        return await ctx.send("bleh")
+        return await ctx.send("bleh")"""
 
     # make uptime: add here -> trigger on mention in on_message
     @commands.hybrid_command(name="hello", aliases=cs.HELLO_ALIASES, with_app_command=True)
@@ -937,6 +937,10 @@ class About(commands.Cog):
 
         embed.add_field(name="Startup Time", value=timestamp, inline=False)
         return await ctx.reply(embed=embed)
+    
+    @commands.hybrid_command(name="invite", help="Please invite me.", with_app_command=True)
+    async def invite(self, ctx: Context) -> discord.Message | None:
+        return await ctx.reply(f"[invite me](<{cs.INVITE_LINK}>)")
 
     @commands.hybrid_command(name="contribute", help="Please do.", with_app_command=True)
     async def contribute(self, ctx: Context) -> discord.Message | None:

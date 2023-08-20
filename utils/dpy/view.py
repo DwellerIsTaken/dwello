@@ -4,7 +4,7 @@ import contextlib
 from typing import TYPE_CHECKING, Any, TypeVar, overload
 
 import discord
-from discord import Interaction
+from discord import Interaction, Member, User
 from discord.ext.commands.context import Context as _Context
 from discord.ui import View
 
@@ -34,7 +34,7 @@ class NewView(View):
 
     def __init__(
         self,
-        obj: Context | Interaction[Dwello] | None,
+        obj: Context | Interaction[Dwello] | None = None,
         *,
         timeout: float | None = 180,
         **kwargs,
@@ -43,19 +43,22 @@ class NewView(View):
 
         self.kwargs = kwargs
 
-        self.ctx = None
-        self.interaction = None
+        self.bot: Dwello | None = None
+        self.ctx: Context | None = None
+        self.author: Member | User | Any | None = None
+        self.interaction: Interaction = None
 
-        if any(
-            (issubclass(obj.__class__, _Context), isinstance(obj, _Context)),
-        ):
-            self.bot: Dwello = obj.bot
-            self.author = obj.author
-            self.ctx: Context = obj
-        else:
-            self.author = obj.user
-            self.bot: Dwello = obj.client
-            self.interaction: Interaction = obj
+        if obj:
+            if any(
+                (issubclass(obj.__class__, _Context), isinstance(obj, _Context)),
+            ):
+                self.bot = obj.bot
+                self.author = obj.author
+                self.ctx = obj
+            else:
+                self.author = obj.user
+                self.bot = obj.client
+                self.interaction = obj
 
         self.message: discord.Message = None
 
@@ -139,7 +142,7 @@ class NewView(View):
     @classmethod
     async def start(
         cls: type[NVT],
-        obj: Context | Interaction[Dwello] | None,
+        obj: Context | Interaction[Dwello] | None = None,
         *,
         timeout: float | None = 180,
         **kwargs,

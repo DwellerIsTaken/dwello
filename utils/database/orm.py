@@ -290,7 +290,7 @@ class Guild(BasicORM):
         if not updates:
             return
 
-        query = f"UPDATE guilds SET {', '.join(updates)} WHERE id = $1 RETURNING *"
+        query = f"UPDATE guild_config SET {', '.join(updates)} WHERE guild_id = $1 RETURNING *"
         async with self.bot.safe_connection() as conn:
             row: Record = await conn.fetchrow(query, self.id)
 
@@ -402,9 +402,18 @@ class Guild(BasicORM):
                 """,
                 id,
             )
-            config_record: Record = await conn.fetchrow("SELECT * FROM guild_config WHERE guild_id = $1", id)
-            twitch_records: list[Record] = await conn.fetch("SELECT * FROM twitch_users WHERE guild_id = $1", id)
-
+            config_record: Record = await conn.fetchrow(
+                """
+                INSERT INTO guild_config (guild_id) VALUES ($1)
+                ON CONFLICT (guild_id) DO UPDATE SET guild_id = excluded.guild_id
+                RETURNING *;
+                """,
+                id,
+            )
+            twitch_records: list[Record] = await conn.fetch(
+                "SELECT * FROM twitch_users WHERE guild_id = $1",
+                id,
+            )
         self._update_configuration(config_record)
         self._update_channels(record)
         self._update_counters(record)

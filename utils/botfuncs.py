@@ -19,6 +19,15 @@ def is_discord_link(link: str) -> bool:
     return bool(re.match(url_pattern, link))
 
 
+def extract_guild_id_from_link(link) -> int | None:
+    pattern = r"https://discord\.com/channels/(\d+)/(\d+)/(\d+)"
+    match = re.match(pattern, link)
+    if match:
+        return int(match.group(1))
+    else:
+        return None
+
+
 def capitalize_greek_numbers(text):
     pattern = r"\b(?=[MDCLXVIΙΙ]+)\b(M{0,4}(CM|CD|D?C{0,3})(XC|XL|L?X{0,3})(IX|IV|V?I{0,2})(?!\S))\b"
     return re.sub(pattern, lambda match: match.group().upper(), text, flags=re.IGNORECASE)
