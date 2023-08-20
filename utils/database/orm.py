@@ -309,7 +309,9 @@ class Guild(BasicORM):
 
         return getattr(self, _type, None)  # type: ignore
 
-    async def add_message(self, _type: str, text: str) -> None:
+    async def add_message(self, _type: str, text: str = None) -> None:
+        if not text:
+            return
         try:
             self.CHANNEL_DICT[_type]
         except KeyError as e:
@@ -443,7 +445,6 @@ class GuildChannel(_GuildChannel):
     def __init__(self, _type: str, guild: Guild, /, id: int | None, text: str | None) -> None:
         super().__init__(_type, id, guild)
 
-        self.type = _type
         self.text: str | None = text
 
     @property
@@ -466,7 +467,6 @@ class GuildCounter(_GuildChannel):
     """Class representing a db guild counter."""
     def __init__(self, _type: str, guild: Guild, /, id: int | None) -> None:
         super().__init__(_type, id, guild)
-        self.type = _type
 
 
 class Idea:

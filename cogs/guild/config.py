@@ -3,12 +3,48 @@ from __future__ import annotations
 from typing import Any
 
 import discord
-from discord.app_commands import Choice  # noqa: F401
 from discord.ext import commands
+from discord.ui import Modal, TextInput
 
 import constants as cs  # noqa: F401
 from core import BaseCog, Context, Dwello, Embed
-from utils import Guild
+from utils import Guild, GuildChannel
+
+
+class EditChannelMessageModal(Modal, title="Edit channel message."):
+    """This modal is only called when the message for a channel isn't provided."""
+
+    # maybe add title for the welcome message embed
+    # maybe do that in customisation instead
+    # like, modal, so the user would be construct the embed themselves
+    # title for welcome embed, description, maybe even on/off button for banner that will be generated
+    # same for embed author etc
+    # maybe not cause there should also be like a general embed config by user
+    content: TextInput = TextInput(
+        label="Content (optional)",
+        required=False,
+        min_length=1,
+        max_length=1000,
+        style=discord.TextStyle.long,
+        placeholder=f"Example:\n{cs.EXAMPLE_WELCOME_MESSAGE}",
+    )
+
+    def __init__(self, cog: Config, channel: GuildChannel) -> None:
+        super().__init__()
+
+        self.cog: Config = cog
+        self.channel: GuildChannel = channel
+
+        self.content.default = channel.message or ""
+
+    async def on_submit(self, interaction: discord.Interaction) -> None:
+        content = self.content
+        channel = self.channel
+        value = content.value or None
+        await channel.guild.add_message(channel.type, value)
+        await interaction.response.send_message(
+            f"Done, the message now is:\n> {value or content.placeholder}", ephemeral=True,
+        )
 
 
 class Config(BaseCog):
@@ -20,22 +56,26 @@ class Config(BaseCog):
     async def cog_check(self, ctx: Context) -> bool:
         return ctx.guild is not None
     
-    async def _add_message(self, ctx: Context, _type: str, text: str) -> discord.Message | None:
-        _guild = await Guild.get(ctx.guild.id, self.bot) # add modals here if app cmd
+    async def _add_message(self, ctx: Context, _type: str, text: str = None) -> discord.Message | None:
+        _guild = await Guild.get(ctx.guild.id, self.bot)
         _channel = _guild.get_channel_by_type(_type)
 
-        if not _channel or not _channel.id:
-            return await ctx.reply(
-                content=f"{_type.capitalize()} channel isn't yet set.",
-                embed=Embed(
-                    description=(
-                        "## But how do I set it?\n"
-                        "Like this:"
-                        f"```{self.bot.main_prefix}{_type} channel set```"
+        if not text and ctx.interaction and _channel:
+            await ctx.interaction.response.send_modal(EditChannelMessageModal(self, _channel))
+            return
+        else:
+            if not _channel or not _channel.id:
+                return await ctx.reply(
+                    content=f"{_type.capitalize()} channel isn't yet set.",
+                    embed=Embed(
+                        description=(
+                            "## But how do I set it?\n"
+                            "Like this:"
+                            f"```{self.bot.main_prefix}{_type} channel set```"
+                        ),
                     ),
-                ),
-                user_mistake=True,
-            ) # i mean, u should be able to set a message without a channel, but this is like a reminder smh
+                    user_mistake=True,
+                ) # i mean, u should be able to set a message without a channel, but this is like a reminder smh
         await _guild.add_message(_type, text)
         return await ctx.reply(
             embed=Embed(
@@ -229,7 +269,7 @@ class Config(BaseCog):
         return await self._add_channel(ctx, "leave", channel)
 
     @leave_message.command(name="edit", description="You can use this command to set a leave message.")
-    async def leave_message_set(self, ctx: Context, *, text: str):
+    async def leave_message_set(self, ctx: Context, *, text: str = None):
         return await self._add_message(ctx, "leave", text)
 
     @leave_message.command(
@@ -276,7 +316,7 @@ class Config(BaseCog):
         return await self._add_channel(ctx, "twitch", channel)
 
     @twitch_message.command(name="edit", help="Sets a notification message.")
-    async def twitch_message_set(self, ctx: Context, *, text: str):
+    async def twitch_message_set(self, ctx: Context, *, text: str = None):
         return await self._add_message(ctx, "twitch", text)
 
     @twitch_message.command(
