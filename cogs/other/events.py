@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from typing import Any, Literal
 
+import re
 import io
 import discord
 import contextlib
@@ -10,7 +11,7 @@ from discord.ext import commands
 from typing_extensions import Self
 from asyncio import to_thread
 
-from utils import User, Guild, get_welcome_card
+from utils import User, Guild, get_welcome_card, extract_ids_from_discord_message_link
 from core import BaseCog, Context, Dwello, Embed
 
 
@@ -136,6 +137,23 @@ class Events(BaseCog):
                     f"but you can use me regardless. Use `{prefix}help` for more."
                 )
             await message.reply(content=content)
+
+        # customisation option
+        if match:= re.compile(r"https?://(.+)?.?discord\.com/channels/\d+/\d+/\d+").search(message.content):
+            link = match.group()
+            guild_id, channel_id, message_id = extract_ids_from_discord_message_link(link)
+            if (
+                guild_id == message.guild.id
+                and (msg := await self.bot.get_or_fetch_message(channel_id, message_id))
+                and (not msg.channel.is_nsfw() or (msg.channel.is_nsfw() and message.channel.is_nsfw()))
+                and msg.content
+            ):
+                content_preview = msg.content[:300] + ('...' if len(msg.content) > 300 else '')
+                await message.channel.send(
+                    embed=Embed(description=f"**Contents**\n{content_preview}")
+                    .set_author(name=msg.author.name, icon_url=msg.author.display_avatar.url)
+                    .add_field(name="Message", value=f"[Jump!](<{msg.jump_url}>)")
+                )
 
         if message.author == self.bot.user:
             self.bot.reply_count += 1
