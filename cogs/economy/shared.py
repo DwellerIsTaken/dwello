@@ -14,7 +14,7 @@ class SharedEcoUtils:
         self.bot = bot
 
     async def fetch_basic_job_data_by_username(
-        self, ctx: Context, member: discord.Member = None
+        self, ctx: Context, member: discord.Member | None = None
     ) -> tuple[str | None, int | None, str | None, int | None] | None:
         async with self.bot.pool.acquire() as conn:
             conn: asyncpg.Connection
