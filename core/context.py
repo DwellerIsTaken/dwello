@@ -127,7 +127,7 @@ class NewContext(commands.Context):  # [commands.Bot], Generic[T]
         italic: bool = False,
         underline: bool = False,
         **kwargs: Any,
-    ) -> discord.Message | None:
+    ) -> discord.Message:
         assert isinstance(self.me, discord.Member)
 
         perms: discord.Permissions = self.channel.permissions_for(self.me)

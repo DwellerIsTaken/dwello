@@ -27,13 +27,14 @@ class BotEcoUtils:
 
                 money = int(row[0]) if row else None
 
-                if money < amount:
-                    return await ctx.reply(
+                if money and money < amount:
+                    await ctx.reply(
                         embed=Embed(
                             title="Permission denied",
                             description="You don't have enough currency to execute this action!",
                         )
                     )
+                    return True
 
         return True
 
