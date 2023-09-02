@@ -56,7 +56,11 @@ class ChannelsFunctions:
                 )
                 return
 
-            if _guild.counter_category_denied is None and not _guild.category_counter.id:
+            w = _guild.counter_category_denied
+            if (w is True or w is None) and not _guild.category_counter.id:
+                # so, if `_guild.counter_category_denied` is stored as False in db then this check won't be triggered
+                # however, if the category is deleted and db stores True from a previous response
+                # then this check will trigger again once someone creates a counter
                 await ctx.reply(
                     embed=Embed(
                         description="**Do you want to create a category for your counters?**",

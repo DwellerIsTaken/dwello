@@ -9,7 +9,9 @@ from discord.emoji import Emoji
 from discord.enums import ButtonStyle
 from discord.ext.commands.context import Context as CommandsContext
 from discord.partial_emoji import PartialEmoji
-from discord.ui import Button, View
+from discord.ui import Button
+
+from .dpy.view import NewView as View
 
 if TYPE_CHECKING:
     from typing_extensions import Self
@@ -17,8 +19,6 @@ if TYPE_CHECKING:
     from core import Context, Dwello, Embed
 
 DPT = TypeVar("DPT", bound="DefaultPaginator")
-
-INTERACTION_CHECK_GIF = "https://media.tenor.com/jTKDchcLtrcAAAAd/walter-white-walter-crying.gif"
 
 
 class PreviousPageButton(Button["DefaultPaginator"]):
@@ -36,7 +36,7 @@ class PreviousPageButton(Button["DefaultPaginator"]):
 
         view.current_page -= 1
         view._update_buttons()
-        await interaction.response.edit_message(embed=view.embeds[view.current_page], view=view)
+        await interaction.response.edit_message(embed=view.current_embed, view=view)
 
 
 class StopViewButton(Button["DefaultPaginator"]):
@@ -73,7 +73,7 @@ class NextPageButton(Button["DefaultPaginator"]):
 
         view.current_page += 1
         view._update_buttons()
-        await interaction.response.edit_message(embed=view.embeds[view.current_page], view=view)
+        await interaction.response.edit_message(embed=view.current_embed, view=view) # changed
 
 
 class GoBackButton(Button["DefaultPaginator"]):
@@ -84,7 +84,7 @@ class GoBackButton(Button["DefaultPaginator"]):
         assert self.view is not None
         view: DefaultPaginator = self.view
 
-        await interaction.response.edit_message(**view.kwargs)
+        await interaction.response.edit_message(**view.back_content)
         return view.stop()
 
 
@@ -92,7 +92,7 @@ class DefaultPaginator(View):
     """
     A simple paginator that paginates through a list of embeds.
 
-    kwargs:
+    go_back_content:
         If you have another view or content you want to switch to you can pass that to the class and it'll be passed onto
         ``interaction.response.edit_message()``.
     """
@@ -107,9 +107,10 @@ class DefaultPaginator(View):
         /,
         values: list[Any] | None = None,
         delete_button: bool | None = False,
-        **kwargs,  # eh, redo?
+        timeout: float | None = 180,
+        **go_back_content,
     ) -> None:
-        super().__init__(timeout=kwargs.pop("timeout", None))
+        super().__init__(timeout=timeout)
 
         if isinstance(obj, CommandsContext):
             self.bot: Dwello = obj.bot
@@ -124,7 +125,7 @@ class DefaultPaginator(View):
 
         self.values = values
         self.delete_button = delete_button
-        self.kwargs = kwargs
+        self.back_content = go_back_content
 
         self.next = NextPageButton()
         self.previous = PreviousPageButton()
@@ -136,12 +137,27 @@ class DefaultPaginator(View):
         if self.delete_button:
             self.add_item(StopViewButton())
 
-        if any(self.kwargs):
+        if any(self.back_content):
             self.add_item(GoBackButton(emoji=discord.PartialEmoji(name="\N{HOUSE BUILDING}"), style=ButtonStyle.blurple))
 
         self.current_page = 0
 
         self.message: discord.Message | None = None
+
+        # self.additional_view = None can only be changed if the class is subclassed
+        # for now its for customisation paginator, so i would be able to edit the views whilst 'paginating'
+        # although should be modified in the future, but now im lazy sooo
+
+    @property
+    def current_embed(self) -> Embed:
+        return self.embeds[self.current_page]
+
+    @property
+    def current_value(self) -> Any | None:
+        try:
+            return self.values[self.current_page]
+        except IndexError:
+            return None
 
     def _reconstruct_embeds(self, embeds: list[Embed]) -> list[Embed]:
         _embeds: list[Embed] = []
@@ -160,22 +176,6 @@ class DefaultPaginator(View):
         self.previous.disabled = page == 0
         self.next.style = self.btn_styles[page == total]
         self.previous.style = self.btn_styles[page == 0]
-
-    async def interaction_check(self, interaction: Interaction[Dwello]) -> bool:
-        if interaction.user == self.author:
-            return True
-
-        await interaction.response.send_message(
-            embed=(
-                discord.Embed(
-                    title="Failed to interact with the view",
-                    description="Hey there! Sorry, but you can't interact with someone else's view.\n",
-                    timestamp=discord.utils.utcnow(),
-                ).set_image(url=INTERACTION_CHECK_GIF)
-            ),
-            ephemeral=True,
-        )
-        return False
 
     async def on_timeout(self) -> None:
         if not hasattr(self, "message"):
@@ -210,8 +210,10 @@ class DefaultPaginator(View):
         obj: Context | Interaction[Dwello],
         embeds: list[Embed],
         /,
+        values: list[Any] | None = None,
         delete_button: bool | None = False,
-        **kwargs,
+        timeout: float | None = 180,
+        **go_back_content,
     ) -> DPT:
-        new = cls(obj, embeds, delete_button=delete_button, **kwargs)
-        return await new._start()
+        return await cls(obj, embeds, values=values, delete_button=delete_button, timeout=timeout, **go_back_content)._start()  # noqa: E501
+        #return await new._start()

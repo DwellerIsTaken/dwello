@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 import contextlib
-from typing import TYPE_CHECKING, Any, TypeVar, overload
+from typing import TYPE_CHECKING, Any, TypeVar, Literal, overload
 
 import discord
 from discord import Interaction, Member, User
@@ -14,6 +14,8 @@ if TYPE_CHECKING:
     from core import Context, Dwello
 
 NVT = TypeVar("NVT", bound="NewView")
+
+INTERACTION_CHECK_GIF = "https://media.tenor.com/jTKDchcLtrcAAAAd/walter-white-walter-crying.gif"
 
 
 class NewView(View):
@@ -82,20 +84,20 @@ class NewView(View):
         else:
             return await self.interaction.response.send_message(view=self, **self.kwargs)
 
-    async def interaction_check(self, interaction: Interaction[Dwello]) -> bool | None:
+    async def interaction_check(self, interaction: Interaction[Dwello]) -> Literal[True] | discord.Message:
         if val := interaction.user == self.author:
             return val
-        else:
-            return await interaction.response.send_message(
-                embed=(
-                    Embed(
-                        title="Failed to interact with the view",
-                        description="Hey there! Sorry, but you can't interact with someone else's view.\n",
-                        timestamp=discord.utils.utcnow(),
-                    ).set_image(url="https://media.tenor.com/jTKDchcLtrcAAAAd/walter-white-walter-crying.gif")
-                ),
-                ephemeral=True,
-            )
+
+        return await interaction.response.send_message(
+            embed=(
+                Embed(
+                    title="Failed to interact with the view",
+                    description="Hey there! Sorry, but you can't interact with someone else's view.\n",
+                    timestamp=discord.utils.utcnow(),
+                ).set_image(url=INTERACTION_CHECK_GIF)
+            ),
+            ephemeral=True,
+        )
 
     async def on_timeout(self) -> discord.Message:
         self.clear_items()

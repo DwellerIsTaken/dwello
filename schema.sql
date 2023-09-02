@@ -22,7 +22,8 @@ CREATE TABLE IF NOT EXISTS guilds(
 -- modconfig part of customisation table or separate?
 CREATE TABLE IF NOT EXISTS guild_config( --contains booleans only
     guild_id BIGINT PRIMARY KEY REFERENCES guilds(id),
-    counter_category_denied BOOLEAN DEFAULT NULL
+    counter_category_denied BOOLEAN DEFAULT NULL,
+    turn_link_into_message BOOLEAN DEFAULT FALSE
 );
 
 CREATE TABLE IF NOT EXISTS ideas(

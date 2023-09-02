@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, List, TypeVar
+from typing import TYPE_CHECKING, Any, List, TypeVar
 
 import discord
 from typing_extensions import Self
@@ -37,6 +37,83 @@ class Blacklist(BasicORM):
         self.bot: Dwello = bot
         self.user_id: int = record["user_id"]
         self.reason: str | None = record.get("reason")
+
+# maybe add view items to each option as a string (cuase cant do class because of the circular import)
+CONFIG_DICT = {
+    "counter_category_denied": {
+        "sql_name": "counter_category_denied",
+        "embed": {
+            "title": "Counter category",
+            "description":
+                "This is an option for creating a category for all your counters. "
+                "This option is also suggested once you create a counter channel, "
+                "unless you have already configured it here."
+            ,
+            "url": "",
+            "image_url": "",
+            "thumbnail_url": "",
+            "colour": None,
+            "color": None,
+            "fields": [
+                {
+                    "name": "Enable",
+                    "value":
+                        "If you click this then a category for counters will immideately be created, if you have any."
+                    ,
+                    "inline": "True",
+                },
+                {
+                    "name": "Disable",
+                    "value":
+                        "Disables the possible pop-up questioning whether you would like a category or not when "
+                        "creating a counter channel. Does not delete the current category if there is one!"
+                    ,
+                    "inline": "True",
+                },
+            ],
+        },
+    },
+    "turn_link_into_message": {
+        "sql_name": "turn_link_into_message",
+        "embed": {
+            "title": "t",
+            "description":
+                "This is an option for creating a category for all your counters. "
+                "This option is also suggested once you create a counter channel, "
+                "unless you have already configured it here."
+            ,
+            "url": "",
+            "image_url": "",
+            "thumbnail_url": "",
+            "colour": None,
+            "color": None,
+            "fields": [
+                {
+                    "name": "Enable",
+                    "value":
+                        "If you click this then a category for counters will immideately be created, if you have any."
+                    ,
+                    "inline": "True",
+                },
+                {
+                    "name": "Disable",
+                    "value":
+                        "Disables the possible pop-up questioning whether you would like a category or not when "
+                        "creating a counter channel. Does not delete the current category if there is one!"
+                    ,
+                    "inline": "True",
+                },
+            ],
+        },
+    }
+}
+
+CONFIG_ALIASES = {
+    "category_denied": "counter_category_denied",
+    "counter_category_denied": "counter_category_denied",
+    "turn_link_into_message": "turn_link_into_message",
+    "link_to_message": "turn_link_into_message",
+}
 
 
 class Guild(BasicORM):
@@ -158,11 +235,6 @@ class Guild(BasicORM):
         "category": {"channel": "category_counter"},
     }
 
-    CONFIG_PARAMS_DICT = {
-        "counter_category_denied": "counter_category_denied",
-        "category_denied": "counter_category_denied",
-    }
-
     # General
     bot: Dwello
     id: int
@@ -176,6 +248,7 @@ class Guild(BasicORM):
 
     # Config Table
     counter_category_denied: bool | None
+    turn_link_into_message: bool | None
 
     # Twitch Table
     twitch_users: dict[int, TwitchUser]
@@ -238,8 +311,10 @@ class Guild(BasicORM):
         
         if record:
             self.counter_category_denied = record.get("counter_category_denied")
+            self.turn_link_into_message = record.get("turn_link_into_message")
         else:
             self.counter_category_denied = None
+            self.turn_link_into_message = None
         return
 
     def _update_channels(self, record: Record) -> None:
@@ -277,15 +352,26 @@ class Guild(BasicORM):
         self.category_counter = GuildCounter("category_counter", self, id=record.get("category_counter"))
         return
     
-    async def update_config(self, _dict: dict[str, bool]) -> None:
+    def _get_config_option_from_alias(self, name: str) -> str:
+        try:
+            _real_name = CONFIG_ALIASES[name]
+        except KeyError as e:
+            raise ValueError(f"Invalid config option alias: {name}") from e
+        return _real_name
+    
+    async def update_config(self, _dict: dict[str, Any]) -> None:
+        # actually, some of the values won't be just bool soooo change it later ig
         updates = []
         for _type, value in _dict.items():
             try:
-                param_name = self.CONFIG_PARAMS_DICT[_type]
+                param_name = CONFIG_DICT[self._get_config_option_from_alias(_type)]['sql_name']
             except KeyError as e:
                 raise ValueError(f"Invalid (channel) type: {_type}") from e
 
-            updates.append(f"{param_name} = {'TRUE' if value is True else 'FALSE'}")
+            if isinstance(value, bool):
+                updates.append(f"{param_name} = {'TRUE' if value else 'FALSE'}")
+            else:
+                updates.append(f"{param_name} = {value}")
         
         if not updates:
             return
@@ -308,6 +394,13 @@ class Guild(BasicORM):
             _type = f"{_type.replace('_counter', '')}_counter"
 
         return getattr(self, _type, None)  # type: ignore
+    
+    def get_config_option_by_type(self, _type: str) -> bool | Any | None: # dont have many options yet
+        try:
+            _type = CONFIG_ALIASES.get(_type)
+        except KeyError:
+            _type = CONFIG_DICT.get(_type)
+        return getattr(self, _type, None)
 
     async def add_message(self, _type: str, text: str = None) -> None:
         if not text:
