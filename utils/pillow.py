@@ -3,7 +3,7 @@ from typing import List, Optional, Tuple
 
 import discord
 import requests
-from PIL import Image, ImageDraw, ImageFont, ImageSequence
+from PIL import Image, ImageDraw, ImageFont, ImageSequence, UnidentifiedImageError
 
 # rename folder and store datasets and pillow within
 DIR = "storage/pillow/"
@@ -28,6 +28,19 @@ def get_font(text: str, size: int) -> ImageFont.FreeTypeFont:
 
     return ImageFont.truetype(f"{DIR}Arial.ttf", size)
 
+def has_extension(filename: str) -> bool:
+    # Split the filename into parts using the dot as a separator
+    parts = filename.split('.')
+    
+    # Check if there are at least two parts (name and extension)
+    if len(parts) >= 2:
+        # Check if the last part is not empty or consists of only dots
+        last_part = parts[-1]
+        if last_part and not last_part.isspace() and not last_part.startswith('.'):
+            return True
+    
+    return False
+
 def resize_gif(_bytes: bytes, _size: tuple[int, int], /, _buffer: BytesIO = BytesIO()) -> Image:
     im = Image.open(BytesIO(_bytes))
 
@@ -46,13 +59,20 @@ def resize_gif(_bytes: bytes, _size: tuple[int, int], /, _buffer: BytesIO = Byte
 
 def resize_discord_file(file: discord.File, size: tuple[int, int], _file_extension: str = ".png") -> discord.File:
     buffer = BytesIO()
-    if _file_extension == ".gif":
-        resize_gif(file.fp.read(), size, buffer)
-    else:
-        image = Image.open(BytesIO(file.fp.read())).resize(size)
-        image.save(buffer, format=_file_extension[1:].upper())
+    try:
+        if _file_extension == ".gif":
+            resize_gif(file.fp.read(), size, buffer)
+        else:
+            image = Image.open(BytesIO(file.fp.read())).resize(size)
+            image.save(buffer, format="JPEG" if (_ext:= _file_extension[1:].upper()) == "JPG" else _ext)
+    except UnidentifiedImageError as e:
+        raise e
     buffer.seek(0)
-    return discord.File(buffer, f"{file.filename or 'image'}{_file_extension}")
+    if file.filename:
+        name = file.filename if has_extension(file.filename) else f'{file.filename}{_file_extension}'
+    else:
+        name = f'image{_file_extension}'
+    return discord.File(buffer, name)
 
 def get_welcome_card(text: str, pfp_url: str, text2: Optional[str] = None) -> Image.Image:
     with Image.open(f"{DIR}images/2TVCKxLS.jpg").convert("RGBA") as base:

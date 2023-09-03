@@ -40,6 +40,8 @@ if TYPE_CHECKING:
 DBT = TypeVar("DBT", bound="Dwello")
 DCT = TypeVar("DCT", bound="Context")
 
+Choice = discord.app_commands.Choice
+
 logging.basicConfig(
     format="%(asctime)s [%(levelname)s] - %(name)s: %(message)s",
     level=logging.INFO,
@@ -259,6 +261,19 @@ class Dwello(commands.AutoShardedBot):
 
     def is_blacklisted(self, user_id: int) -> bool:
         return user_id in self.blacklisted_users  # rewrite member and user and put it there as a property
+    
+    async def autocomplete(
+        self, current: Any, names_and_values: list[tuple[Any, Any]], *, choice_length: int = 5,
+    ) -> list[Choice]:
+        # 25 choices is max
+        current: str = str(current)
+        item = len(current)
+        choices = []
+   
+        for name, value in names_and_values:
+            if current.startswith(str(name).lower()[:item]):
+                choices.append(Choice(name=name, value=value))
+        return choices[:choice_length if choice_length < 26 else 25]
 
     @override
     async def get_context(self, message, *, cls: Any = Context):

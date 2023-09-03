@@ -799,6 +799,7 @@ class About(commands.Cog):
     async def whois(self, ctx: Context, member: discord.Member = commands.Author) -> discord.Message | None:
         # embed.add_field(name="Display Name", value=member.display_name) if member.display_name != member.name else None
         # embed.add_field(name="Discriminator", value=member.discriminator) get initial discriminator and not 0
+        await ctx.defer()
         _user = await self.bot.fetch_user(member.id)
         banner, _ext = None, None
         if _user.banner:
@@ -806,7 +807,6 @@ class About(commands.Cog):
             _ext = ".gif" if _user.banner.is_animated() else ".png"
             banner = await to_thread(resize_discord_file, _file, (800, 300), _ext)
 
-        await ctx.defer()
         return await ctx.reply(
             file=banner,
             embed=Embed(

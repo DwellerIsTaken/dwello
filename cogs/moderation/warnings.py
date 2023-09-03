@@ -91,7 +91,7 @@ class Warnings(BaseCog):
                 title="User is warned!",
                 description=(
                     f"*Warned by:* {ctx.author.mention}\n"
-                    f"\n**{member}** has been successfully warned! \nReason: `{reason}`"
+                    f"\n**{member.name}** has been successfully warned! \nReason: `{reason}`"
                 ),
                 color=cs.WARNING_COLOR,
                 timestamp=discord.utils.utcnow(),
@@ -231,4 +231,4 @@ class Warnings(BaseCog):
                 or current.startswith(str(warning.id)[:item])
             )
         ]
-        return choices if len(choices) < 10 else choices[:10]
+        return choices[:25]
