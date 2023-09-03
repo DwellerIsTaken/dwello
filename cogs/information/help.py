@@ -15,16 +15,17 @@ from typing import Any, TypeVar
 import discord
 import psutil
 import pygit2
+from asyncio import to_thread
 from discord import Interaction, app_commands
 from discord.enums import ButtonStyle
 from discord.ext import commands
-from discord.http import Route
+#from discord.http import Route
 from discord.ui import Select, button, select
 from typing_extensions import override
 
 import constants as cs
 from core import Context, Dwello, Embed
-from utils import DefaultPaginator, Idea, create_codeblock
+from utils import DefaultPaginator, Idea, create_codeblock, resize_discord_file
 
 from .news import NewsViewer
 
@@ -798,22 +799,23 @@ class About(commands.Cog):
     async def whois(self, ctx: Context, member: discord.Member = commands.Author) -> discord.Message | None:
         # embed.add_field(name="Display Name", value=member.display_name) if member.display_name != member.name else None
         # embed.add_field(name="Discriminator", value=member.discriminator) get initial discriminator and not 0
+        _user = await self.bot.fetch_user(member.id)
+        banner, _ext = None, None
+        if _user.banner:
+            _file = await _user.banner.to_file(filename="banner")
+            _ext = ".gif" if _user.banner.is_animated() else ".png"
+            banner = await to_thread(resize_discord_file, _file, (800, 300), _ext)
 
+        await ctx.defer()
         return await ctx.reply(
+            file=banner,
             embed=Embed(
                 title=f"Info on {member.name}",
                 description="",
                 timestamp=discord.utils.utcnow(),
-                color=(
-                    (
-                        r["accent_color"]
-                        if (r := await self.bot.http.request(Route("GET", "/users/{uid}", uid=member.id)))
-                        else None
-                    )
-                    or member.color
-                ),
+                color=_user.accent_color or member.color,
             )
-            .set_image(url=f"https://cdn.discordapp.com/banners/{member.id}/{r['banner']}?size=1024" if r else None)
+            .set_image(url=f"attachment://banner{_ext}" if banner else None) # change width in pil maybe some day
             .set_footer(text=f"ID: {member.id}", icon_url=member.display_icon.url if member.display_icon else None)
             .set_author(name=member.name, icon_url=member.display_avatar.url)
             .set_thumbnail(url=member.display_avatar.url)
@@ -829,9 +831,9 @@ class About(commands.Cog):
             .add_field(
                 name="Flags",
                 value=(
-                    " ".join(
+                    str(" ".join(
                         emoji for f in member.public_flags.all() if (emoji := cs.PUBLIC_USER_FLAGS_EMOJI_DICT.get(f.name))
-                    ).split()
+                    ).split()).replace("[","").replace("]", "").replace("'","").replace(",", "")
                     or None
                 ),
             )

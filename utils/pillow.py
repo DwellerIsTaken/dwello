@@ -1,12 +1,14 @@
 from io import BytesIO
-from typing import List, Optional, Tuple
+from typing import List, Optional, Tuple, TypeVar
 
 import discord
 import requests
-from PIL import Image, ImageDraw, ImageFont
+from PIL import Image, ImageDraw, ImageFont, ImageSequence
 
 # rename folder and store datasets and pillow within
 DIR = "storage/pillow/"
+
+IT = TypeVar("IT") # cant bind to Image
 
 
 def get_center(size: Tuple[int, int], bbsize: Tuple[int, int, int, int]) -> List[float]:
@@ -28,6 +30,31 @@ def get_font(text: str, size: int) -> ImageFont.FreeTypeFont:
 
     return ImageFont.truetype(f"{DIR}Arial.ttf", size)
 
+def resize_gif(_bytes: bytes, _size: tuple[int, int], /, _buffer: BytesIO = BytesIO()) -> tuple[IT, BytesIO]:
+    im = Image.open(BytesIO(_bytes))
+
+    # Wrap on-the-fly thumbnail generator
+    def thumbnails(frames):
+        for frame in frames:
+            yield frame.resize(_size)
+
+    frames = thumbnails(ImageSequence.Iterator(im))
+
+    # Save output
+    om = next(frames) # Handle first frame separately
+    om.info = im.info # Copy sequence info
+    om.save(_buffer, save_all=True, append_images=list(frames), loop=0, format="GIF")
+    return om, _buffer
+
+def resize_discord_file(file: discord.File, size: tuple[int, int], _file_extension: str = ".png") -> discord.File:
+    buffer = BytesIO()
+    if _file_extension == ".gif":
+        resize_gif(file.fp.read(), size, buffer)
+    else:
+        image = Image.open(BytesIO(file.fp.read())).resize(size)
+        image.save(buffer, format=_file_extension[1:].upper())
+    buffer.seek(0)
+    return discord.File(buffer, f"{file.filename or 'image'}{_file_extension}")
 
 def get_welcome_card(text: str, pfp_url: str, text2: Optional[str] = None) -> Image.Image:
     with Image.open(f"{DIR}images/2TVCKxLS.jpg").convert("RGBA") as base:
