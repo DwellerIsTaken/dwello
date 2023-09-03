@@ -81,29 +81,6 @@ class Customisation(commands.Cog):
 
     async def cog_check(self, ctx: Context) -> bool:
         return ctx.guild is not None
-    
-    # maybe make a part of `guild` hybrid group
-    @commands.hybrid_command(name="customise", aliases=["customisation"], help="Customise your guild", with_app_command=True)
-    async def customise(self, ctx: Context):
-        values: list[str] = []
-        embeds: list[Embed] = []
-        for option in CONFIG_DICT.values():
-            embed_dict = option["embed"]
-            ed = embed_dict
-            embed = Embed(
-                url=ed["url"],
-                title=ed["title"],
-                description=ed["description"],
-                color=ed["color"] or ed["colour"],
-            )
-            embed.set_thumbnail(url=ed["thumbnail_url"])
-            embed.set_image(url=ed["image_url"])
-            for field in ed["fields"]:
-                embed.add_field(name=field["name"], value=field["value"], inline=field["inline"])
-            
-            values.append(option["sql_name"])
-            embeds.append(embed)
-        return await CustomisationPaginator.start(ctx, embeds, values)
 
     @commands.hybrid_group(aliases=["prefixes"], invoke_without_command=True, with_app_command=True)
     async def prefix(self, ctx: Context):
@@ -222,20 +199,15 @@ class DisableButton(Button["CustomisationPaginator"]):
 
 CONFIG_VIEW_ITEMS = {
     "counter_category_denied": [EnableButton, DisableButton],
-    "turn_link_into_message": [EnableButton],
+    "turn_link_into_message": [EnableButton, DisableButton],
 }
 
 
 class CustomisationPaginator(DefaultPaginator):
-    def __init__(
-        self,
-        obj: Context | Interaction[Dwello],
-        embeds: list[Embed],
-        options: list[str],  # in this case it's the config parameter (sql) name
-    ) -> None:
-        super().__init__(obj, embeds, values=options)
+    def __init__(self, obj: Context | Interaction[Dwello]) -> None:
+        options, embeds = self._construct_embeds_and_options()
 
-        self.options = options # aslo: values
+        super().__init__(obj, embeds, values=options)
 
         self.updated_config: dict[str, Any] = {}
         self.guild: Guild | None = None # set in start() classmethod
@@ -256,6 +228,10 @@ class CustomisationPaginator(DefaultPaginator):
     def option(self) -> str:
         return self.options[self.current_page]
     
+    @property
+    def options(self) -> list[str]:
+        return self.values
+    
     # property is too slow
     def current_view(self) -> CustomisationPaginator:
         self.clear_items()
@@ -265,6 +241,30 @@ class CustomisationPaginator(DefaultPaginator):
     
     def get_item_by_type(self, _type: type) -> Item | None:
         return next((item for item in self.view_items[self.current_page] if isinstance(item, _type)), None)
+    
+    def _construct_embeds_and_options(self) -> tuple[list[str], list[Embed]]:
+        values: list[str] = []
+        embeds: list[Embed] = []
+        for option in CONFIG_DICT.values():
+            embed_dict = option["embed"]
+            ed = embed_dict
+            embed = Embed(
+                url=ed["url"],
+                title=ed["title"],
+                description=ed["description"],
+                color=ed["color"] or ed["colour"],
+            )
+            embed.set_thumbnail(url=ed["thumbnail_url"])
+            embed.set_image(url=ed["image_url"])
+            for field in ed["fields"]:
+                embed.add_field(name=field["name"], value=field["value"], inline=field["inline"])
+            
+            values.append(option["sql_name"])
+            embeds.append(embed)
+        return values, embeds
+
+    def _construct_items(self) -> list[tuple[Item]]:
+        return [self._get_merged_items(option) for option in self.options]
 
     def _get_view_items_by_option_name(self, _name: str) -> list[Any]:
         try:
@@ -290,20 +290,15 @@ class CustomisationPaginator(DefaultPaginator):
             items.extend([self.previous, self.next])
         items.append(self.submit)
         return tuple(items)
-    
-    def _construct_items(self):
-        return [self._get_merged_items(option) for option in self.options]
 
     @classmethod
     async def start(
         cls: type[CPT],
         obj: Context | Interaction[Dwello],
-        embeds: list[Embed],
-        options: list[str],
         /,
         **kwargs,
     ) -> CPT:
-        self = cls(obj, embeds, options, **kwargs)
+        self = cls(obj, **kwargs)
 
         self.guild = await Guild.get(obj.guild.id, self.bot)
         self.view_items = self._construct_items()

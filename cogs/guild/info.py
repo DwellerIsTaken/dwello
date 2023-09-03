@@ -8,6 +8,8 @@ from discord.ext import commands
 
 from core import BaseCog, Context, Dwello, Embed  # noqa: F401
 
+from .customisation import CustomisationPaginator
+
 
 class Info(BaseCog):
     def __init__(self, bot: Dwello, *args: Any, **kwargs: Any) -> None:
@@ -78,3 +80,14 @@ class Info(BaseCog):
                 ),
             )
         return await ctx.reply(embed=embed)
+    
+    @commands.command(name="customisation", help="Customise your guild.")
+    async def customise_prefix(self, ctx: Context): # prefix cmd i mean
+        return await CustomisationPaginator.start(ctx)
+    
+    # part of guild group, but could belong in customisation.py
+    @guild.command(
+        name="customise", aliases=["customisation", "customize"], help="Customise your guild.", with_app_command=True,
+    )
+    async def customise(self, ctx: Context):
+        return await CustomisationPaginator.start(ctx)
