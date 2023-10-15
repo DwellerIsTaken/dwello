@@ -308,21 +308,27 @@ class News(BaseCog):
     def __init__(self, bot: Dwello, *args: Any, **kwargs: Any) -> None:
         super().__init__(bot, *args, **kwargs)
 
-    @app_commands.command(name="news", description="Displays latest news on the bot.")
+    @app_commands.command(name="news", description="Displays latest news about the bot.")
     async def app_news(self, interaction: discord.Interaction) -> NewsViewer:
-        news = await self.bot.pool.fetch("SELECT * FROM news ORDER BY news_id DESC")
+        """Displays application related news, such as updates and patches."""
 
+        news = await self.bot.pool.fetch("SELECT * FROM news ORDER BY news_id DESC")
         return await NewsViewer.from_interaction(interaction, news)
 
-    @commands.group(invoke_without_command=True)
-    async def news(self, ctx: Context) -> NewsViewer:
+    # only a command for user, and group for owner
+    @commands.group(name="news", brief="Displays latest news about the bot.", invoke_without_command=True)
+    async def news(self, ctx: Context) -> NewsViewer: # maybe have something like interpret_as_a_command attr or smh for help
+        """Displays application related news, such as updates and patches."""
+        
         news = await self.bot.pool.fetch("SELECT * FROM news ORDER BY news_id DESC")
-
         return await NewsViewer.start(ctx, news)
 
     @commands.is_owner()
     @news.command(hidden=True, aliases=["publish"])
+    # rethink the design -> maybe just get the message you reply to, add a title and publish
     async def add(self, ctx: Context, link: str, *, title: str):
+        """Publish the news about the application. Application owner(s) only."""
+
         if not await ctx.bot.is_owner(ctx.author):
             return await self.news(ctx)
 
@@ -367,6 +373,8 @@ class News(BaseCog):
     @commands.is_owner()
     @news.command(hidden=True)
     async def remove(self, ctx: Context, news_id: int):
+        """Remove a news post by ID. Application owner(s) only."""
+        
         if not await ctx.bot.is_owner(ctx.author):
             return await self.news(ctx)
 

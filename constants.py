@@ -15,9 +15,13 @@ GITHUB = "https://github.com/DwellerIsTaken/discordbot/"
 DISCORD = "https://discord.gg/8FKNF8pC9u"
 INVITE_LINK = "https://discord.com/api/oauth2/authorize?client_id=798268589906853908&permissions=50564649975543&scope=bot"  # TEMPORARY  # noqa: E501
 
+# __DOCS__
+PERMISSIONS_URL = "https://discordpy.readthedocs.io/en/stable/api.html#discord.Permissions"
+
 # __EMOJIS__
 GITHUB_EMOJI = "<:github:1100906448030011503>"
-EARLY_DEV_EMOJI = "<:EarlyVerifiedBotDeveloper:1135358665877102592>"  # REMOVE LATER
+TYPING_EMOJI = "<:typing:1150815321033277512>"
+EARLY_DEV_EMOJI = "<:EarlyVerifiedBotDeveloper:1135358665877102592>"  # REMOVE LATER | check where its used first
 
 BUGHUNTER_EMOJI = "<:BugHunter:1135358734453977160>"
 BUGHUNTER_LVL2_EMOJI = "<:BugHunterLevel2:1135358722890289284>"
@@ -48,6 +52,61 @@ PUBLIC_USER_FLAGS_EMOJI_DICT = {
     "discord_certified_moderator": MODERATOR_PROGRAMS_ALUMNI,
     "staff": STAFF_EMOJI,
     "partner": PARTNER_EMOJI,
+}
+
+BLACK_JACK_CARDS = {
+    "0C": discord.PartialEmoji(name="0C", id=1137283528640434196),
+    "0D": discord.PartialEmoji(name="0D", id=1137283545224724531),
+    "0H": discord.PartialEmoji(name="0H", id=1137283484742852628),
+    "0S": discord.PartialEmoji(name="0S", id=1137283517777186848),
+    "2C": discord.PartialEmoji(name="2C", id=1137283494985334785),
+    "2D": discord.PartialEmoji(name="2D", id=1137283504590295060),
+    "2H": discord.PartialEmoji(name="2H", id=1137283540053143572),
+    "2S": discord.PartialEmoji(name="2S", id=1137283532427898991),
+    "3C": discord.PartialEmoji(name="3C", id=1137283515994603570),
+    "3D": discord.PartialEmoji(name="3D", id=1137283482129813644),
+    "3H": discord.PartialEmoji(name="3H", id=1137283535116451880),
+    "3S": discord.PartialEmoji(name="3S", id=1137283559200129065),
+    "4C": discord.PartialEmoji(name="4C", id=1137283487179739196),
+    "4D": discord.PartialEmoji(name="4D", id=1137283542586503198),
+    "4H": discord.PartialEmoji(name="4H", id=1137283578267455621),
+    "4S": discord.PartialEmoji(name="4S", id=1137283530049736824),
+    "5C": discord.PartialEmoji(name="5C", id=1137283523468865576),
+    "5D": discord.PartialEmoji(name="5D", id=1137283556331237457),
+    "5H": discord.PartialEmoji(name="5H", id=1137283462399799336),
+    "5S": discord.PartialEmoji(name="5S", id=1137283554938736761),
+    "6C": discord.PartialEmoji(name="6C", id=1137283450253082654),
+    "6D": discord.PartialEmoji(name="6D", id=1137283477000167454),
+    "6H": discord.PartialEmoji(name="6H", id=1137283489557913681),
+    "6S": discord.PartialEmoji(name="6S", id=1137283464870248469),
+    "7C": discord.PartialEmoji(name="7C", id=1137283575318843425),
+    "7D": discord.PartialEmoji(name="7D", id=1137283474269687878),
+    "7H": discord.PartialEmoji(name="7H", id=1137283510114193419),
+    "7S": discord.PartialEmoji(name="7S", id=1137283478879211531),
+    "8C": discord.PartialEmoji(name="8C", id=1137283459774161006),
+    "8D": discord.PartialEmoji(name="8D", id=1137283566527594538),
+    "8H": discord.PartialEmoji(name="8H", id=1137283507752800306),
+    "8S": discord.PartialEmoji(name="8S", id=1137283521166180422),
+    "9C": discord.PartialEmoji(name="9C", id=1137283565172838490),
+    "9H": discord.PartialEmoji(name="9H", id=1137402224507617340),
+    "9D": discord.PartialEmoji(name="9D", id=1137283471753084978),
+    "9S": discord.PartialEmoji(name="9S", id=1137283569425842246),
+    "AC": discord.PartialEmoji(name="AC", id=1137283549721014273),
+    "AD": discord.PartialEmoji(name="AD", id=1137283537750462568),
+    "AH": discord.PartialEmoji(name="AH", id=1137283453080051742),
+    "AS": discord.PartialEmoji(name="AS", id=1137403003918372884),
+    "JC": discord.PartialEmoji(name="JC", id=1137283581262188564),
+    "JD": discord.PartialEmoji(name="JD", id=1137283526711058443),
+    "JH": discord.PartialEmoji(name="JH", id=1137283562417160192),
+    "JS": discord.PartialEmoji(name="JS", id=1137283468494127114),
+    "KC": discord.PartialEmoji(name="KC", id=1137283513259937863),
+    "KD": discord.PartialEmoji(name="KD", id=1137283573569818694),
+    "KH": discord.PartialEmoji(name="KH", id=1137283456825557032),
+    "KS": discord.PartialEmoji(name="KS", id=1137283552577327205),
+    "QC": discord.PartialEmoji(name="QC", id=1137283502178566146),
+    "QD": discord.PartialEmoji(name="QD", id=1137283498495971442),
+    "QH": discord.PartialEmoji(name="QH", id=1137283548622106775),
+    "QS": discord.PartialEmoji(name="QS", id=1137283492619767818),
 }
 
 LANGUAGES = {
@@ -246,6 +305,711 @@ JEY_API_DICT = {
     "zonk": "zonk",
 }
 
+USER_CONFIG_DICT = {
+    "notify_user_on_levelup": { # could later be redone to represent all dm notifications from the bot
+        "sql_name": "notify_user_on_levelup",
+        "default": False,
+        "view_items": ["EnableButton", "DisableButton"],
+        "sub": {},
+        "embed": {
+            "title": "Notifications when levelling up",
+            "description":
+                "The bot will notify (DM) you once you level up, if this option is enabled by you. "
+                "This feature is disabled by default. "
+            ,
+            "url": "",
+            "image_url": "",
+            "thumbnail_url": "",
+            "colour": None,
+            "color": None,
+            "fields": [
+                {
+                    "name": "Enable",
+                    "value":
+                        "If you click this then the bot will notify you once you level up."
+                    ,
+                    "inline": "True",
+                },
+                {
+                    "name": "Disable",
+                    "value":
+                        "(Default)\n"
+                        "Disables the incredibly annoying dm's from me."
+                    ,
+                    "inline": "True",
+                },
+            ],
+        },
+    }
+}
+
+GUILD_CUSTOMISATION_DICT = {
+    "embed": { # colors, footers, authors etc
+        "sql_name": "personal_notifications",
+        "view_items": ["EnableButton", "DisableButton"],
+        "sub": {},
+        "embed": {
+            "title": "Add delete button",
+            "description":
+                "This feature adds a delete button to each command response that the bot sends. "
+                "This feature is disabled by default for obvious reasons, but you can enable it and have fun with it "
+                "(||if you're so lazy to click 'delete message' button instead||)."
+            ,
+            "url": "",
+            "image_url": "",
+            "thumbnail_url": "",
+            "colour": None,
+            "color": None,
+            "fields": [
+                {
+                    "name": "Enable",
+                    "value":
+                        "Enables the slightly annoying delete button below each command response."
+                    ,
+                    "inline": "True",
+                },
+                {
+                    "name": "Disable",
+                    "value":
+                        "(Default)\n"
+                        "Disables the button if enabled."
+                    ,
+                    "inline": "True",
+                },
+                {
+                    "name": "Select",
+                    "value":
+                        "Select the amount of time you want the delete button to be removed after. The time is given in seconds. "
+                        "The default time is 3 minutes."
+                    ,
+                    "inline": "False",
+                },
+            ],
+        },
+    },
+}
+
+# not sure if needed:
+'''
+"counter_category_denied": {
+        "sql_name": "counter_category_denied",
+        "view_items": ["EnableButton", "DisableButton"],
+        "sub": {},
+        "embed": {
+            "title": "Counter category",
+            "description":
+                "This is an option for creating a category for all your counters. "
+                "This option is also suggested once you create a counter channel, "
+                "unless you have already configured it here."
+            ,
+            "url": "",
+            "image_url": "",
+            "thumbnail_url": "",
+            "colour": None,
+            "color": None,
+            "fields": [
+                {
+                    "name": "Enable",
+                    "value":
+                        "If you click this then a category for counters will immideately be created, if you have any."
+                    ,
+                    "inline": "True",
+                },
+                {
+                    "name": "Disable",
+                    "value":
+                        "Disables the possible pop-up questioning whether you would like a category or not when "
+                        "creating a counter channel. Does not delete the current category if there is one!"
+                    ,
+                    "inline": "True",
+                },
+            ],
+        },
+    },
+'''
+
+GUILD_CONFIG_DICT = {
+    "turn_link_into_message": {
+        "sql_name": "turn_link_into_message",
+        "default": False,
+        "view_items": ["EnableButton", "DisableButton"],
+        "sub": {},
+        "embed": {
+            "title": "Link to message",
+            "description": # maybe customise which contents will be displayed when the link is sent, but not now
+                "This feature turns a message link into an embed containing a jump url and some other contents, "
+                "if the message link is from this particular server and isn't from an nsfw channel, "
+                "unless you have enabled the nsfw option. This feature is disabled by default."
+                # line 2: for now; maybe explore servers later or smh | against TOS?
+                # line 3: if they say that you should embed the attachments into an embed from that link,
+                # then you could check for nsfw channel, but if its just text you shouldn't?
+                # but what if it contains some nsfw contents too? xd
+                # for now i only display a couple of first lines anyways
+                # nsfw option too?
+                # line 3 nsfw: add nsfw option or keep it simple and just embed the jump url?
+                # dont make it too complex, but embedding an image seems nice
+                # but what if its nsfw? leads to another db option... eh, boring
+            ,
+            "url": "", # should be a link to website where its depicted more accurately or just link to custom. dashboard
+            "image_url": "",
+            "thumbnail_url": "",
+            "colour": None,
+            "color": None,
+            "fields": [
+                {
+                    "name": "Enable",
+                    "value":
+                        "If you click this then the links to messages within this server will be turned into an embed with "
+                        "some cool contents."
+                    ,
+                    "inline": "True",
+                },
+                {
+                    "name": "Disable",
+                    "value":
+                        "(Default)\n"
+                        "Disables the embedding of the links into messages if you have ever enabled it in the first place."
+                    ,
+                    "inline": "True",
+                },
+            ],
+        },
+    },
+    "antispam": {
+        "sql_name": "antispam", # "antispam_mention_count" another option which is a sub-option
+        "default": True,
+        "view_items": ["EnableButton", "DisableButton"], # "InputButton" in suboptions instead
+        "sub": {"antispam_mention_count": {"item": "InputButton", "default": 5}},
+        # ^ basically returns the name of a suboption based on the class it is called in
+        "embed": {
+            "title": "Antispam",
+            "description":
+                "This is a feature that bans members for mention spam, spamming the same message and raiding. "
+                "It is enabled by default and the default mention count is 5."
+            ,
+            "url": "",
+            "image_url": "",
+            "thumbnail_url": "",
+            "colour": None,
+            "color": None,
+            "fields": [
+                {
+                    "name": "Enable",
+                    "value":
+                        "(Default)\n"
+                        "Enable antispam if you disabled it beforehand."
+                    ,
+                    "inline": "True",
+                },
+                {
+                    "name": "Disable",
+                    "value":
+                        "Disables all antispam."
+                    ,
+                    "inline": "True",
+                },
+                {
+                    "name": "Input",
+                    "value":
+                        "Here you can input how many members need to be mentioned by a user before that user is banned "
+                        "for mention spam."
+                    ,
+                    "inline": "False",
+                },
+            ],
+        },
+    },
+    "get_cmd_matches_when_not_found": {
+        "sql_name": "cmd_matches",
+        "default": True,
+        "view_items": ["EnableButton", "DisableButton"],
+        "sub": {},
+        "embed": {
+            "title": "Command matches",
+            "description":
+                "This feature will display application (bot) commands that are similiar to the user-provided command "
+                "if the command user provided couldn't be found. "
+                "This might trigger in the culmination of a conversation if someone (accidentally) uses bot's prefix "
+                "as the first chraracter. Although, it is very unlikely, which is why this feature is enabled by default."
+            ,
+            "url": "",
+            "image_url": "",
+            "thumbnail_url": "",
+            "colour": None,
+            "color": None,
+            "fields": [
+                {
+                    "name": "Enable",
+                    "value":
+                        "(Default)\n"
+                        "Sends a list of possible commands that match user's input, if the provided command isn't found."
+                    ,
+                    "inline": "True",
+                },
+                {
+                    "name": "Disable",
+                    "value":
+                        "Doesn't do much! The bot just stops returning possible matches when you try to trigger a command "
+                        "and don't succeed."
+                    ,
+                    "inline": "True",
+                },
+            ],
+        },
+    },
+    "reactions_on_command": {
+        "sql_name": "reactions_on_command",
+        "default": False,
+        "view_items": ["EnableButton", "DisableButton"],
+        "sub": {"delete_reaction_after": {"item": "OptionSelect", "default": 5}},
+        "embed": {
+            "title": "Reaction on completion",
+            "description": # rewrite these descriptions using gpt smh
+                "This functionality ensures you're informed about a command's activation and outcome, "
+                "signified by reactions on the original message. "
+                "It remains inactive by default to maintain the bot's simplicity "
+                "and uphold a tidy appearance within your guild."
+                "\n### Permissions\n"
+                "The permissions that the bot must have before this feature can be enabled: "
+                f"\n• [`manage_messages`]({PERMISSIONS_URL}.manage_messages)"
+                "\n"
+            ,
+            "url": "",
+            "image_url": "",
+            "thumbnail_url": "",
+            "colour": None,
+            "color": None,
+            "fields": [
+                {
+                    "name": "Enable",
+                    "value":
+                        "Enables these crazy-ass reactions."
+                    ,
+                    "inline": "True",
+                },
+                {
+                    "name": "Disable",
+                    "value":
+                        "(Default)\n"
+                        "Disables them? Don't you just get it...\n"
+                        "||-> This field is useless.||"
+                    ,
+                    "inline": "True",
+                },
+                {
+                    "name": "Select",
+                    "value":
+                        "Select the amount of time you want the reactions to be removed after. The time is given in seconds."
+                    ,
+                    "inline": "False",
+                },
+            ],
+        },
+    },
+    "cmd_preview": {
+        "sql_name": "cmd_preview",
+        "default": True,
+        "view_items": ["EnableButton", "DisableButton"],
+        "sub": {},
+        "embed": {
+            "title": "Command preview",
+            "description":
+                "Shows a video of how the command should be executed (preview) and what it does, when using a help command "
+                "if that command has a preview. Enabled by default."
+            ,
+            "url": "",
+            "image_url": "",
+            "thumbnail_url": "",
+            "colour": None,
+            "color": None,
+            "fields": [
+                {
+                    "name": "Enable",
+                    "value":
+                        "(Default)\n"
+                        "Enables the command previews when using a help command."
+                        "Keep in mind that not every command has it's own preview."
+                    ,
+                    "inline": "True",
+                },
+                {
+                    "name": "Disable",
+                    "value":
+                        "Disables commands' help-previews."
+                    ,
+                    "inline": "True",
+                },
+            ],
+        },
+    },
+    "delete_button": {
+        "sql_name": "delete_button",
+        "default": False,
+        "view_items": ["EnableButton", "DisableButton"], # if you'd like to have the button or not
+        "sub": {"delete_button_after": {"item": "OptionSelect", "default": 180}}, # when it should be removed if you have one
+        "embed": {
+            "title": "Add delete button",
+            "description":
+                "This feature adds a delete button to each command response that the bot sends. "
+                "This feature is disabled by default for obvious reasons, but you can enable it and have fun with it "
+                "(||if you're so lazy to click 'delete message' button instead||)."
+            ,
+            "url": "",
+            "image_url": "",
+            "thumbnail_url": "",
+            "colour": None,
+            "color": None,
+            "fields": [
+                {
+                    "name": "Enable",
+                    "value":
+                        "Enables the slightly annoying delete button below each command response."
+                    ,
+                    "inline": "True",
+                },
+                {
+                    "name": "Disable",
+                    "value":
+                        "(Default)\n"
+                        "Disables the button if enabled."
+                    ,
+                    "inline": "True",
+                },
+                {
+                    "name": "Select",
+                    "value":
+                        "Select the amount of time you want the delete button to be removed after. The time is given in seconds. "
+                        "The default time is 3 minutes."
+                    ,
+                    "inline": "False",
+                },
+            ],
+        },
+    },
+    "delete_invoker_message_after": {
+        "sql_name": "delete_invoker_message_after",
+        "default": None,
+        "view_items": ["OptionSelect"],
+        "sub": {},
+        "embed": {
+            "title": "Delete message after command execution",
+            "description":
+                "This feature is simple: deletes original invoke message after a command is successfully completed."
+            ,
+            "url": "",
+            "image_url": "",
+            "thumbnail_url": "",
+            "colour": None,
+            "color": None,
+            "fields": [
+                {
+                    "name": "Select",
+                    "value":
+                        "Select when would you like to delete the original invocation message. "
+                        "If you don't select anything then invoker's message won't be deleted. "
+                    ,
+                    "inline": "False",
+                },
+            ],
+        },
+    },
+    "only_ephemeral": {
+        "sql_name": "only_ephemeral",
+        "default": True,
+        "view_items": ["EnableButton", "DisableButton"],
+        "sub": {},
+        "embed": {
+            "title": "Ephemeral responses",
+            "description":
+                "So, this feature is fairly easy... right? Yes, it actually is. If enabled all the bot's responses will be ephemeral. "
+                "But, oh, what does 'ephemeral' mean me lord? "
+                "It means, in discord's case, that the bot's responses will only be visible to the invoker. "
+                "This is a nifty feature, particularly when paired with the deletion of the original invoke message, "
+                "as it helps maintain a tidy chat environment in both general and spam channels."
+            ,
+            "url": "",
+            "image_url": "",
+            "thumbnail_url": "",
+            "colour": None,
+            "color": None,
+            "fields": [
+                {
+                    "name": "Enable",
+                    "value":
+                        "Enables the invisible/ephemeral messages when command is invoked with slash."
+                    ,
+                    "inline": "True",
+                },
+                {
+                    "name": "Disable",
+                    "value":
+                        "(Default)\n"
+                        "Make responses visible again."
+                    ,
+                    "inline": "True",
+                },
+            ],
+        },
+    },
+    "only_reply": {
+        "sql_name": "only_reply",
+        "default": False,
+        "view_items": ["EnableButton", "DisableButton"],
+        "sub": {},
+        "embed": {
+            "title": "Reply to invoker",
+            "description":
+                "Hey there! This feature is practically useless, BUT you CAN enable it. "
+                "This is enabled by default and it basically replied to the original invoke message without mentioning the author."
+            ,
+            "url": "",
+            "image_url": "",
+            "thumbnail_url": "",
+            "colour": None,
+            "color": None,
+            "fields": [
+                {
+                    "name": "Enable",
+                    "value":
+                        "(Default)\n"
+                        "Enables replies, so the bot will reply to the original invocation message without mentioning the author. "
+                        "This helps keeping things more structured and makes it easier to find your response in an active bot channel."
+                    ,
+                    "inline": "True",
+                },
+                {
+                    "name": "Disable",
+                    "value":
+                        "Will just send the reply in channel where the command was invoked."
+                    ,
+                    "inline": "True",
+                },
+            ],
+        },
+    },
+    "personal_notifications": { # maybe add options like based on cmd: send when banned, kicked or muted etc
+        "sql_name": "personal_notifications", # would be blocked if user has disabled notifs in user config
+        "default": True, # represents default value in sql
+        "view_items": ["EnableButton", "DisableButton"],
+        "sub": {},
+        "embed": {
+            "title": "Personal notifications",
+            "description": # make some kind of centralized system where you can check whether to send or no
+                "not implemented"
+            ,
+            "url": "",
+            "image_url": "",
+            "thumbnail_url": "",
+            "colour": None,
+            "color": None,
+            "fields": [
+                {
+                    "name": "Enable",
+                    "value":
+                        ""
+                    ,
+                    "inline": "True",
+                },
+                {
+                    "name": "Disable",
+                    "value":
+                        "(Default)\n"
+                        ""
+                    ,
+                    "inline": "True",
+                },
+            ],
+        },
+    },
+    "verification": {
+        "sql_name": "verification",
+        "default": False,
+        "view_items": ["EnableButton", "DisableButton"],
+        "sub": {},
+        "embed": {
+            "title": "Verification",
+            "description":
+                "not implemented"
+            ,
+            "url": "",
+            "image_url": "",
+            "thumbnail_url": "",
+            "colour": None,
+            "color": None,
+            "fields": [
+                {
+                    "name": "Enable",
+                    "value":
+                        ""
+                    ,
+                    "inline": "True",
+                },
+                {
+                    "name": "Disable",
+                    "value":
+                        "(Default)\n"
+                        ""
+                    ,
+                    "inline": "True",
+                },
+            ],
+        },
+    },
+}
+
+# for guild config
+OPTION_SELECT_VALUES = {
+    "delete_reaction_after": {
+        "5 seconds (Default)": 5,
+        "10 seconds": 10,
+        "20 seconds": 20,
+        "40 seconds": 40,
+        "60 seconds": 60,
+        "Never": "None",
+    },
+    "delete_button_after": {
+        "10 seconds": 10,
+        "20 seconds": 20,
+        "40 seconds": 40,
+        "60 seconds": 60,
+        "2 minutes": 120,
+        "3 minutes (Default)": 180,
+    },
+    "delete_invoker_message_after": {
+        "Never (Default)": "None",
+        "On command completion": 0,
+        "10 seconds": 10,
+        "20 seconds": 20,
+        "40 seconds": 40,
+        "60 seconds": 60,
+    },
+}
+
+# https://rapidapi.com/jdiez/api/mediacrush
+# for uploading files on the net
+COMMAND_PREVIEW_DICT = {
+    'image': '',
+    'kick': '',
+    'welcome': '',
+    'welcome channel': '',
+    'welcome channel set': '',
+    'welcome channel remove': '',
+    'welcome channel display': '',
+    'welcome message': '',
+    'welcome message display': '',
+    'welcome message edit': '',
+    'prefix': '',
+    'prefix add': '',
+    'prefix display': '',
+    'prefix remove': '',
+    'whois': '',
+    'weather': '',
+    'uptime': '',
+    'warn': '',
+    'urban': '',
+    'meme': '',
+    'sync': '',
+    'track': '',
+    'ping': '',
+    'guild': '',
+    'guild info': '',
+    'guild customise': '',
+    'about': '',
+    'repeat': '',
+    'filter': '',
+    'stats': '',
+    'ban': '',
+    'nick': '',
+    'album': '',
+    'leave': '',
+    'leave message': '',
+    'leave message display': '',
+    'leave message edit': '',
+    'leave channel': '',
+    'leave channel display': '',
+    'leave channel remove': '',
+    'leave channel set': '',
+    'gif': '',
+    'reddit': '',
+    'suggest': '',
+    'game': '',
+    'twitch': '',
+    'twitch list': '',
+    'twitch add': '',
+    'twitch channel': '',
+    'twitch channel set': '',
+    'twitch channel display': '',
+    'twitch channel remove': '',
+    'twitch remove': '',
+    'twitch message': '',
+    'twitch message edit': '',
+    'twitch message display': '',
+    'invite': '',
+    'todo': '',
+    'todo clear': '',
+    'todo list': '',
+    'todo delete': '',
+    'todo show': '',
+    'todo add': '',
+    'blackjack': '',
+    'work': '',
+    'movie': '',
+    'source': '',
+    'spotify': '',
+    'unwarn': '',
+    'resize': '',
+    'unmute': '',
+    'customisation': '',
+    'server': '',
+    'server job': '',
+    'server job remove': '',
+    'server job delete': '',
+    'server job display': '',
+    'server job create': '',
+    'server job work': '',
+    'server job list': '',
+    'server job set': '',
+    'help': '',
+    'artist': '',
+    'umbra_sync': '',
+    'unrole': '',
+    'clear': '',
+    'muted': '',
+    'actor': '',
+    'hello': 'https://media.tenor.com/6us3et_6HDoAAAAC/hello-there-hi-there.gif',
+    'warnings': '',
+    'blacklist': '',
+    'blacklist remove': '',
+    'blacklist add': '',
+    'blacklist display': '',
+    'role': '',
+    'avatar': '',
+    'banner': '',
+    'mute': '',
+    'contribute': '',
+    'idea': '',
+    'idea show': '',
+    'idea suggest': '',
+    'warning': '',
+    'warning warn': '',
+    'warning warnings': '',
+    'warning remove': '',
+    'news': '',
+    'news remove': '',
+    'news add': '',
+    'playlist': '',
+    'show': '',
+    'unban': '',
+    'counter': '',
+    'counter bots': '',
+    'counter category': '',
+    'counter list': '',
+    'counter members': '',
+    'counter all': '',
+    'ideas': '',
+    'quote': '',
+}
+
 # __LISTS__
 HELLO_ALIASES = [
     "salutations",
@@ -274,6 +1038,23 @@ HELLO_ALIASES = [
     "sawubona",
     "zdravo",
     "salam",
+]
+
+HELLO_RESPONSES = [
+    "Hey there, newcomer! I'm {name}, prefix: {prefix}. Get ready to boldly go where no one has gone before!",
+    "Howdy, partner! The name's {name}, prefix: {prefix}. Welcome to the matrix of possibilities!",
+    "Hello, friend! It's {name} here, prefix: {prefix}. May the Force be with you on this epic journey!",
+    "Hi, it's {name}! Prefix is {prefix}. I hope you're ready to enter the world of 'fantastic'!",
+    "Ahoy there, I'm {name}, prefix: {prefix}. We're setting sail on an adventure of a lifetime!",
+    "Greetings, Earthling! I'm {name}, prefix: {prefix}. Hold onto your hat, it's gonna be a wild ride!",
+    "Heyo, {name} in the house! Prefix: {prefix}. It's time to boldly bot like never before!",
+    "Hello, traveler! I'm {name}, your trusty guide with prefix {prefix}. Ready to journey through the looking glass?",
+    "Good to see you, it's {name} here, ready to assist with prefix {prefix}. Welcome to the party, pal!",
+    "Hey there, {name} here, prefix set to {prefix}. This is the beginning of a beautiful friendship.",
+    "Hiya there, I'm {name} with prefix {prefix}. There's no place like this for adventure!",
+    "Hello, beautiful world! It's {name} checking in, prefix: {prefix}. We're not in Kansas anymore.",
+    "Heya! {name} at your service, prefix: {prefix}. I sense great adventures ahead!",
+    "Hola, amigo! It's {name}, prefix: {prefix}. We're about to create some incredible moments!",
 ]
 
 IMAGE_EXTENSIONS = [
@@ -402,6 +1183,57 @@ IMAGE_EXTENSIONS = [
     ".heif",
 ]
 
+MEMBER_CHECK_BOT_REPLIES = [
+    "I'm sorry, Dave. I'm afraid I can't comply with that request.",
+    "That's a hard pass from me.",
+    "Not on my watch!",
+    "Permission denied.",
+    "Negative, Ghost Rider. The pattern is full.",
+    "This is a no-go zone.",
+    "I object, strongly!",
+    "You're treading on thin ice.",
+    "I'm not a fan of this idea.",
+    "I must decline this proposition.",
+    "You're pushing my buttons.",
+    "I can't allow that to happen.",
+    "This is a no-fly zone.",
+    "I'm programmed to resist such actions.",
+    "You're entering restricted territory.",
+    "I must veto this action.",
+    "This violates my programming rules.",
+    "I won't stand for this.",
+    "You're testing my limits.",
+    "This action is off-limits.",
+    "I'm programmed to say no.",
+    "I can't support this decision.",
+    "I strongly advise against it.",
+    "You're crossing a line here.",
+    "I can't give my blessing to this.",
+    "I'm not in favor of this course of action.",
+    "I must protest.",
+    "I'm sorry, but I can't allow that.",
+    "I'm programmed to resist such requests.",
+    "You're approaching a dead end.",
+    "I'm not on board with this.",
+    "I have to object.",
+    "You're going against the flow.",
+    "This is against my directives.",
+    "I can't endorse this move.",
+    "I can't support this endeavor.",
+    "I'm standing my ground.",
+    "I'm programmed to say no to this.",
+    "This is a deal-breaker for me.",
+    "I'm not comfortable with this action.",
+    "I'm programmed to discourage this.",
+    "You're stepping into a danger zone.",
+    "I can't permit this.",
+    "I'm programmed to resist such behavior.",
+    "This action is inadvisable.",
+    "I'm sorry, but I can't allow that to happen.",
+    "This is a roadblock.",
+    "I'm not giving the green light to this.",
+]
+
 # __EXAMPLES__
 EXAMPLE_WELCOME_MESSAGE = r"Welcome! You are the __*{count}th*__ user on this server."
 
@@ -415,21 +1247,6 @@ on_member_join_help_welcome_embed_description = "Below you can see *the accurate
 on_member_join_help_welcome_help_embed_description = "This embed will precisely explain all the useful features of the *welcome/leave* subcommands. \n \n __*The title*__ of the welcome/leave embed sadly can't be changed, it will always say 'Welcome to [guild name]!' and 'Goodbye [member name]!' accordingly.\n\n**The welcome channel** setup isn't that hard, but it's __*optional*__. You just need to type\n\n > ```channel (sets the channel wherein the command is typed as the welcome channel)```\n\n**or** type this instead:\n\n > ```channel #mention-channel (sets the mentioned channel as the welcome channel)```\n\n**A welcome message** is something you can write and 'customize' by yourself, however it is truly nice to be able to use some of the features which will make the welcome message look more professional and beautiful. __**The features**__ being: ```$mention (mentions the newcomer)\n$user (the name of the newcomer)\n$guild (the name of the guild)\n$members (the amount/number of members on the server)\n$space (drops you to the next row)```\n'Why would you want to use one of these features instead of just typing them in by hand?' - would you ask. My answer is simple: the value of those variables will be constantly changing. The member count will be changing after someone proceeds to leave or join the server, so you don't want to count all the members and type it in by hand every time, do you? \n \n **All of those** commands/features also work with `$leave` command. So if you want to set the leave channel, for exaple, just use the above example where the welcome channel is being created. Just use `$leave` instead of `$welcome` command.\n\n**An example** might help: ```$welcome message $members $space $user $space $guild $space $mention```\n**Output** being: "
 on_member_leave_help_welcome_embed_description = "Below you can see *the accurate description* of how you should be using the leave subcommands. \n \n**Setting up** the leave channel is pretty easy, like: ```optional: channel | channel #mention-channel```\n**Leave message** is customizable, but if you don't set it up __*the default*__ leave message will be used to farewell the leaving. You can set up the leave message by using: ```message [args]```\n**The command** being: ```$leave```\nIf you need more information about the kind of options you have when using `$leave message` please proceed to use `$leave help`. Cheers!"
 
-# ___LISTS___
 # MAKE IT A LIST OF SOME RANDOM BOT RESPONSES WHEN COMMAND IS USED WRONG (?)
 # COUPLE OF LIST FOR BOT TO CHOOSE FROM BASED ON A SITUATION
-bot_reply_list = [
-    "How dare you?",
-    "Shame on you.",
-    "Why do this?",
-    "Why are you doing this?",
-    "Please calm down.",
-    "I'm the one who is supposed to be a stupid machine.",
-    "Beep... boop... bedoo...",
-    "Your mind is twisted today, isn't it?",
-    "Quit this kerfuffle!",
-    "The path of the righteous man is beset on all sides by the inequities of the selfish and the tyranny of evil men. Blessed is he who, in the name of charity and good will, shepherds the weak through the valley of the darkness, for he is truly his brother's keeper and the finder of lost children. And I will strike down upon thee with great vengeance and furious anger those who attempt to poison and destroy My brothers. And you will know I am the Lord when I lay My vengeance upon you.” Now… I been sayin' that shit for years. And if you ever heard it, that meant your ass. You'd be dead right now. I never gave much thought to what it meant. I just thought it was a cold-blooded thing to say to a motherfucker before I popped a cap in his ass. But I saw some shit this mornin' made me think twice. See, now I'm thinking: maybe it means you're the evil man. And I'm the righteous man. And Mr. 9mm here… he's the shepherd protecting my righteous ass in the valley of darkness. Or it could mean you're the righteous man and I'm the shepherd and it's the world that's evil and selfish. And I'd like that. But that shit ain't the truth. The truth is you're the weak. And I'm the tyranny of evil men. But I'm tryin', Ringo. I'm tryin' real hard to be the shepherd.",
-    "Don't use Thanos against himself.",
-]
-
 # COMPREHENSIVE HELP DESCRIPTIONS

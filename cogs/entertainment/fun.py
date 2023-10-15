@@ -11,17 +11,28 @@ import mimetypes
 from typing import Any
 
 import discord
-from discord import app_commands
 from discord.ext import commands
+from discord import app_commands, Interaction, Attachment
 
 import constants as cs
 from core import BaseCog, Context, Dwello, Embed
-from utils import ENV, resize_discord_file
+from utils import ENV, resize_discord_file, BlackJackView
 
 
 Choice = app_commands.Choice
 
 JEYY_KEY = ENV['JEYY_API_KEY']
+
+# could use with app_commands.describe
+'''SLASH_PARAM_DESCRIPTIONS = {
+    "resize": {
+        "attachment": "An image with one of the common image extensions.",
+        "width": "Width of an image.",
+        "height": "Height of an image.",
+    },
+    "member": "Any member within this guild."
+}'''
+
 
 class Fun(BaseCog):
     def __init__(self, bot: Dwello, *args: Any, **kwargs: Any) -> None:
@@ -57,14 +68,35 @@ class Fun(BaseCog):
             return await ctx.reply("No subreddit found.", user_mistake=True)
 
         return _data
+    
+    @commands.hybrid_command(
+        name="blackjack",
+        brief="Play a game of blackjack.",
+        description="Play a game of blackjack.",
+        with_app_command=True,
+    )
+    async def blackjack(self, ctx: Context, bet: int = 100) -> None:
+        """
+        Not done yet. Should be a multiplayer. If no player found - play against the bot.
+        Maybe put some global bot money at stake. Or put on the items you bought on the global market
+        if you don't have enough money or smh.
+        """
+        view = BlackJackView(player=ctx.author, bet=bet)
+        return await view.start(ctx) # multiplayer | and test it beforehand
 
     @commands.hybrid_command(
         name="gif",
-        help="Returns a GIF. | Accepts multiple languages.",
+        brief="Returns a requested GIF.",
+        description="Returns a requested GIF.",
         aliases=["tenor"],
         with_app_command=True,
     )
     async def gif(self, ctx: Context, *, gif: str = "dankmeme") -> discord.Message | None:
+        """
+        Returns a GIF from the provided text input.
+        If the command encounters an error, it likely originates from the API it relies on.
+        This feature can handle various languages in the input text thanks to its integration with Tenor's API.
+        """
         key: str = ENV["TENOR_KEY"]
         limit: int = 1
         ckey: str = self.bot.user.id
@@ -95,11 +127,20 @@ class Fun(BaseCog):
 
         return await ctx.reply(embed=embed)
 
-    @commands.hybrid_command(name="meme", help="Returns a subreddit meme.", with_app_command=True)
+    @commands.hybrid_command(
+        name="meme",
+        brief="Returns a subreddit meme.",
+        description="Returns a subreddit meme.",
+        with_app_command=True,
+    )
     async def meme(self, ctx: Context) -> discord.Message | None:
+        """
+        Returns a subreddit (dank)meme.
+        Originates from the `reddit` command.
+        """
         data = await self.retrieve_subreddit(ctx, "dankmeme")
         if isinstance(data, discord.Message):
-            return
+            return # could do the error hadling in here instead of that func
 
         dt: datetime.datetime = datetime.datetime.utcfromtimestamp(data["created_utc"])
         embed: Embed = Embed(
@@ -113,8 +154,22 @@ class Fun(BaseCog):
 
         return await ctx.reply(embed=embed)
 
-    @commands.hybrid_command(name="reddit", help="Returns a subreddit.", with_app_command=True)
+    @commands.hybrid_command(
+        name="reddit",
+        brief="Returns a subreddit.",
+        description="Returns a subreddit.",
+        with_app_command=True,
+    )
     async def reddit(self, ctx: Context, subreddit: str) -> discord.Message | None:
+        """
+        Returns a subreddit of your choosing.
+        Sometimes the subreddit can't be found, because it simply doesn't exist.
+        But you can just provide a different input (subreddit name) and call it a day.
+        If the command encounters an error, it likely originates from the API it relies on.
+        This feature uses the original [Reddit API](<https://www.reddit.com/dev/api/>).
+        This, free at the moment, API might become chargeable in the future.
+        In which case this command might be removed permanently or disabled for a while.
+        """
         data: dict[str, Any] = await self.retrieve_subreddit(ctx, subreddit)
         if isinstance(data, discord.Message):
             return
@@ -140,12 +195,24 @@ class Fun(BaseCog):
     @commands.guild_only()
     @app_commands.guild_only()
     @app_commands.describe(member="The member of whom you want to see what they are listening too.")
+    # add this everywhere probably ^ | globalize
+    # check what it does first
     @commands.hybrid_command(
-        name="spotify",
-        help="Shows the song member is listening to.",
+        name="spotify", # could set in bot.py
+        brief="Shows the song member is listening to.",
+        description="Shows the song member is listening to.",
         with_app_command=True,
     )
     async def spotify(self, ctx: Context, *, member: discord.Member = commands.Author) -> discord.Message | None:
+        """
+        This feature lets you see what a member is currently listening to, if that member connected their
+        Spotify account to discord.
+        If someone isn't listening to anything at the moment, it will let you know.
+        But if they are, you'll get a cool preview of the song, complete with the artist's name, song title,
+        and when they started listening.
+        This cool preview is powered by the [JEYY API](<https://api.jeyy.xyz/dashboard/landing>),
+        and I want to give a big shoutout to Jeyy for making this possible. Thanks, Jeyy!
+        """
         if ctx.interaction:
             member: discord.Member = ctx.guild.get_member(member.id)
             await ctx.defer()
@@ -190,8 +257,17 @@ class Fun(BaseCog):
         return await ctx.reply(embed=embed, file=file)
 
     # maybe add difflib later to search based on query or just use some api
-    @commands.hybrid_command(name="quote", help="Returns a random quote.", with_app_command=True)
+    @commands.hybrid_command(
+        name="quote",
+        brief="Returns a random quote.",
+        description="Returns a random quote.",
+        with_app_command=True,
+    )
     async def quote(self, ctx: Context) -> discord.Message: # *, query: str | None
+        """
+        Provides a random quote for now, but there's a possibility of integrating an API in the future.
+        With this enhancement, you'll be able to specify keywords to find quotes related to your input.
+        """
         async with aiofiles.open("storage/datasets/quotes.json") as file:
             data: list = json.loads(await file.read())
         choice: dict = random.choice(data)
@@ -199,8 +275,19 @@ class Fun(BaseCog):
         author = choice.get("quoteAuthor") or "Unknown"
         return await ctx.reply(f'*"{text}"* - **{author}**')
     
-    @commands.hybrid_command(name="filter", help="Gives chosen effect to member's avatar.", with_app_command=True)
+    @commands.hybrid_command(
+        name="filter",
+        brief="Gives chosen effect to member's avatar.",
+        description="Gives chosen effect to member's avatar.",
+    )
     async def filter(self, ctx: Context, member: discord.Member, option: str) -> discord.Message:
+        """
+        Applies a filter of your choice to an image. Currently only accepts member's avatar as that image.
+        There are currently 83 filters you can apply. I would recommend only using this as a slash command
+        since there are currently no complete docs on every option.
+        """
+        # em, basically store description of each filter in JEYY_DICT too, but display every option on the website instead
+        # cause embed will exceed its length otherwise
         if option not in cs.JEY_API_DICT:
             return await ctx.reply(
                 "Sorry, we don't have that option. Please use slash command for more optimal use.", user_mistake=True,
@@ -209,18 +296,52 @@ class Fun(BaseCog):
         url = f"https://api.jeyy.xyz/v2/image/{option}?image_url={member.display_avatar.url}"
         async with self.bot.http_session.get(url=url, headers=self.jeyy_headers) as response:
             buffer = io.BytesIO(await response.read())
-        return await ctx.reply(file=discord.File(buffer, "filter.png"))
+        return await ctx.reply(file=discord.File(buffer, "filter.gif"))
 
     @filter.autocomplete("option")
     async def autocomplete_callback_twitch_remove(self, _: discord.Interaction, current: str):
         return await self.bot.autocomplete(current, list(cs.JEY_API_DICT.items()), choice_length=25)
-
+    
+    async def _resize(
+        self, attachments: list[discord.Attachment | discord.File], _width: int = 500, _height: int = 500,
+    ) -> list[discord.File]:
+        files: list[discord.File] = []
+        for attachment in attachments:
+            if isinstance(attachment, discord.File):
+                file = attachment
+            else:
+                file = await attachment.to_file(filename=attachment.filename)
+            extension = re.search(r'\.[^.]+$', file.filename) # might need to adjust
+            if (extension:= extension.group(0)) not in cs.IMAGE_EXTENSIONS: # check which ones are supported by PIL
+                raise ValueError(extension)
+            files.append(await asyncio.to_thread(resize_discord_file, file, (_width, _height), extension))
+        return files
+    
+    @app_commands.command(name="resize", description="Resizes an image.")
+    #@app_commands.describe(**SPD.get("resize"))
+    async def app_resize(self, interaction: Interaction, attachment: Attachment, width: int, height: int) -> discord.Message:
+        await interaction.response.defer(thinking=True)
+        try:
+            files = await self._resize([attachment], width, height)
+        except ValueError as ve:
+            return await interaction.followup.send(f"Sorry, we currently don't support this file type: {ve}")
+        return await interaction.followup.send(files=files)
+    
     # maybe a context menu but hard cause you need to provide width and height etc
-    @commands.hybrid_command(name="resize", help="Resizes an image.", with_app_command=True)
+    @commands.command(name="resize", brief="Resizes an image.")
     async def resize(self, ctx: Context, width: int, height: int) -> discord.Message:
+        """
+        This command resizes images,
+        accepting one attachment with the slash command or multiple (up to 10) images attached to the command prefix,
+        including replies and embedded images in messages.
+        It utilizes the [PIL](<https://pillow.readthedocs.io/en/stable/>) library
+        and processing time may vary based on the number of attachments and bot load.
+        """
+
         # option 1: provide attachments in the same message
         # option 2: reply to a message with attachments
         # option 3: reply to a message with embeds that contain images
+
         if not (attachments:=ctx.message.attachments):
             if not (reference:= ctx.message.reference):
                 return await ctx.reply(
@@ -241,17 +362,10 @@ class Fun(BaseCog):
                 return await ctx.reply(
                     "Sorry, this message contains no attachments. And if it does, then please download it and give it to me."
                 )
-        
         await ctx.defer()
-        files: list[discord.File] = []
-        attachments: list[discord.Attachment | discord.File]
-        for attachment in attachments[:10]: # cause 10 is max to return
-            if isinstance(attachment, discord.File):
-                file = attachment
-            else:
-                file = await attachment.to_file(filename=attachment.filename)
-            extension = re.search(r'\.[^.]+$', file.filename) # might need to adjust
-            if (extension:= extension.group(0)) not in cs.IMAGE_EXTENSIONS: # check which ones are supported by PIL
-                return await ctx.reply(f"Sorry, we currently don't support this file type: {extension}", user_mistake=True)
-            files.append(await asyncio.to_thread(resize_discord_file, file, (width, height), extension))
+        try:
+            files = await self._resize(attachments[:10], width, height)
+        except ValueError as ve:
+            return await ctx.reply(f"Sorry, we currently don't support this file type: {ve}", user_mistake=True)
+        
         return await ctx.reply(files=files)

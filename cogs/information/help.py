@@ -6,6 +6,8 @@ import datetime
 import difflib
 import inspect
 import io
+import re
+import random
 import itertools
 import os
 import time
@@ -15,7 +17,6 @@ from typing import Any, TypeVar
 import discord
 import psutil
 import pygit2
-from asyncio import to_thread
 from discord import Interaction, app_commands
 from discord.enums import ButtonStyle
 from discord.ext import commands
@@ -25,7 +26,7 @@ from typing_extensions import override
 
 import constants as cs
 from core import Context, Dwello, Embed
-from utils import DefaultPaginator, Idea, create_codeblock, resize_discord_file
+from utils import DefaultPaginator, Idea, Guild, create_codeblock, resize_from_url
 
 from .news import NewsViewer
 
@@ -38,6 +39,13 @@ newline = "\n"
 async def setup(bot: Dwello) -> None:
     await bot.add_cog(About(bot))
 
+
+def average_execution_time(command: commands.Command) -> float:
+    """To get the average execution time of any command."""
+    # implement into help command for individual commands (thus not groups)
+    # for groups you could have like average time by combining average times of all
+    # commands within that groups and getting their average
+    return round(sum(num for num in command.extras["execution_times"]) / len(command.extras["execution_times"]), 3)
 
 class HelpCentre(discord.ui.View):
     def __init__(
@@ -407,20 +415,38 @@ class MyHelp(commands.HelpCommand):
         await view.start()
 
     async def send_command_help(self, command: commands.Command):
+        desc = " ".join((command.help or command.description or "No help given...").splitlines())
         embed = Embed(
             title=f"`{self.context.clean_prefix}{command}`",
-            description="**Description:**\n"
-            + (command.help or command.description or "No help given...").replace("%PRE%", self.context.clean_prefix),
+            description="**Description:**\n" + desc.replace("%PRE%", self.context.clean_prefix),
         )
+        # command.help basically default to docstring if its empty, so might aswell keep it that way
+        # or could get help string from the cmd dict instead and set it in bot.py
+        # instead of writing the docstrings
+        # endgoal is the same so idk
         embed.add_field(
             name="Command usage:",
             value=f"```css\n{self.get_minimal_command_signature(command)}\n```",
+            inline=False,
         )
-        try:
-            preview = command.__original_kwargs__["preview"]
-            embed.set_image(url=preview)  #
-        except KeyError:
-            pass
+        embed.add_field(
+            name="Average execution time:",
+            value=f"```css\n{average_execution_time(command)}ms\n```",
+            inline=False,
+        )
+        embed.add_field(
+            name="Times executed:",
+            value=f"```css\n{command.extras['times_executed']}\n```",
+            inline=False,
+        )
+        with contextlib.suppress(KeyError): # any guild-related exceptions (orm i mean)
+            if (await Guild.get(self.context.guild.id, self.context.bot)).cmd_preview:
+                preview = None # maybe store extention in a dict too
+                if (_url:= command.extras["preview"]): # add previews to most commands ig
+                    async with self.context.bot.reaction_typing(self.context.message):
+                        extension = re.search(r'\.([^.?/]+)(?:\?|$)', _url) # takes too long | find the fastest way or make a customisation option   # noqa: E501
+                        preview = await asyncio.to_thread(resize_from_url, _url, (700, 350), extension.group(0))
+                        embed.set_image(url=f"attachment://{preview.filename}")
         if command.aliases:
             embed.description = f'{embed.description}\n\n**Aliases:**\n`{"`, `".join(command.aliases)}`'
         try:
@@ -478,7 +504,7 @@ class MyHelp(commands.HelpCommand):
                 )
                 print(f"{command} failed to execute: {exc}")
         finally:
-            await self.context.send(embed=embed)
+            await self.context.send(file=preview, embed=embed)
 
     async def send_cog_help(self, cog: commands.Cog):
         if entries := cog.get_commands():
@@ -662,7 +688,9 @@ class About(commands.Cog):
         help_command.command_attrs = {
             "help": "Shows help about a command or category, it can also display other useful information, such as "
             "examples on how to use the command, or special syntax that can be used for a command, for example, "
-            "in the `welcome message` command, it shows all available special tags.",
+            "in the `welcome message` command, it shows all available special tags. So, if you have a trouble "
+            "with a command you can just type it's full name when using a help command, or a name of the group, "
+            "the command is bound to, to get a general idea about it's usage.",
             "name": "help",
         }
         help_command.cog = self
@@ -725,13 +753,18 @@ class About(commands.Cog):
     # make uptime: add here -> trigger on mention in on_message
     @commands.hybrid_command(name="hello", aliases=cs.HELLO_ALIASES, with_app_command=True)
     async def hello(self, ctx: Context) -> discord.Message | None:
-        # make variations for the response
-        prefix: str = str(self.bot.DEFAULT_PREFIXES[0])
-        content: str = f"Hello there! I'm {self.bot.user.name}. Use `{prefix}help` for more."  # {self.bot.help_command}?
-        return await ctx.send(content=content)  # display more info about bot
+        """Hello there!"""
 
-    @commands.hybrid_command(name="about", help="About me.", aliases=["botinfo", "info", "bi"], with_app_command=True)
+        return await ctx.send(
+            content=random.choice(cs.HELLO_RESPONSES).format(
+                name=self.bot.user.name, prefix=f"`{self.bot.DEFAULT_PREFIXES[0]}`",
+            ),
+        ) # display more info about bot
+
+    @commands.hybrid_command(name="about", aliases=["botinfo", "info", "bi"], with_app_command=True)
     async def about(self, ctx: Context) -> discord.Message | None:
+        """Some info about me and the creators!"""
+
         # information: discord.AppInfo = await self.bot.application_info()
         author: discord.User = self.bot.get_user(548846436570234880)
 
@@ -794,102 +827,6 @@ class About(commands.Cog):
 
         return await ctx.send(embed=embed)
 
-    # maybe add a button, so itll also display member's lvl, xp, rank, money... from global user
-    @commands.hybrid_command(name="whois", help="Shows who the member is.")
-    async def whois(self, ctx: Context, member: discord.Member = commands.Author) -> discord.Message | None:
-        # embed.add_field(name="Display Name", value=member.display_name) if member.display_name != member.name else None
-        # embed.add_field(name="Discriminator", value=member.discriminator) get initial discriminator and not 0
-        await ctx.defer()
-        _user = await self.bot.fetch_user(member.id)
-        banner, _ext = None, None
-        if _user.banner:
-            _file = await _user.banner.to_file(filename="banner")
-            _ext = ".gif" if _user.banner.is_animated() else ".png"
-            banner = await to_thread(resize_discord_file, _file, (800, 300), _ext)
-
-        return await ctx.reply(
-            file=banner,
-            embed=Embed(
-                title=f"Info on {member.name}",
-                description="",
-                timestamp=discord.utils.utcnow(),
-                color=_user.accent_color or member.color,
-            )
-            .set_image(url=f"attachment://banner{_ext}" if banner else None) # change width in pil maybe some day
-            .set_footer(text=f"ID: {member.id}", icon_url=member.display_icon.url if member.display_icon else None)
-            .set_author(name=member.name, icon_url=member.display_avatar.url)
-            .set_thumbnail(url=member.display_avatar.url)
-            .add_field(name="Name", value=member.name)
-            .add_field(name="Created", value=discord.utils.format_dt(member.created_at, style="D"))
-            .add_field(name="Joined", value=discord.utils.format_dt(member.joined_at, style="D"))
-            .add_field(
-                name="Top Role",
-                value=member.top_role.mention if member.top_role.name != "@everyone" else member.top_role.name,
-            )
-            .add_field(name="Device", value="Desktop" if member.desktop_status else "Mobile")
-            .add_field(name="Status", value=member.status)
-            .add_field(
-                name="Flags",
-                value=(
-                    str(" ".join(
-                        emoji for f in member.public_flags.all() if (emoji := cs.PUBLIC_USER_FLAGS_EMOJI_DICT.get(f.name))
-                    ).split()).replace("[","").replace("]", "").replace("'","").replace(",", "")
-                    or None
-                ),
-            )
-            .add_field(
-                name="Assets",
-                value=(
-                    f"{f'[Avatar]({member.avatar.url})' if member.avatar else ''}"
-                    f"{f'[Banner]({member.banner.url})' if member.banner else ''}"
-                    f"{f'[Guild Avatar]({member.guild_avatar.url})' if member.guild_avatar else ''}"
-                ),
-            )
-            .add_field(name="Custom Status", value=f"{member.activity.name}" if member.activity is not None else None)
-            .add_field(
-                name="Activities",
-                value=(
-                    "\n".join(
-                        [
-                            f"Gaming: {game.name[:15] + '...' if game and len(game.name) > 15 else game.name}"
-                            if (
-                                game := discord.utils.find(
-                                    lambda activity: isinstance(activity, discord.Game),
-                                    member.activities,
-                                )
-                            )
-                            else "",
-                            (
-                                f"Listening: "
-                                f"[{spotify.title[:15] + '...' if spotify and len(spotify.title) > 15 else spotify.title}]"
-                                f"({spotify.track_url})"
-                            )
-                            if (
-                                spotify := discord.utils.find(
-                                    lambda activity: isinstance(activity, discord.Spotify),
-                                    member.activities,
-                                )
-                            )
-                            else "",
-                            (
-                                f"Streaming: "
-                                f"[{streaming.twitch_name or (streaming.name[:15] + '...' if len(streaming.name) > 15 else streaming.name)}]"  # noqa: E501
-                                f"({streaming.url})"
-                            )
-                            if (
-                                streaming := discord.utils.find(
-                                    lambda activity: isinstance(activity, discord.Streaming),
-                                    member.activities,
-                                )
-                            )
-                            else "",
-                        ]
-                    ).strip("\n")
-                    or None
-                ),
-            ),
-        )
-
     async def _suggest_idea(self, ctx: Context, title: str, content: str) -> discord.Message | None:
         idea = await self.bot.db.suggest_idea(title, content, ctx.author)
         # also somehow check if the ideas are similair
@@ -905,31 +842,54 @@ class About(commands.Cog):
             return await ctx.reply(embed=Embed(description="No ideas yet."))
         return await IdeaPaginator.start(ctx, ideas)
 
-    @commands.hybrid_command(name="ideas", help="Shows the list of suggested ideas.", with_app_command=True)
+    @commands.hybrid_command(
+        name="ideas",
+        brief="Shows the list of suggested ideas.",
+        description="Shows the list of suggested ideas.",
+    )
     async def ideas(self, ctx: Context) -> discord.Message | None:
+        """Should show some of the newest ideas people suggested."""
         return await self._ideas_show(ctx)
 
     # somehow check if ideas is bullshit or not
     # maybe ai or smh
     # or a dict of 'bad' words instead
-    @commands.hybrid_command(name="suggest", help="Suggest an idea for bot improvement.")  # call a modal here
+    @commands.hybrid_command(
+        name="suggest",
+        brief="Suggest an idea for bot improvement.",
+        description="Suggest an idea for bot improvement.",
+    )  # call a modal here
     async def suggest(self, ctx: Context, title: str, *, content: str) -> discord.Message | None:
+        """Suggest an idea, so we can improve our bot!"""
         return await self._suggest_idea(ctx, title, content)
 
     @commands.hybrid_group(name="idea", invoke_without_command=True, with_app_command=True)
     async def idea(self, ctx: Context):
+        """Idea command group that contains some commands for suggesting and displaying suggested ideas."""
         return await ctx.send_help(ctx.command)
 
-    @idea.command(name="suggest", help="Suggest an idea for bot improvement.")
+    @idea.command(
+        name="suggest",
+        brief="Suggest an idea for bot improvement.",
+        description="Suggest an idea for bot improvement.",
+    )
     async def hybrid_suggest(self, ctx: Context, title: str, *, content: str) -> discord.Message | None:
+        """Suggest an idea, so we can improve our bot!"""
         return await self._suggest_idea(ctx, title, content)
 
-    @idea.command(name="show", aliases=["display"], help="Shows the list of suggested ideas.")
+    @idea.command(
+        name="show", aliases=["display"],
+        brief="Shows the list of suggested ideas.",
+        description="Shows the list of suggested ideas.",
+    )
     async def hybrid_show_idea(self, ctx: Context) -> discord.Message | None:
+        """Should show some of the newest ideas people suggested."""
         return await self._ideas_show(ctx)
 
     @commands.hybrid_command(name="uptime", help="Returns bot's uptime.", with_app_command=True)
     async def uptime(self, ctx: Context) -> discord.Message | None:
+        """Returns bot's uptime."""
+
         timestamp = self.get_startup_timestamp()
 
         embed: Embed = Embed(
@@ -942,19 +902,23 @@ class About(commands.Cog):
     
     @commands.hybrid_command(name="invite", help="Please invite me.", with_app_command=True)
     async def invite(self, ctx: Context) -> discord.Message | None:
+        """Invite me PLEASE!"""
         return await ctx.reply(f"[invite me](<{cs.INVITE_LINK}>)")
 
     @commands.hybrid_command(name="contribute", help="Please do.", with_app_command=True)
     async def contribute(self, ctx: Context) -> discord.Message | None:
+        """And contribute... begging you."""
         return await ctx.reply(f"{cs.GITHUB_EMOJI} {cs.GITHUB}\nJoin my [guild](<{cs.DISCORD}>) for more.")
 
     @commands.hybrid_command(
         name="ping",
+        brief="Pong.",
+        description="Pong.",
         aliases=["latency", "latencies"],
-        help="Pong.",
-        with_app_command=True,
     )
     async def ping(self, ctx: Context) -> discord.Message | None:  # work on return design?
+        """Returns some boring-ass latencies."""
+
         typing_start = time.monotonic()
         await ctx.typing()
         typing_end = time.monotonic()
@@ -989,8 +953,14 @@ class About(commands.Cog):
             ),
         )
 
-    @commands.hybrid_command(name="stats", help="Returns some of the bot's stats", with_app_command=True)
+    @commands.hybrid_command(
+        name="stats",
+        brief="Returns some of the bot's stats",
+        description="Returns some of the bot's stats",
+    )
     async def stats(self, ctx: Context) -> discord.Message | None:
+        """Some statistics depicting what I've done."""
+
         typing_start = time.monotonic()
         await ctx.typing()
         typing_end = time.monotonic()
@@ -1035,13 +1005,30 @@ class About(commands.Cog):
             .add_field(name="Responses", value=self.bot.reply_count or 1)
             .add_field(name="Lines", value=self.bot.total_lines)
             .add_field(name="Latency", value=f"{round(self.get_average_latency(typing_ms, latency_ms, postgres_ms), 3)}ms")
+            .add_field(name="Average cmd latency", value=f"{round(self.bot.average_command_execution_time, 3)}ms")
             .add_field(name="Uptime", value=self.get_uptime(complete=True))
         )
         # embed.add_field(name='Total Commands', value=len(self.bot.commands)) ?
         return await ctx.reply(embed=embed)
+    
+    @commands.command(name="git", brief="Returns repository.")
+    async def git(self, ctx: Context) -> discord.Message | None:
+        """Bot's GitHub repository."""
+        return await ctx.send(cs.GITHUB)
 
-    @commands.hybrid_command(name="source", help="Returns command's source.", with_app_command=True)
-    async def source(self, ctx: Context, *, command_name: str | None) -> discord.Message | None:
+    @commands.hybrid_command(
+        name="source",
+        aliases=["src"],
+        brief="Returns command's source.",
+        description="Returns command's source.",
+    )
+    async def source(self, ctx: Context, *, command_name: str | None) -> discord.Message | SourceView | None:
+        """
+        Provides the option to retrieve either the complete repository link or
+        a targeted link directing to a specific command or cog.
+        It also offers the ability to showcase code in either an embed or file format.
+        """
+
         git = cs.GITHUB
         if not command_name:
             return await ctx.reply(git)
@@ -1117,7 +1104,7 @@ class About(commands.Cog):
             description=source_link,
         )
 
-        await SourceView.start(ctx, embed, lines, filename=f"{command_name}.py")
+        return await SourceView.start(ctx, embed, lines, filename=f"{command_name}.py")
 
 
 # I DONT LIKE THIS AT ALL | maybe redo
@@ -1274,7 +1261,7 @@ class ShowFileButton(discord.ui.Button["SourceView"]):
 _Context: type[commands.Context] = commands.Context
 
 
-class SourceView(discord.ui.View):
+class SourceView(discord.ui.View): # from our view or just default discord?
     def __init__(
         self,
         obj: Context | Interaction[Dwello],

@@ -4,7 +4,6 @@ import contextlib
 from typing import TYPE_CHECKING, Any, TypeVar, Literal, overload
 
 import discord
-from discord import Interaction, Member, User
 from discord.ext.commands.context import Context as _Context
 from discord.ui import View
 
@@ -12,6 +11,8 @@ from .embed import NewEmbed as Embed
 
 if TYPE_CHECKING:
     from core import Context, Dwello
+    from discord import Interaction, Member
+    from discord import User as _User
 
 NVT = TypeVar("NVT", bound="NewView")
 
@@ -43,11 +44,11 @@ class NewView(View):
     ) -> None:
         super().__init__(timeout=timeout)
 
-        self.kwargs = kwargs
+        self.__send_kwargs__ = kwargs
 
         self.bot: Dwello | None = None
         self.ctx: Context | None = None
-        self.author: Member | User | Any | None = None
+        self.author: Member | _User | Any | None = None
         self.interaction: Interaction = None
 
         if obj:
@@ -62,7 +63,7 @@ class NewView(View):
                 self.bot = obj.client
                 self.interaction = obj
 
-        self.message: discord.Message = None
+        self.message: discord.Message | None = None
 
     async def from_context(self) -> Any:  # should be rewritten when creating new view
         return await self.send()
@@ -80,12 +81,12 @@ class NewView(View):
 
     async def send(self) -> discord.Message | None:
         if self.ctx:
-            return await self.ctx.reply(view=self, **self.kwargs)
+            return await self.ctx.reply(view=self, **self.__send_kwargs__)
         else:
-            return await self.interaction.response.send_message(view=self, **self.kwargs)
+            return await self.interaction.response.send_message(view=self, **self.__send_kwargs__)
 
     async def interaction_check(self, interaction: Interaction[Dwello]) -> Literal[True] | discord.Message:
-        if val := interaction.user == self.author:
+        if val := interaction.user.id == self.author.id:
             return val
 
         return await interaction.response.send_message(

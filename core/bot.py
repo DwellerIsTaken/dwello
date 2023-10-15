@@ -1,18 +1,34 @@
 from __future__ import annotations
 
 import asyncio
+import aiohttp
+import asyncpg
+import discord
+import aiofiles
 import datetime
 import logging
 import os
 import re
 import sys
-from typing import TYPE_CHECKING, Any, ClassVar, Generic, List, Optional, Set, Tuple, TypeVar, Union, overload  # noqa: F401
 
-import aiohttp
-import asyncpg
-import discord
 from discord.ext import commands
 from typing_extensions import override
+
+from typing import (
+    TYPE_CHECKING,
+    Any,
+    List,  # noqa: F401
+    Set,  # noqa: F401
+    ClassVar,
+    Generic,
+    Generator,
+    Optional,
+    Tuple,  # noqa: F401
+    Type,
+    TypeVar,
+    Union,  # noqa: F401
+    overload,
+)
 
 if os.name == "nt":
     asyncio.set_event_loop_policy(asyncio.WindowsSelectorEventLoopPolicy())
@@ -24,21 +40,28 @@ else:
     else:
         asyncio.set_event_loop_policy(uvloop.EventLoopPolicy())
 
-import constants as cs
+from constants import GITHUB, TYPING_EMOJI, COMMAND_PREVIEW_DICT
 from utils import NewEmbed as Embed
 from utils import NewTranslator as Translator
-from utils import NewView as View  # noqa: F401
 from utils import get_avatar_dominant_color
+from utils import ENV, DataBaseOperations, Twitch
 
-from ._utils import ENV, AiohttpWeb, DataBaseOperations, Twitch
+from .web import AiohttpWeb as Web
 from .context import NewContext as Context
+from .context import NewView as View # noqa: F401
 
 if TYPE_CHECKING:
     from asyncpg import Connection, Pool
     from asyncpg.transaction import Transaction
 
+if TYPE_CHECKING:
+    from discord.abc import Message
+    from types import TracebackType
+
+    BE = TypeVar('BE', bound=BaseException)
+    DCT = TypeVar("DCT", bound=Context)
+
 DBT = TypeVar("DBT", bound="Dwello")
-DCT = TypeVar("DCT", bound="Context")
 
 Choice = discord.app_commands.Choice
 
@@ -65,7 +88,6 @@ extensions: list[str] = [
     "cogs.todo",
     "cogs.other.owner",
     "cogs.other",
-    "utils.error",
 ]
 
 
@@ -96,15 +118,33 @@ def countlines(directory: str, /, lines=0, ext=".py", skip_blank=False):
     return lines
 
 
+async def count_others(
+    # to count classes and funcs (for about cmd)
+    # Examples:
+    # await count_others('./', '.py', 'def ')"
+    # await count_others('./', '.py', 'class ')
+    path: str,
+    filetype: str = ".py",
+    file_contains: str = "def",
+    skip_venv: bool = True,
+):
+    line_count = 0
+    for i in os.scandir(path):
+        if i.is_file():
+            if i.path.endswith(filetype):
+                if skip_venv and re.search(r"(\\|/)?venv(\\|/)", i.path):
+                    continue
+                line_count += len(
+                    [line for line in (await (await aiofiles.open(i.path, "r")).read()).split("\n") if file_contains in line]
+                )
+        elif i.is_dir():
+            line_count += await count_others(i.path, filetype, file_contains)
+    return line_count
+
+
 # GLOBAL CHECKS
 def blacklist_check(ctx: Context) -> bool:
     return not ctx.bot.is_blacklisted(ctx.author.id)
-
-
-# CONTEXT MENUS
-# Example
-"""async def my_cool_context_menu(interaction: discord.Interaction, message: discord.Message):
-    await interaction.response.send_message("Very cool message!", ephemeral=True)"""
 
 
 class ContextManager(Generic[DBT]):
@@ -141,6 +181,26 @@ class ContextManager(Generic[DBT]):
             await self._pool.release(self._conn)
 
 
+class ReactionTyping:
+    def __init__(self, _bot: Dwello, _message: Message) -> None:
+        self.message: Message = _message
+        self.author: discord.ClientUser = _bot.user
+
+    def __await__(self) -> Generator[None, None, None]:
+        return self.message.add_reaction(TYPING_EMOJI).__await__()
+
+    async def __aenter__(self) -> None:
+        await self.message.add_reaction(TYPING_EMOJI)
+
+    async def __aexit__(
+        self,
+        exc_type: Optional[Type[BE]],
+        exc: Optional[BE],
+        traceback: Optional[TracebackType],
+    ) -> None:
+        await self.message.remove_reaction(TYPING_EMOJI, self.author)
+
+
 class Dwello(commands.AutoShardedBot):
     user: discord.ClientUser
     DEFAULT_PREFIXES: ClassVar[list[str]] = ["dw.", "Dw.", "dwello.", "Dwello."]
@@ -168,7 +228,7 @@ class Dwello(commands.AutoShardedBot):
         self.pool = pool
         self.http_session = session
 
-        self.repo = cs.GITHUB
+        self.repo = GITHUB
 
         self.reply_count: int = 0
         self.commands_executed: int = 0
@@ -180,6 +240,7 @@ class Dwello(commands.AutoShardedBot):
 
         self.blacklisted_users: dict[int, str] = {}
         self.bypass_cooldown_users: list[int] = []
+        self.execution_times: list[float] = []
 
         self.cooldown: commands.CooldownMapping[discord.Message] = commands.CooldownMapping.from_cooldown(
             1,
@@ -190,7 +251,7 @@ class Dwello(commands.AutoShardedBot):
         # redo except db
         self.db: DataBaseOperations = DataBaseOperations(self)
         # maybe make it a pool if no funcs (that are bound to this db class) are triggered?
-        self.web = AiohttpWeb(self)
+        self.web = Web(self)
 
         # Caching Variables (for now)
         # TODO: Use LRU Cache
@@ -207,6 +268,16 @@ class Dwello(commands.AutoShardedBot):
     @property
     def main_prefix(self) -> str:
         return self.DEFAULT_PREFIXES[0]
+    
+    @property
+    def average_command_execution_time(self) -> float:
+        _all = 0.0
+        for num in self.execution_times:
+            _all += num
+        try:
+            return _all / len(self.execution_times)
+        except ZeroDivisionError:
+            return 100.0
 
     async def setup_hook(self) -> None:
         try:
@@ -217,6 +288,13 @@ class Dwello(commands.AutoShardedBot):
                 await self.load_extension(ext, _raise=False)
         except Exception as e:
             raise e
+        
+        for command in self.walk_commands():
+            if isinstance(command, commands.Command):
+                command.extras["execution_times"] = [500.0]
+                command.extras["times_executed"] = 0
+                if (key:= command.qualified_name) in COMMAND_PREVIEW_DICT:
+                    command.extras["preview"] = COMMAND_PREVIEW_DICT.get(key)
 
         self.tables = await self.db.create_tables()
         #self.db_data = await self.db.fetch_table_data()
@@ -262,7 +340,7 @@ class Dwello(commands.AutoShardedBot):
     def is_blacklisted(self, user_id: int) -> bool:
         return user_id in self.blacklisted_users  # rewrite member and user and put it there as a property
     
-    async def autocomplete(
+    def autocomplete(
         self, current: Any, names_and_values: list[tuple[Any, Any]], *, choice_length: int = 5,
     ) -> list[Choice]:
         # 25 choices is max
@@ -274,6 +352,9 @@ class Dwello(commands.AutoShardedBot):
             if current.startswith(str(name).lower()[:item]):
                 choices.append(Choice(name=name, value=value))
         return choices[:choice_length if choice_length < 26 else 25]
+    
+    def reaction_typing(self, message: Message) -> ReactionTyping:
+        return ReactionTyping(self, message)
 
     @override
     async def get_context(self, message, *, cls: Any = Context):
@@ -282,12 +363,15 @@ class Dwello(commands.AutoShardedBot):
     @override
     async def get_prefix(self, message: discord.Message) -> list[str]:
         prefixes = []
-        if guild_prefixes := self.guild_prefixes.get(message.guild.id):  # type: ignore
-            prefixes.extend(guild_prefixes)
-        else:
-            prefixes.extend(self.DEFAULT_PREFIXES)
+        if message.guild:
+            if guild_prefixes := self.guild_prefixes.get(message.guild.id):  # type: ignore
+                prefixes.extend(guild_prefixes)
+            else:
+                prefixes.extend(self.DEFAULT_PREFIXES)
 
-        if await self.is_owner(message.author) and guild_prefixes:
+            if await self.is_owner(message.author) and guild_prefixes:
+                prefixes.extend(self.DEFAULT_PREFIXES) # ?
+        else:
             prefixes.extend(self.DEFAULT_PREFIXES)
 
         # override or extend

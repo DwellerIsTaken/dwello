@@ -23,7 +23,20 @@ CREATE TABLE IF NOT EXISTS guilds(
 CREATE TABLE IF NOT EXISTS guild_config( --contains booleans only
     guild_id BIGINT PRIMARY KEY REFERENCES guilds(id),
     counter_category_denied BOOLEAN DEFAULT NULL,
-    turn_link_into_message BOOLEAN DEFAULT FALSE
+    turn_link_into_message BOOLEAN DEFAULT FALSE,
+    antispam BOOLEAN DEFAULT TRUE,
+    antispam_mention_count BIGINT DEFAULT 5,
+    cmd_preview BOOLEAN DEFAULT TRUE,
+    cmd_matches BOOLEAN DEFAULT TRUE,
+    reactions_on_command BOOLEAN DEFAULT FALSE,
+    delete_button BOOLEAN DEFAULT FALSE,
+    delete_button_after BIGINT DEFAULT 180,
+    delete_reaction_after BIGINT DEFAULT 5,
+    delete_invoker_message_after BIGINT DEFAULT NULL,
+    verification BOOLEAN DEFAULT FALSE,
+    personal_notifications BOOLEAN DEFAULT TRUE,
+    only_reply BOOLEAN DEFAULT TRUE,
+    only_ephemeral BOOLEAN DEFAULT FALSE
 );
 
 CREATE TABLE IF NOT EXISTS ideas(
@@ -88,7 +101,13 @@ CREATE TABLE IF NOT EXISTS users(
     messages BIGINT DEFAULT 0,
     total_xp BIGINT DEFAULT 0,
     money BIGINT DEFAULT 0,
-    worked BOOLEAN NOT NULL DEFAULT FALSE
+    worked BOOLEAN NOT NULL DEFAULT FALSE,
+    command_count BIGINT DEFAULT 0
+);
+
+CREATE TABLE IF NOT EXISTS user_config(
+    user_id BIGINT PRIMARY KEY REFERENCES users(id),
+    notify_user_on_levelup BOOLEAN DEFAULT FALSE
 );
 
 CREATE TABLE IF NOT EXISTS warnings(

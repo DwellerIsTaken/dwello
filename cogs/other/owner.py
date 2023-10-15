@@ -44,6 +44,12 @@ class Owner(commands.Cog):
         *,
         reason: str = None,
     ):
+        """
+        Blacklist command group to manage global blacklists.
+        If no subcommand provided the provided user is blacklisted,
+        otherwise displays all currently blacklisted users.
+        """
+
         if user:
             return await self.add(ctx, user, reason=reason)
 
@@ -75,6 +81,8 @@ class Owner(commands.Cog):
     @commands.is_owner()
     @blacklist_group.command(name="display", hidden=True)
     async def display(self, ctx: Context) -> discord.Message:
+        """Displays blacklisted users."""
+
         records = await self.bot.pool.fetch("SELECT * FROM blacklist")
 
         embed: Embed = Embed(
@@ -95,6 +103,8 @@ class Owner(commands.Cog):
     @commands.is_owner()
     @blacklist_group.command(name="remove", hidden=True)
     async def remove(self, ctx: Context, user: discord.User) -> discord.Message:
+        """Removes blacklist by user ID."""
+        
         async with ctx.bot.safe_connection() as conn:
             query = """
             WITH deleted AS (
@@ -112,8 +122,10 @@ class Owner(commands.Cog):
     @commands.command()
     @commands.is_owner()
     async def sync(self, ctx: Context) -> discord.Message | None:
+        """Sync that basically syncs EVERYTHING globally."""
+
         message: discord.Message = await ctx.send("Syncing...")
-        return await message.reply(f"Synced {len(await self.bot.tree.sync())} global commands")
+        return await message.edit(content=f"Synced {len(await self.bot.tree.sync())} global commands")
 
     @commands.command()
     @commands.is_owner()
@@ -124,6 +136,8 @@ class Owner(commands.Cog):
         guilds: commands.Greedy[discord.Object],
         spec: Literal["~", "*", "^"] | None = None,
     ) -> discord.Message | None:
+        """Original Umbra's sync cmd."""
+
         bot = self.bot
         if not guilds:
             if spec == "~":

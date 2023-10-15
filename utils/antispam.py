@@ -122,12 +122,13 @@ class SpamChecker:
         self.hit_and_run = commands.CooldownMapping.from_cooldown(10, 12, commands.BucketType.channel)
 
         self.mention_count = 5  # add to guild config table instead
+        # how do i fetch ^ from db if i dont have async?
 
     def by_mentions(self) -> commands.CooldownMapping | None:
         if not self.mention_count:
             return None
 
-        mention_threshold = self.mention_count * 2
+        mention_threshold = self.mention_count * 2 # hm, why *2
         if self._by_mentions_rate != mention_threshold:
             self._by_mentions = commands.CooldownMapping.from_cooldown(mention_threshold, 12, commands.BucketType.member)
             self._by_mentions_rate = mention_threshold

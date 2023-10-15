@@ -109,7 +109,7 @@ class DataBaseOperations:
                 data[table] = table_data
         return data
     
-    async def create_user(self, user_id: int) -> User:
+    """async def create_user(self, user_id: int) -> User:
         return await User.create(user_id, self.bot)
     
     async def get_user(self, user_id: int) -> User:
@@ -117,7 +117,7 @@ class DataBaseOperations:
             record: Record | None = await conn.fetchrow("SELECT * FROM users WHERE id = $1", user_id)
         if not record:
             return await self.create_user(user_id)
-        return await User.get(record, self.bot)
+        return await User.get(record, self.bot)""" # check if this is anywhere else in the code | then fix and remove these
     
     async def get_users(self) -> list[User]:
         async with self.bot.safe_connection() as conn:

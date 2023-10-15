@@ -2,13 +2,33 @@ from __future__ import annotations
 
 from typing import Any
 
+import random
 import discord
 from discord.app_commands import Choice
 from discord.ext import commands
 
-import constants as cs
+from constants import MEMBER_CHECK_BOT_REPLIES, WARNING_COLOR
 from core import BaseCog, Context, Dwello, Embed
-from utils import HandleHTTPException, member_check
+from utils import HandleHTTPException
+
+
+async def member_check(ctx: Context, member: discord.Member) -> bool:
+    if ctx.author == member:
+        await ctx.reply("https://media.tenor.com/qO9Gx8WTAGYAAAAC/get-some-help-stop-it.gif", user_mistake=True)
+        return False
+
+    if member.id == ctx.bot.user.id:
+        await ctx.reply(random.choice(MEMBER_CHECK_BOT_REPLIES), user_mistake=True)
+        return False
+
+    if member.top_role > ctx.author.top_role: # check how top roles work
+        await ctx.reply(
+            f"You can't do that. {member.name} has a higher role than you do,"
+            f"thus he is probably more important than you are. How utterly disheartening for you...",
+            user_mistake=True,
+        )
+        return False
+    return True
 
 
 class StandardModeration(BaseCog):
@@ -18,9 +38,15 @@ class StandardModeration(BaseCog):
     async def cog_check(self, ctx: Context) -> bool:
         return ctx.guild is not None
 
-    @commands.hybrid_command(name="ban", help="Bans users with bad behaviour.", with_app_command=True)
-    @commands.bot_has_guild_permissions(ban_members=True)
-    @commands.has_guild_permissions(ban_members=True)
+    @commands.hybrid_command(
+        name="ban",
+        brief="Bans members that don't behave.",
+        description="Bans members that don't behave.",
+    )
+    @commands.check_any(
+        commands.bot_has_permissions(ban_members=True),
+        commands.has_permissions(ban_members=True),
+    )
     async def ban(
         self,
         ctx: Context,
@@ -28,46 +54,51 @@ class StandardModeration(BaseCog):
         *,
         reason: str | None = None,
     ) -> discord.Message | None:
-        async with ctx.typing(ephemeral=True):
-            if await member_check(ctx, member, self.bot) is not True:  # redo member_check later (?)
-                return
+        """Bans. Members."""
 
-            if not reason:
-                reason = "Not specified"
+        if not await member_check(ctx, member):
+            return
 
-            embed: Embed = Embed(
-                title="Permanently banned",
-                description=f"Greetings! \nYou have been banned from **{ctx.channel.guild.name}**. "
-                "You must have done something wrong or it's just an administrator whom is playing with his toys. "
-                f"In any way, it's an embezzlement kerfuffle out here.\n \n Reason: **{reason}**",
-            )
+        if not reason:
+            reason = "Not specified"
 
-            embed.set_image(url="https://media1.tenor.com/images/05186cf068c1d8e4b6e6d81025602215/tenor.gif?itemid=14108167")
-            embed.set_footer(text=cs.FOOTER)
-            embed.timestamp = discord.utils.utcnow()
+        embed: Embed = Embed(
+            title="Permanently banned",
+            description=f"Greetings! \nYou have been banned from **{ctx.channel.guild.name}**. "
+            "You must have done something wrong or it's just an administrator whom is playing with his toys. "
+            f"In any way, it's an embezzlement kerfuffle out here.\n \n Reason: **{reason}**",
+        )
 
-            async with HandleHTTPException(ctx, title=f"Failed to ban {member}"):
-                await member.ban(reason=reason)
+        embed.set_image(url="https://media1.tenor.com/images/05186cf068c1d8e4b6e6d81025602215/tenor.gif?itemid=14108167")
+        embed.timestamp = discord.utils.utcnow()
 
-            try:
-                await member.send(embed=embed)
+        async with HandleHTTPException(ctx, title=f"Failed to ban {member}"):
+            await member.ban(reason=reason)
 
-            except discord.HTTPException as e:
-                print(e)
+        try:
+            await member.send(embed=embed)
 
-            embed: Embed = Embed(
-                title="User banned!",
-                description=f"*Banned by:* {ctx.author.mention}\n"
-                f"\n**{member}** has been succesfully banned from this server! \nReason: `{reason}`",
-                color=cs.WARNING_COLOR,
-            )
+        except discord.HTTPException as e:
+            print(e)
 
-            return await ctx.channel.send(embed=embed)
+        embed: Embed = Embed(
+            title="User banned!",
+            description=f"*Banned by:* {ctx.author.mention}\n"
+            f"\n**{member}** has been succesfully banned from this server! \nReason: `{reason}`",
+            color=WARNING_COLOR,
+        )
 
-    @commands.hybrid_command(name="unban", help="Unbans users for good behaviour.", with_app_command=True)
-    @commands.bot_has_permissions(send_messages=True, view_audit_log=True, ban_members=True)
-    @commands.has_guild_permissions(ban_members=True)
+        return await ctx.channel.send(embed=embed)
+
+    # somehow involve `send_messages=True` in overall functionality, so it wouldnt trigger any errors
+    @commands.hybrid_command(name="unban", brief="Unbans users.", description="Unbans users.")
+    @commands.check_any(
+        commands.bot_has_permissions(ban_members=True, view_audit_log=True), # check `view_audit_log=True` only for slash maybe  # noqa: E501
+        commands.has_guild_permissions(ban_members=True),
+    )
     async def unban(self, ctx: Context, member: str) -> discord.Message | discord.InteractionMessage | None:
+        """Unbans. Members. Accepts either user ID or name."""
+
         if member.isdigit():
             member_id = int(member, base=10)
             try:
@@ -90,7 +121,7 @@ class StandardModeration(BaseCog):
         if not isinstance(member, discord.User | discord.Object):
             return await ctx.reply("The provided member doesn't exist or isn't banned.", user_mistake=True)
 
-        async with ctx.typing(ephemeral=True):
+        async with ctx.typing(ephemeral=True): # remove probably
             async with HandleHTTPException(ctx, title=f"Failed to unban {member}"):
                 await ctx.guild.unban(member)
 
@@ -117,12 +148,13 @@ class StandardModeration(BaseCog):
 
     @commands.hybrid_command(
         name="kick",
-        help="Kick a member for bad behaviour.",
-        aliases=["rename"],
-        with_app_command=True,
+        brief="Kick a member for not behaving.",
+        description="Kick a member for not behaving.",
     )
-    @commands.bot_has_permissions(send_messages=True, kick_members=True)
-    @commands.has_permissions(kick_members=True)
+    @commands.check_any(
+        commands.bot_has_permissions(kick_members=True),
+        commands.has_guild_permissions(kick_members=True),
+    )
     async def kick(
         self,
         ctx: Context,
@@ -130,32 +162,36 @@ class StandardModeration(BaseCog):
         *,
         reason: str | None = None,
     ) -> discord.Message | None:
-        async with ctx.typing(ephemeral=True):
-            if await member_check(ctx, member, self.bot) is not True:
-                return
+        """Kicks. Members. Eh, these descriptions just keep getting more boring..."""
 
-            if not reason:
-                reason = "Not specified"
+        if not await member_check(ctx, member):
+            return
 
-            embed: Embed = Embed(
-                title="User kicked!",
-                description=f"*Kicked by:* {ctx.author.mention}\n"
-                f"\n**{member}** has been succesfully kicked from this server! \nReason: `{reason}`",
-                color=cs.WARNING_COLOR,
-            )
+        if not reason:
+            reason = "Not specified"
 
-            async with HandleHTTPException(ctx, title=f"Failed to kick {member}"):
-                await member.kick(reason=reason)
+        embed: Embed = Embed(
+            title="User kicked!",
+            description=f"*Kicked by:* {ctx.author.mention}\n"
+            f"\n**{member}** has been succesfully kicked from this server! \nReason: `{reason}`",
+            color=WARNING_COLOR,
+        )
 
-            return await ctx.channel.send(embed=embed)
+        async with HandleHTTPException(ctx, title=f"Failed to kick {member}"):
+            await member.kick(reason=reason)
+
+        return await ctx.channel.send(embed=embed)
 
     @commands.hybrid_command(
         name="nick",
-        help="Changes the nickname of a provided member.",
-        with_app_command=True,
+        aliases=["rename"],
+        brief="Changes member's nickname.",
+        description="Changes member's nickname.",
     )
-    @commands.bot_has_guild_permissions(manage_nicknames=True)
-    @commands.has_guild_permissions(manage_nicknames=True)
+    @commands.check_any(
+        commands.bot_has_permissions(manage_nicknames=True),
+        commands.has_guild_permissions(manage_nicknames=True),
+    )
     async def nick(
         self,
         ctx: Context,
@@ -163,20 +199,23 @@ class StandardModeration(BaseCog):
         *,
         nickname: str | None = None,
     ) -> discord.Message | None:
-        async with ctx.typing(ephemeral=True):
+        """Nicks. Members. Bruh."""
+
+        async with ctx.typing(ephemeral=True): # remove probably
             if not nickname and not member.nick:
-                return await ctx.reply(f"**{member}** has no nickname to remove.", user_mistake=True)
+                return await ctx.reply(f"**{member.name}** has no nickname to remove.", user_mistake=True)
 
             elif nickname and len(nickname) > 32:
                 return await ctx.reply(f"Nickname is too long! ({len(nickname)}/32)", user_mistake=True)
 
-            message = "Changed nickname of **{user}** to **{nick}**.' if nickname else 'Removed nickname of **{user}**."
+            n = member.name
+            message = f"Changed nickname of **{n}** to **{nickname}**." if nickname else f"Removed nickname of **{n}**."
             embed: Embed = Embed(
                 title="Member renamed",
-                description=message.format(user=member, nick=nickname),
-                color=cs.WARNING_COLOR,
+                description=message,
+                color=discord.Colour.green() if nickname else WARNING_COLOR,
             )
-            async with HandleHTTPException(ctx, title=f"Failed to set nickname for {member}."):
+            async with HandleHTTPException(ctx, title=f"Failed to set nickname for {member.name}."):
                 await member.edit(nick=nickname)
 
             return await ctx.channel.send(embed=embed)

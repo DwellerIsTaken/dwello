@@ -13,10 +13,22 @@ import discord
 from discord.ext import commands
 from typing_extensions import override
 
+from utils import NewView, Guild
+
 T = TypeVar("T")
 
 if TYPE_CHECKING:
     from discord import ButtonStyle, Interaction
+
+
+class DeleteButton(discord.ui.Button):
+    def __init__(self) -> None:
+        super().__init__(style=discord.ButtonStyle.red, emoji="\N{WASTEBASKET}")
+
+    async def callback(self, interaction: Interaction):
+        assert self.view is not None
+        if interaction.message:
+            await interaction.message.delete(delay=0)
 
 
 class ConfirmButton(discord.ui.Button):
@@ -45,7 +57,9 @@ class CancelButton(discord.ui.Button):
         view.stop()
 
 
-class Confirm(discord.ui.View):
+class Confirm(NewView):
+    # inherrit from the custom view
+    # and see what this view does
     def __init__(self, buttons: tuple[tuple[str]], timeout: int = 30) -> None:
         super().__init__(timeout=timeout)
         self.message = None
@@ -69,7 +83,7 @@ class Confirm(discord.ui.View):
     async def interaction_check(self, interaction: Interaction) -> bool:
         if interaction.user == self.ctx.author:
             return True
-        messages = [  # should be defined someplace else in constants
+        messages = [  # should be defined someplace else in constants and be used for all view
             "Oh no you can't do that! This belongs to **{user}**",
             "This is **{user}**'s confirmation, sorry! 💢",
             "😒 Does this look yours? **No**. This is **{user}**'s confirmation button",
@@ -100,6 +114,7 @@ class NewContext(commands.Context):  # [commands.Bot], Generic[T]
 
     def __init__(self, *args, **kwargs) -> None:
         super().__init__(*args, **kwargs)
+        # maybe somehow set orm_guild in here, so i wouldnt have to fetch it everytime
 
     @staticmethod
     def with_type(func: Callable[..., Any]) -> Callable[..., Any]:
@@ -121,6 +136,7 @@ class NewContext(commands.Context):  # [commands.Bot], Generic[T]
         self,
         content: str | None = None,
         *,
+        view: NewView | discord.ui.View | None = None,
         embed: discord.Embed | None = None,
         embeds: Sequence[discord.Embed] | None = None,
         bold: bool = False,
@@ -128,19 +144,20 @@ class NewContext(commands.Context):  # [commands.Bot], Generic[T]
         underline: bool = False,
         **kwargs: Any,
     ) -> discord.Message:
-        assert isinstance(self.me, discord.Member)
+        # assert isinstance(self.me, discord.Member)
 
-        perms: discord.Permissions = self.channel.permissions_for(self.me)
-        if not (perms.send_messages and perms.embed_links):
-            with suppress(discord.Forbidden):
-                await self.author.send(
-                    (
-                        "Bot don't have either Embed Links/Send Messages permission in that channel. "
-                        "Please give sufficient permissions to the bot."
-                    ),
-                    view=self.send_view(),
-                )
-                return None
+        if self.guild:
+            perms: discord.Permissions = self.channel.permissions_for(self.me)
+            if not (perms.send_messages and perms.embed_links):
+                with suppress(discord.Forbidden):
+                    await self.author.send(
+                        (
+                            "Bot don't have either Embed Links/Send Messages permission in that channel. "
+                            "Please give sufficient permissions to the bot."
+                        ),
+                        view=self.send_view(),
+                    )
+                    return None
 
         if embed and embeds:
             raise commands.BadArgument("cannot pass both embed and embeds parameter to send()")
@@ -173,7 +190,18 @@ class NewContext(commands.Context):  # [commands.Bot], Generic[T]
             content = f"__{content}__"
 
         content = str(content)[:1990] if content else None
-        return await super().send(content=content, embeds=embeds, **kwargs)
+        _guild = await Guild.get(self.guild.id, self.bot)
+
+        if not view and _guild.delete_button:
+            view = NewView(self, timeout=_guild.delete_button_after)
+            view.add_item(DeleteButton())
+
+        kwargs['ephemeral'] = _guild.only_ephemeral
+        message = await super().send(content=content, embeds=embeds, view=view, **kwargs)
+
+        with suppress(AttributeError):
+            view.message = view.message or message
+        return message
 
     @override  # ritik check this and leave all the features but u can rewrite
     async def reply(  # add things and cleanup
@@ -193,7 +221,14 @@ class NewContext(commands.Context):  # [commands.Bot], Generic[T]
         if reference and mention_reference_author:
             message = reference.resolved
             mention = message.author in self.message.mentions
-
+        else:
+            _guild = await Guild.get(self.guild.id, self.bot)
+            if not _guild.only_reply:
+                # basically either only reply
+                # or only send
+                # unless there is a reference already which is when bot replies to reference author
+                return await self.send(content, mention_author=mention_author or mention, ephemeral=ephemeral, **kwargs)
+            
         if mention_author:
             mention = mention_author
 
@@ -300,7 +335,7 @@ class NewContext(commands.Context):  # [commands.Bot], Generic[T]
                 return None
             raise
 
-    async def confirm(
+    async def confirm( #idk what this is
         self,
         message: str = "Do you want to confirm?",
         buttons: tuple[discord.PartialEmoji | str, str, discord.ButtonStyle] | None = None,
@@ -385,7 +420,7 @@ class NewContext(commands.Context):  # [commands.Bot], Generic[T]
     def referenced_user(self) -> discord.abc.User | None:
         return getattr(self.reference, "author", None)
 
-    def send_view(self):
+    def send_view(self): # why
         class View(discord.ui.View):
             def __init__(self) -> None:
                 super().__init__()

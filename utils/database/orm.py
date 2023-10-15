@@ -3,7 +3,10 @@ from __future__ import annotations
 from typing import TYPE_CHECKING, Any, List, TypeVar
 
 import discord
+import contextlib
 from typing_extensions import Self
+
+from constants import GUILD_CONFIG_DICT, USER_CONFIG_DICT
 
 if TYPE_CHECKING:
     from datetime import datetime
@@ -38,75 +41,6 @@ class Blacklist(BasicORM):
         self.user_id: int = record["user_id"]
         self.reason: str | None = record.get("reason")
 
-# maybe add view items to each option as a string (cuase cant do class because of the circular import)
-CONFIG_DICT = {
-    "counter_category_denied": {
-        "sql_name": "counter_category_denied",
-        "embed": {
-            "title": "Counter category",
-            "description":
-                "This is an option for creating a category for all your counters. "
-                "This option is also suggested once you create a counter channel, "
-                "unless you have already configured it here."
-            ,
-            "url": "",
-            "image_url": "",
-            "thumbnail_url": "",
-            "colour": None,
-            "color": None,
-            "fields": [
-                {
-                    "name": "Enable",
-                    "value":
-                        "If you click this then a category for counters will immideately be created, if you have any."
-                    ,
-                    "inline": "True",
-                },
-                {
-                    "name": "Disable",
-                    "value":
-                        "Disables the possible pop-up questioning whether you would like a category or not when "
-                        "creating a counter channel. Does not delete the current category if there is one!"
-                    ,
-                    "inline": "True",
-                },
-            ],
-        },
-    },
-    "turn_link_into_message": {
-        "sql_name": "turn_link_into_message",
-        "embed": {
-            "title": "t",
-            "description":
-                "This is an option for creating a category for all your counters. "
-                "This option is also suggested once you create a counter channel, "
-                "unless you have already configured it here."
-            ,
-            "url": "",
-            "image_url": "",
-            "thumbnail_url": "",
-            "colour": None,
-            "color": None,
-            "fields": [
-                {
-                    "name": "Enable",
-                    "value":
-                        "If you click this then a category for counters will immideately be created, if you have any."
-                    ,
-                    "inline": "True",
-                },
-                {
-                    "name": "Disable",
-                    "value":
-                        "Disables the possible pop-up questioning whether you would like a category or not when "
-                        "creating a counter channel. Does not delete the current category if there is one!"
-                    ,
-                    "inline": "True",
-                },
-            ],
-        },
-    }
-}
 
 CONFIG_ALIASES = {
     "category_denied": "counter_category_denied",
@@ -204,24 +138,38 @@ class Guild(BasicORM):
     __slots__ = (
         "id",
         "bot",
-        "all_counter",
-        "bot_counter",
-        "twitch_users",
-        "leave_channel",
-        "member_counter",
-        "twitch_channel",
-        "welcome_channel",
-        "category_counter",
-        "counter_category_denied",
+        "_all_counter",
+        "_bot_counter",
+        "_twitch_users",
+        "_leave_channel",
+        "_member_counter",
+        "_twitch_channel",
+        "_welcome_channel",
+        "_category_counter",
+        "_antispam",
+        "_antispam_mention_count",
+        "_cmd_preview",
+        "_cmd_matches",
+        "_counter_category_denied",
+        "_turn_link_into_message",
+        "_reactions_on_command",
+        "_delete_button",
+        "_delete_button_after",
+        "_delete_reaction_after",
+        "_delete_invoker_message_after",
+        "_verification",
+        "_personal_notifications",
+        "_only_ephemeral",
+        "_only_reply",
     )
 
     CHANNEL_DICT = { # this should get the correct sql column names from gives string
-        "welcome_channel": {"text": "welcome_text", "channel": "welcome_channel"},
-        "leave_channel": {"text": "leave_text", "channel": "leave_channel"},
-        "twitch_channel": {"text": "twitch_text", "channel": "twitch_channel"},
-        "welcome": {"text": "welcome_text", "channel": "welcome_channel"},
-        "leave": {"text": "leave_text", "channel": "leave_channel"},
-        "twitch": {"text": "twitch_text", "channel": "twitch_channel"},
+        "welcome_channel": {"text": "welcome_text", "channel": "welcome_channel", "label": "Welcome channel"},
+        "leave_channel": {"text": "leave_text", "channel": "leave_channel", "label": "Leave channel"},
+        "twitch_channel": {"text": "twitch_text", "channel": "twitch_channel", "label": "Twitch channel"},
+        "welcome": {"text": "welcome_text", "channel": "welcome_channel", "label": "Welcome channel"},
+        "leave": {"text": "leave_text", "channel": "leave_channel", "label": "Leave channel"},
+        "twitch": {"text": "twitch_text", "channel": "twitch_channel", "label": "Twitch channel"},
     }
 
     COUNTER_DICT = {
@@ -238,24 +186,139 @@ class Guild(BasicORM):
     # General
     bot: Dwello
     id: int
-    all_counter: GuildCounter
-    bot_counter: GuildCounter
-    member_counter: GuildCounter
-    category_counter: GuildCounter
-    welcome_channel: GuildChannel
-    leave_channel: GuildChannel
-    twitch_channel: GuildChannel
+
+    _all_counter: GuildCounter
+    _bot_counter: GuildCounter
+    _member_counter: GuildCounter
+    _category_counter: GuildCounter
+    _welcome_channel: GuildChannel
+    _leave_channel: GuildChannel
+    _twitch_channel: GuildChannel
 
     # Config Table
-    counter_category_denied: bool | None
-    turn_link_into_message: bool | None
+    _antispam: bool
+    _antispam_mention_count: int
+    _cmd_preview: bool
+    _cmd_matches: bool
+    _counter_category_denied: bool | None
+    _turn_link_into_message: bool
+    _reactions_on_command: bool
+    _delete_button: bool
+    _delete_button_after: int
+    _delete_reaction_after: int
+    _delete_invoker_message_after: int | None
+    _verification: bool
+    _personal_notifications: bool
+    _only_ephemeral: bool
+    _only_reply: bool
 
     # Twitch Table
-    twitch_users: dict[int, TwitchUser]
+    _twitch_users: dict[int, TwitchUser]
+    
+    @property
+    def all_counter(self) -> GuildCounter:
+        return self._all_counter
+    
+    @property
+    def bot_counter(self) -> GuildCounter:
+        return self._bot_counter
+    
+    @property
+    def member_counter(self) -> GuildCounter:
+        return self._member_counter
+    
+    @property
+    def category_counter(self) -> GuildCounter:
+        return self._category_counter
+    
+    @property
+    def welcome_channel(self) -> GuildChannel:
+        return self._welcome_channel
+    
+    @property
+    def leave_channel(self) -> GuildChannel:
+        return self._leave_channel
+
+    @property
+    def twitch_channel(self) -> GuildChannel:
+        return self._twitch_channel
+    
+    @property
+    def antispam(self) -> bool:
+        return self._antispam
+    
+    @property
+    def antispam_mention_count(self) -> int:
+        return self._antispam_mention_count
+    
+    @property
+    def cmd_preview(self) -> bool:
+        return self._cmd_preview
+    
+    @property
+    def cmd_matches(self) -> bool:
+        return self._cmd_matches
+    
+    @property
+    def counter_category_denied(self) -> bool | None:
+        return self._counter_category_denied
+    
+    @property
+    def turn_link_into_message(self) -> bool:
+        return self._turn_link_into_message
+    
+    @property
+    def reactions_on_command(self) -> bool:
+        return self._reactions_on_command
+    
+    @property
+    def delete_button(self) -> bool:
+        return self._delete_button
+    
+    @property
+    def delete_button_after(self) -> int:
+        return self._delete_button_after
+    
+    @property
+    def delete_reaction_after(self) -> int:
+        return self._delete_reaction_after
+    
+    @property
+    def delete_invoker_message_after(self) -> int | None:
+        return self._delete_invoker_message_after
+    
+    @property
+    def verification(self) -> bool:
+        return self._verification
+    
+    @property
+    def personal_notifications(self) -> bool:
+        return self._personal_notifications
+    
+    @property
+    def only_ephemeral(self) -> bool:
+        return self._only_ephemeral
+    
+    @property
+    def only_reply(self) -> bool:
+        return self._only_reply
+    
+    @property
+    def twitch_users(self) -> dict[int, TwitchUser]:
+        return self._twitch_users
+    
+    def __init__(self, _id: int, _bot: Dwello) -> None:
+        # used to set attrs from the classmethods
+        self.id = _id
+        self.bot = _bot
 
     @property
     def category_denied(self) -> bool | None:
         return self.counter_category_denied
+    
+    @property
+    def delete_invoker_message(self) -> bool:
+        return self.delete_invoker_message_after is not None
 
     @property
     def counters(self) -> list[GuildCounter]:
@@ -308,13 +371,36 @@ class Guild(BasicORM):
     
     def _update_configuration(self, record: Record | None) -> None:
         """Updates attributes related to 'guild_config' sql table."""
+
+        def get_default(name: str) -> Any:
+            # the downside is that ur fucked if sub-options happen to have the same name
+            if not record:
+                try:
+                    return GUILD_CONFIG_DICT.get(name)["default"]
+                except KeyError:
+                    for i in GUILD_CONFIG_DICT.values():
+                        for sub_name, sub_value in i["sub"].items():
+                            if sub_name == name:
+                                return sub_value["default"]
+            return record.get(name)
         
-        if record:
-            self.counter_category_denied = record.get("counter_category_denied")
-            self.turn_link_into_message = record.get("turn_link_into_message")
-        else:
-            self.counter_category_denied = None
-            self.turn_link_into_message = None
+        # bruh idk if this is even needed..
+        # all defaults already are stored in db
+        self._antispam = get_default("antispam")
+        self._antispam_mention_count = get_default("antispam_mention_count")
+        self._cmd_preview = get_default("cmd_preview")
+        self._cmd_matches = get_default("cmd_matches")
+        self._counter_category_denied = get_default("counter_category_denied")
+        self._turn_link_into_message = get_default("turn_link_into_message")
+        self._reactions_on_command = get_default("reactions_on_command")
+        self._delete_button = get_default("delete_button")
+        self._delete_button_after = get_default("delete_button_after")
+        self._delete_reaction_after = get_default("delete_reaction_after")
+        self._delete_invoker_message_after = get_default("delete_invoker_message_after")
+        self._verification = get_default("verification")
+        self._personal_notifications = get_default("personal_notifications")
+        self._only_ephemeral = get_default("only_ephemeral")
+        self._only_reply = get_default("only_reply")
         return
 
     def _update_channels(self, record: Record) -> None:
@@ -323,19 +409,19 @@ class Guild(BasicORM):
         Channel attributes are updated to :class:`GuildChannel`; all its attributes are thus updated too.
         """
 
-        self.welcome_channel = GuildChannel(
+        self._welcome_channel = GuildChannel(
             "welcome_channel",
             self,
             id=record.get("welcome_channel"),
             text=record.get("welcome_text"),
         )
-        self.leave_channel = GuildChannel(
+        self._leave_channel = GuildChannel(
             "leave_channel",
             self,
             id=record.get("leave_channel"),
             text=record.get("leave_text"),
         )
-        self.twitch_channel = GuildChannel(
+        self._twitch_channel = GuildChannel(
             "twitch_channel",
             self,
             id=record.get("twitch_channel"),
@@ -346,30 +432,37 @@ class Guild(BasicORM):
     def _update_counters(self, record: Record) -> None:
         """Similiar to :func:`_update_channels`, but for guild counters."""
 
-        self.all_counter = GuildCounter("all_counter", self, id=record.get("all_counter"))
-        self.bot_counter = GuildCounter("bot_counter", self, id=record.get("bot_counter"))
-        self.member_counter = GuildCounter("member_counter", self, id=record.get("member_counter"))
-        self.category_counter = GuildCounter("category_counter", self, id=record.get("category_counter"))
+        self._all_counter = GuildCounter("all_counter", self, id=record.get("all_counter"))
+        self._bot_counter = GuildCounter("bot_counter", self, id=record.get("bot_counter"))
+        self._member_counter = GuildCounter("member_counter", self, id=record.get("member_counter"))
+        self._category_counter = GuildCounter("category_counter", self, id=record.get("category_counter"))
         return
     
-    def _get_config_option_from_alias(self, name: str) -> str:
+    def _get_config_option_name_from_alias(self, _name: str) -> str:
+        _real_name = None
+        with contextlib.suppress(KeyError):
+            _real_name = CONFIG_ALIASES[_name]
+        return _real_name or _name
+    
+    def _get_sql_name(self, _name: str) -> str:
+        name = self._get_config_option_name_from_alias(_name)
         try:
-            _real_name = CONFIG_ALIASES[name]
-        except KeyError as e:
-            raise ValueError(f"Invalid config option alias: {name}") from e
-        return _real_name
+            name = GUILD_CONFIG_DICT[name]['sql_name']
+        except KeyError:
+            name = name
+        return name
     
     async def update_config(self, _dict: dict[str, Any]) -> None:
         # actually, some of the values won't be just bool soooo change it later ig
         updates = []
         for _type, value in _dict.items():
-            try:
-                param_name = CONFIG_DICT[self._get_config_option_from_alias(_type)]['sql_name']
-            except KeyError as e:
-                raise ValueError(f"Invalid (channel) type: {_type}") from e
+            param_name = self._get_sql_name(_type)
+            # so, if _type is wrong then sql will just raise an error instead
 
             if isinstance(value, bool):
                 updates.append(f"{param_name} = {'TRUE' if value else 'FALSE'}")
+            elif value is None:
+                updates.append(f"{param_name} = NULL")
             else:
                 updates.append(f"{param_name} = {value}")
         
@@ -395,12 +488,8 @@ class Guild(BasicORM):
 
         return getattr(self, _type, None)  # type: ignore
     
-    def get_config_option_by_type(self, _type: str) -> bool | Any | None: # dont have many options yet
-        try:
-            _type = CONFIG_ALIASES.get(_type)
-        except KeyError:
-            _type = CONFIG_DICT.get(_type)
-        return getattr(self, _type, None)
+    def get_config_option_by_type(self, _type: str) -> Any | None:
+        return getattr(self, self._get_sql_name(_type), None)
 
     async def add_message(self, _type: str, text: str = None) -> None:
         if not text:
@@ -443,57 +532,61 @@ class Guild(BasicORM):
         self._update_counters(row)
         return self.get_channel_by_type(_type)
 
+    async def _exe(self, option: str, value: Any) -> None:
+        async with self.bot.safe_connection() as conn:
+            await conn.execute(f"UPDATE guild_config SET {option} = $1 WHERE guild_id = $2", value, self.id)
+        return
+
     @classmethod
     async def get(
         cls: type[GT],
-        id: int,
+        _id: int,
         bot: Dwello,
     ) -> GT:
-        self = cls()
-        self.id = id
-        self.bot = bot
+        self = cls(_id, bot)
 
-        async with bot.safe_connection() as conn:
+        async with self.bot.safe_connection() as conn:
             config_record: Record = await conn.fetchrow(
                 "SELECT * FROM guild_config WHERE guild_id = $1",
-                id,
+                self.id,
             )
             record: Record = await conn.fetchrow(
                 "SELECT * FROM guilds WHERE id = $1",
-                id,
+                self.id,
             )
             twitch_records: list[Record] = await conn.fetch(
                 "SELECT * FROM twitch_users WHERE guild_id = $1",
-                id,
+                self.id,
             )
+            
+        if not record or not config_record:
+            return await self.create(_id, bot)
+        
         self._update_configuration(config_record)
         self._update_channels(record)
         self._update_counters(record)
 
-        self.twitch_users = {}
+        self._twitch_users = {}
         for twitch_record in twitch_records:
-            self.twitch_users[twitch_record["user_id"]] = await TwitchUser.get(twitch_record, bot)
-
+            self._twitch_users[twitch_record["user_id"]] = await TwitchUser.get(twitch_record, self.bot)
         return self
 
     @classmethod
     async def create(
         cls: type[GT],
-        id: int,
+        _id: int,
         bot: Dwello,
     ) -> GT:
-        self = cls()
-        self.id = id
-        self.bot = bot
+        self = cls(_id, bot)
 
-        async with bot.safe_connection() as conn:
+        async with self.bot.safe_connection() as conn:
             record: Record = await conn.fetchrow(
                 """
                 INSERT INTO guilds (id) VALUES ($1)
                 ON CONFLICT (id) DO UPDATE SET id = excluded.id
                 RETURNING *;
                 """,
-                id,
+                self.id,
             )
             config_record: Record = await conn.fetchrow(
                 """
@@ -501,28 +594,29 @@ class Guild(BasicORM):
                 ON CONFLICT (guild_id) DO UPDATE SET guild_id = excluded.guild_id
                 RETURNING *;
                 """,
-                id,
+                self.id,
             )
             twitch_records: list[Record] = await conn.fetch(
                 "SELECT * FROM twitch_users WHERE guild_id = $1",
-                id,
+                self.id,
             )
         self._update_configuration(config_record)
         self._update_channels(record)
         self._update_counters(record)
 
-        self.twitch_users = {}
+        self._twitch_users = {}
         for twitch_record in twitch_records:
-            self.twitch_users[twitch_record["user_id"]] = await TwitchUser.get(twitch_record, bot)
+            self._twitch_users[twitch_record["user_id"]] = await TwitchUser.get(twitch_record, self.bot)
 
         return self
 
 
 class _GuildChannel:
     """Class representing any db guild channel. Should be subclassed."""
-    def __init__(self, _type: str, id: int | None, guild: Guild) -> None:
+    
+    def __init__(self, _type: str, _id: int | None, guild: Guild) -> None:
         self.type: str = _type
-        self.id: int | None = id
+        self.id: int | None = _id
         self.guild: Guild = guild
 
         self.bot: Dwello = guild.bot
@@ -539,6 +633,11 @@ class _GuildChannel:
         async with self.bot.safe_connection() as conn:
             query = f"UPDATE guilds SET {self.type} = NULL WHERE id = $1"
             await conn.execute(query, self.guild.id)
+        return
+    
+    async def add_id(self, _id: int) -> None:
+        await self.guild.add_channel(self.type, _id)
+        self.id = _id
         return
 
 
@@ -563,6 +662,11 @@ class GuildChannel(_GuildChannel):
     @property
     def message_type(self) -> str | None:
         return self.text_type
+    
+    async def add_message(self, _message: str | None) -> None:
+        await self.guild.add_message(self.type, _message)
+        self.text = _message
+        return
 
 
 class GuildCounter(_GuildChannel):
@@ -614,15 +718,35 @@ class Idea:
         # maybe allow everything tho
     """
 
-    __slots__ = ("bot", "id", "author_id", "created_at", "content", "title", "voters")
+    __slots__ = ("bot", "_id", "_author_id", "_created_at", "_content", "_title", "voters")
+
+    @property
+    def id(self) -> int:
+        return self._id
+    
+    @property
+    def author_id(self) -> int:
+        return self._author_id
+    
+    @property
+    def created_at(self) -> datetime | None:
+        return self._created_at
+    
+    @property
+    def content(self) -> str | None:
+        return self._content
+    
+    @property
+    def title(self) -> str | None:
+        return self._title
 
     def __init__(self, record: Record, bot: Dwello) -> None:
         self.bot: Dwello = bot
-        self.id: int = record["id"]
-        self.author_id: int = record["author_id"]
-        self.created_at: datetime | None = record.get("created_at")
-        self.content: str | None = record.get("content")
-        self.title: str | None = record.get("title")
+        self._id: int = record["id"]
+        self._author_id: int = record["author_id"]
+        self._created_at: datetime | None = record.get("created_at")
+        self._content: str | None = record.get("content")
+        self._title: str | None = record.get("title")
 
         self.voters: List[int] = []
 
@@ -635,7 +759,7 @@ class Idea:
         return self.content
 
     @property
-    def votes(self) -> int | None:
+    def votes(self) -> int:
         try:
             _votes = len(self.voters)
         except TypeError:
@@ -699,7 +823,7 @@ class Idea:
         return self
 
 
-class Job(BasicORM):
+class Job(BasicORM): # not used currently
     __slots__ = ("bot", "guild_id", "name", "id", "salary", "description")
 
     def __init__(self, record: Record, bot: Dwello) -> None:
@@ -711,7 +835,7 @@ class Job(BasicORM):
         self.description: str | None = record.get("description")
 
 
-class News(BasicORM):
+class News(BasicORM): # not used currently
     __slots__ = ("bot", "title", "message_id", "channel_id", "id")
 
     def __init__(self, record: Record, bot: Dwello) -> None:
@@ -723,15 +847,22 @@ class News(BasicORM):
 
 
 class Prefix(BasicORM):
-    __slots__ = ("bot", "guild_id", "prefix")
+    __slots__ = ("bot", "_prefix", "_guild_id")
+
+    @property
+    def guild_id(self) -> int:
+        return self._guild_id
+    
+    @property
+    def prefix(self) -> str:
+        return self._prefix
 
     def __init__(self, record: Record, bot: Dwello) -> None:
         self.bot: Dwello = bot
-        self.guild_id: int = record["guild_id"]
-        self.prefix: str = record["prefix"]  # VARCHAR
+        self._prefix: str = record["prefix"]
+        self._guild_id: int = record["guild_id"]
 
-    @property
-    def name(self) -> str:
+    def __str__(self) -> str:
         return self.prefix
 
     async def remove(self) -> list[Record]:
@@ -743,14 +874,30 @@ class Prefix(BasicORM):
             )
 
 
-class TwitchUser(BasicORM):
-    __slots__ = ("bot", "username", "user_id", "guild_id")
+class TwitchUser(BasicORM): # yet to be used in twitch.py
+    __slots__ = ("bot", "_id", "_username", "_guild_id")
+
+    @property
+    def id(self) -> int:
+        return self._id
+    
+    @property
+    def username(self) -> str:
+        return self._username
+    
+    @property
+    def guild_id(self) -> int:
+        return self._guild_id
 
     def __init__(self, record: Record, bot: Dwello) -> None:
         self.bot: Dwello = bot
-        self.username: str = record["username"]
-        self.user_id: int = record["user_id"]
-        self.guild_id: int = record["guild_id"]
+        self._id: int = record["user_id"]
+        self._username: str = record["username"]
+        self._guild_id: int = record["guild_id"]
+
+    @property
+    def user_id(self) -> int:
+        return self._id
 
 
 class User(BasicORM):
@@ -810,23 +957,65 @@ class User(BasicORM):
     __slots__ = (
         "bot",
         "id",
-        "xp",
-        "level",
-        "messages",
-        "total_xp",
-        "money",
+        "_xp",
+        "_level",
+        "_messages",
+        "_total_xp",
+        "_money",
         "_worked",
+        "_command_count",
+        "_notify_user_on_levelup",
     )
 
-    def __init__(self, record: Record, bot: Dwello) -> None:
-        self.bot: Dwello = bot
-        self.id: int = record["id"]
-        self.xp: int = record["xp"]
-        self.level: int = record["level"]
-        self.money: int = record["money"]
-        self.messages: int = record["messages"]
-        self.total_xp: int = record["total_xp"]
-        self.worked: bool = record["worked"]
+    bot: Dwello
+    id: int
+
+    _xp: int
+    _level: int
+    _money: int
+    _messages: int
+    _total_xp: int
+    _worked: bool
+    _command_count: int
+
+    _notify_user_on_levelup: bool | None
+    
+    @property
+    def xp(self) -> int:
+        return self._xp
+    0
+    @property
+    def level(self) -> int:
+        return self._level
+    
+    @property
+    def messages(self) -> int:
+        return self._messages
+    
+    @property
+    def total_xp(self) -> int:
+        return self._total_xp
+    
+    @property
+    def money(self) -> int:
+        return self._money
+    
+    @property
+    def worked(self) -> bool:
+        return self._worked
+    
+    @property
+    def command_count(self) -> int:
+        return self._command_count
+    
+    @property
+    def notify_user_on_levelup(self) -> bool | None:
+        return self._notify_user_on_levelup
+    
+    def __init__(self, _id: int, _bot: Dwello) -> None:
+        # used to set attrs from the classmethods
+        self.id = _id
+        self.bot = _bot
 
     @property
     def current_xp(self) -> int:
@@ -847,28 +1036,39 @@ class User(BasicORM):
     @property
     def xp_until_next_level(self) -> int:
         return self.xp_formula - self.xp
-
-    @classmethod
-    async def create(
-        cls: type[UT],
-        user_id: int,
-        bot: Dwello,
-    ) -> UT:
-        async with bot.safe_connection() as conn:
-            record: Record = await conn.fetchrow(
-                """
-                    INSERT INTO users (id) VALUES ($1)
-                    ON CONFLICT (id) DO UPDATE SET id = excluded.id
-                    RETURNING *;
-                """,
-                user_id,
-            )
-        return cls(record, bot)
+    
+    def _attributes_from_record(self, record: Record) -> None:
+        self._xp: int = record["xp"]
+        self._level: int = record["level"]
+        self._money: int = record["money"]
+        self._messages: int = record["messages"]
+        self._total_xp: int = record["total_xp"]
+        self._worked: bool = record["worked"]
+        self._command_count: int = record["command_count"]
+        return
+    
+    def _get_sql_name(self, _name: str) -> str:
+        try:
+            name = USER_CONFIG_DICT[_name]['sql_name']
+        except KeyError:
+            name = _name
+        return name
+    
+    def _update_configuration(self, record: Record | None) -> None:
+        """Same logic as `:func:Guild._update_configuration`."""
+        if record:
+            self._notify_user_on_levelup = record.get("notify_user_on_levelup")
+        else:
+            self._notify_user_on_levelup = None
+        return
 
     async def remove(self) -> None:
         async with self.bot.safe_connection() as conn:
             await conn.execute("DELETE FROM users WHERE id = $1", self.id)
         return
+    
+    def get_config_option_by_type(self, _type: str) -> Any | None:
+        return getattr(self, self._get_sql_name(_type), None)
 
     async def get_rank(self) -> int | None:
         async with self.bot.safe_connection() as conn:
@@ -884,7 +1084,7 @@ class User(BasicORM):
             rank: int | None = await conn.fetchval(query, self.id)
         return rank
 
-    async def increase_xp(self, message: discord.Message, rate: int = 5) -> int | None:
+    async def increase_xp(self, message: discord.Message, rate: int = 5) -> int:
         if message.author.bot or not message.guild:
             return None
 
@@ -903,35 +1103,145 @@ class User(BasicORM):
                 total,
                 level,
                 messages,
-                message.author.id,
+                self.id,
             )
-        self.messages = messages
-        self.total_xp = total
-        self.level = level
-        self.xp = xp
+        self._messages = messages
+        self._total_xp = total
+        self._level = level
+        self._xp = xp
 
         return self.xp_until_next_level
+    
+    async def increase_command_count(self, amount: int = 1) -> None: # make a setter smh?
+        async with self.bot.safe_connection() as conn:
+            await conn.execute(
+                "UPDATE users SET command_count = $1 WHERE id = $2",
+                amount + self.command_count,
+                self.id,
+            )
+        return
+    
+    async def update_config(self, _dict: dict[str, Any]) -> None:
+        updates = []
+        for _type, value in _dict.items():
+            param_name = self._get_sql_name(_type)
+
+            if isinstance(value, bool):
+                updates.append(f"{param_name} = {'TRUE' if value else 'FALSE'}")
+            elif value is None:
+                updates.append(f"{param_name} = NULL")
+            else:
+                updates.append(f"{param_name} = {value}")
+        
+        if not updates:
+            return
+
+        query = f"UPDATE user_config SET {', '.join(updates)} WHERE user_id = $1 RETURNING *"
+        async with self.bot.safe_connection() as conn:
+            row: Record = await conn.fetchrow(query, self.id)
+
+        self._update_configuration(row)
+        return
+    
+    @classmethod
+    async def get(
+        cls: type[UT],
+        user_id: int,
+        bot: Dwello,
+    ) -> UT:
+        self = cls(user_id, bot)
+
+        async with self.bot.safe_connection() as conn:
+            config_record: Record = await conn.fetchrow(
+                "SELECT * FROM user_config WHERE user_id = $1",
+                self.id,
+            )
+            record: Record = await conn.fetchrow(
+                "SELECT * FROM users WHERE id = $1",
+                self.id,
+            )
+
+        if not record or not config_record:
+            return await self.create(user_id, bot)
+
+        self._attributes_from_record(record)
+        self._update_configuration(config_record)
+        return self
+
+    @classmethod
+    async def create(
+        cls: type[UT],
+        user_id: int,
+        bot: Dwello,
+    ) -> UT:
+        self = cls(user_id, bot)
+
+        async with self.bot.safe_connection() as conn:
+            record: Record = await conn.fetchrow(
+                """
+                    INSERT INTO users (id) VALUES ($1)
+                    ON CONFLICT (id) DO UPDATE SET id = excluded.id
+                    RETURNING *;
+                """,
+                self.id,
+            )
+            config_record: Record = await conn.fetchrow(
+                """
+                INSERT INTO user_config (user_id) VALUES ($1)
+                ON CONFLICT (user_id) DO UPDATE SET user_id = excluded.user_id
+                RETURNING *;
+                """,
+                self.id,
+            )
+
+        self._attributes_from_record(record)
+        self._update_configuration(config_record)
+        return self
 
 
 class Warning(BasicORM):
     __slots__ = (
-        "id",
         "bot",
-        "reason",
-        "user_id",
-        "guild_id",
-        "warned_by",
-        "created_at",
+        "_id",
+        "_reason",
+        "_user_id",
+        "_guild_id",
+        "_warned_by",
+        "_created_at",
     )
+
+    @property
+    def id(self) -> int:
+        return self._id
+    
+    @property
+    def user_id(self) -> int | None:
+        return self._user_id
+    
+    @property
+    def reason(self) -> str | None:
+        return self._reason
+    
+    @property
+    def guild_id(self) -> int | None:
+        return self._guild_id
+    
+    @property
+    def warned_by(self) -> int | None:
+        return self._warned_by
+    
+    @property
+    def created_at(self) -> datetime | None:
+        return self._created_at
 
     def __init__(self, record: Record, bot: Dwello) -> None:
         self.bot: Dwello = bot
-        self.id: int = record["id"]
-        self.user_id: int | None = record.get("user_id")
-        self.reason: str | None = record.get("reason")
-        self.guild_id: int | None = record.get("guild_id")
-        self.warned_by: int | None = record.get("warned_by")
-        self.created_at: datetime | None = record.get("created_at")
+        self._id: int = record["id"]
+        self._user_id: int | None = record.get("user_id")
+        self._reason: str | None = record.get("reason")
+        self._guild_id: int | None = record.get("guild_id")
+        self._warned_by: int | None = record.get("warned_by")
+        self._created_at: datetime | None = record.get("created_at")
 
     async def remove(self) -> list[Record]:
         async with self.bot.safe_connection() as conn:

@@ -1,11 +1,14 @@
 from __future__ import annotations
 
 from typing import Any
+from asyncio import to_thread
 
-import discord  # noqa: F401
-from discord.ext import commands # noqa: F401
+import discord
+from discord.ext import commands
 
-from core import BaseCog, Context, Dwello # noqa: F401
+import constants as cs
+from utils import resize_discord_file
+from core import BaseCog, Context, Dwello, Embed
 
 # from colorthief import ColorThief
 # import matplotlib.colors as clr
@@ -21,11 +24,126 @@ from core import BaseCog, Context, Dwello # noqa: F401
 class UserInfo(BaseCog):
     def __init__(self, bot: Dwello, *args: Any, **kwargs: Any) -> None:
         super().__init__(bot, *args, **kwargs)
-        # dont forget member.color exists
-        # nvm
 
-        # self.levelling = LevellingUtils(bot)
-        # self.eco = GuildEcoUtils(bot)
+    @commands.hybrid_command(
+        name ="avatar",
+        brief="Returns member's avatar.",
+        description="Returns member's avatar.",
+    )
+    async def avatar(self, ctx: Context, member: discord.Member | None = commands.Author) -> discord.Message | None:
+        """Returns selected member's avatar as an image or GIF."""
+        return await ctx.reply(file=await member.display_avatar.to_file())
+    
+    @commands.hybrid_command(
+        name ="banner",
+        brief="Returns member's banner.",
+        description="Returns member's banner.",
+    )
+    async def banner(self, ctx: Context, member: discord.Member | None = commands.Author) -> discord.Message | None:
+        """Returns selected member's banner as an image or GIF."""
+
+        if not (banner:= (await self.bot.fetch_user(member.id)).banner):
+            return await ctx.reply(f"{'You have' if ctx.author == member else 'This member has'} no banner.")
+        return await ctx.reply(file=await banner.to_file())
+    
+    # maybe add a button, so itll also display member's lvl, xp, rank, money... from global user
+    # or just make that a diff func
+    @commands.hybrid_command(name="whois", brief="Shows who the member is.", description="Shows who the member is.")
+    async def whois(self, ctx: Context, member: discord.Member = commands.Author) -> discord.Message | None:
+        """
+        Displays various details about the member, including their display name, ID, banner, and more.
+        """
+        
+        await ctx.defer()
+        _user = await self.bot.fetch_user(member.id)
+        banner, _ext = None, None
+        if _user.banner:
+            _file = await _user.banner.to_file(filename="banner")
+            _ext = ".gif" if _user.banner.is_animated() else ".png"
+            banner = await to_thread(resize_discord_file, _file, (800, 300), _ext)
+
+        return await ctx.reply(
+            file=banner,
+            embed=Embed(
+                title=f"Info on {member.name}",
+                description="",
+                timestamp=discord.utils.utcnow(),
+                color=_user.accent_color or member.color,
+            )
+            .set_image(url=f"attachment://banner{_ext}" if banner else None) # change width in pil maybe some day
+            .set_footer(text=f"ID: {member.id}", icon_url=member.display_icon.url if member.display_icon else None)
+            .set_author(name=member.name, icon_url=member.display_avatar.url)
+            .set_thumbnail(url=member.display_avatar.url)
+            .add_field(name="Name", value=member.name)
+            .add_field(name="Created", value=discord.utils.format_dt(member.created_at, style="D"))
+            .add_field(name="Joined", value=discord.utils.format_dt(member.joined_at, style="D"))
+            .add_field(
+                name="Top Role",
+                value=member.top_role.mention if member.top_role.name != "@everyone" else member.top_role.name,
+            )
+            .add_field(name="Device", value="Desktop" if member.desktop_status else "Mobile")
+            .add_field(name="Status", value=member.status)
+            .add_field(
+                name="Flags",
+                value=(
+                    str(" ".join(
+                        emoji for f in member.public_flags.all() if (emoji := cs.PUBLIC_USER_FLAGS_EMOJI_DICT.get(f.name))
+                    ).split()).replace("[","").replace("]", "").replace("'","").replace(",", "")
+                    or None
+                ),
+            )
+            .add_field(
+                name="Assets",
+                value=(
+                    f"{f'[Avatar]({member.avatar.url})' if member.avatar else ''}"
+                    f"{f'[Banner]({member.banner.url})' if member.banner else ''}"
+                    f"{f'[Guild Avatar]({member.guild_avatar.url})' if member.guild_avatar else ''}"
+                ),
+            )
+            .add_field(name="Custom Status", value=f"{member.activity.name}" if member.activity is not None else None)
+            .add_field(
+                name="Activities",
+                value=(
+                    "\n".join(
+                        [
+                            f"Gaming: {game.name[:15] + '...' if game and len(game.name) > 15 else game.name}"
+                            if (
+                                game := discord.utils.find(
+                                    lambda activity: isinstance(activity, discord.Game),
+                                    member.activities,
+                                )
+                            )
+                            else "",
+                            (
+                                f"Listening: "
+                                f"[{spotify.title[:15] + '...' if spotify and len(spotify.title) > 15 else spotify.title}]"
+                                f"({spotify.track_url})"
+                            )
+                            if (
+                                spotify := discord.utils.find(
+                                    lambda activity: isinstance(activity, discord.Spotify),
+                                    member.activities,
+                                )
+                            )
+                            else "",
+                            (
+                                f"Streaming: "
+                                f"[{streaming.twitch_name or (streaming.name[:15] + '...' if len(streaming.name) > 15 else streaming.name)}]"  # noqa: E501
+                                f"({streaming.url})"
+                            )
+                            if (
+                                streaming := discord.utils.find(
+                                    lambda activity: isinstance(activity, discord.Streaming),
+                                    member.activities,
+                                )
+                            )
+                            else "",
+                        ]
+                    ).strip("\n")
+                    or None
+                ),
+            ),
+        )
 
     """@commands.hybrid_command(name = 'stats', description="Shows personal information and rank statistics",with_app_command=True)
     async def stats(self, ctx: Context, member: discord.Member | None = commands.Author) -> discord.Message | None:

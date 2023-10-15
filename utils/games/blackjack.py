@@ -4,9 +4,12 @@ import random
 
 import discord
 
-from core import Context
+from typing import TYPE_CHECKING
 
-from .emotes import BLACK_JACK_CARDS
+if TYPE_CHECKING:
+    from core import Context
+
+from constants import BLACK_JACK_CARDS
 
 
 class BlackJack:

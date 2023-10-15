@@ -7,7 +7,7 @@ if TYPE_CHECKING:
 
 from aiohttp import web
 
-from utils import ENV, DataBaseOperations, Twitch  # noqa: F401, E402
+#from utils import ENV, DataBaseOperations, Twitch  # noqa: F401, E402
 
 # REDO
 

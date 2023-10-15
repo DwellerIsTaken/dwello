@@ -11,7 +11,8 @@ from discord.ui import Button, button
 
 import constants as cs
 from core import BaseCog, Context, Dwello, Embed, View
-from utils import Warning, apostrophize, interaction_check, member_check
+from utils import Warning, apostrophize
+from .standard import member_check
 
 from .timeout import tempmute
 
@@ -19,7 +20,6 @@ from .timeout import tempmute
 class TimeoutSuggestion(View):
     def __init__(
         self,
-        bot: Dwello,
         ctx: Context,
         member: discord.Member,
         reason: str,
@@ -27,27 +27,20 @@ class TimeoutSuggestion(View):
     ) -> None:
         super().__init__(**kwargs)
 
-        self.bot = bot
         self.ctx = ctx
         self.member = member
         self.reason = reason
 
     @button(label="Yes", style=discord.ButtonStyle.green)
     async def _yes(self, interaction: discord.Interaction, button: Button) -> None:
-        await interaction_check(interaction, self.ctx.author)
-
-        # await self.ctx.interaction.response.defer()
-        await tempmute(self.bot, self.ctx, self.member, 12, None, self.reason)
-
+        await tempmute(self.ctx, self.member, 12, None, self.reason)
         self.finish()
-        return await interaction.message.delete()
+        await interaction.message.delete()
 
     @button(label="No", style=discord.ButtonStyle.red)
     async def _no(self, interaction: discord.Interaction, button: Button) -> None:
-        await interaction_check(interaction, self.ctx.author)
-
         self.finish()
-        return await interaction.message.delete()
+        await interaction.message.delete()
 
 
 class Warnings(BaseCog):
@@ -65,7 +58,7 @@ class Warnings(BaseCog):
     ) -> discord.Message | None:
         db = self.bot.db
 
-        if not await member_check(ctx, member, self.bot):
+        if not await member_check(ctx, member):
             return
 
         await db.warn(member.id, ctx.guild, ctx.author, reason=reason)
@@ -104,7 +97,8 @@ class Warnings(BaseCog):
         member: discord.Member,
         warn_id: str | Literal["all"],
     ) -> discord.Message | None:
-        if not await member_check(ctx, member, self.bot):
+        
+        if not await member_check(ctx, member):
             return
 
         db = self.bot.db
@@ -172,44 +166,68 @@ class Warnings(BaseCog):
                 view=TimeoutSuggestion(self.bot, ctx, member, "Too many warnings!"),
             )
 
-    @commands.command(name="warn", help="Gives member a warning.")
-    @commands.has_permissions(moderate_members=True)
+    @commands.command(name="warn", brief="Warns member.")
+    @commands.has_guild_permissions(moderate_members=True)
     async def warn(self, ctx: Context, member: discord.Member, *, reason: str | None) -> discord.Message | None:
+        """Gives member a warning."""
+
         async with ctx.typing(ephemeral=True):
             return await self._warn(ctx, member, reason)
 
-    @commands.command(name="unwarn", help="Removes selected warnings.")
-    @commands.has_permissions(moderate_members=True)
+    @commands.command(name="unwarn", brief="Removes selected warning.")
+    @commands.has_guild_permissions(moderate_members=True)
     async def unwarn(self, ctx: Context, member: discord.Member, warning: str) -> discord.Message | None:
+        """Removes the warning by its ID."""
+
         async with ctx.typing(ephemeral=True):
             if not warning.isdigit() and warning != "all":
                 return await ctx.reply("Please provide a valid ID.", user_mistake=True)
             return await self._unwarn(ctx, member, warning)
 
-    @commands.command(name="warnings", help="Shows member's warnings.")
-    @commands.has_permissions(moderate_members=True)
+    @commands.command(name="warnings", brief="Shows member's warnings.")
+    @commands.has_guild_permissions(moderate_members=True)
     async def warnings(self, ctx: Context, member: discord.Member = commands.Author) -> discord.Message | None:
-        async with ctx.typing(ephemeral=True):
-            return await self._warnings(ctx, member)
+        """Shows all member's warnings."""
 
-    @commands.hybrid_group(name="warning", invoke_without_command=True, with_app_command=True)
+        async with ctx.typing(ephemeral=True): # if too many warnings activate a paginator
+            return await self._warnings(ctx, member) # also maybe a func for the top 5 most warned and then also somehow include that into economy system   # noqa: E501
+
+    @commands.hybrid_group(name="warning", invoke_without_command=True)
     async def warning(self, ctx: Context):
+        """A command group for managing warnings."""
+
         return await ctx.send_help(ctx.command)
 
-    @warning.command(name="warn", help="Gives member a warning.", with_app_command=True)
+    @warning.command(name="warn", brief="Gives member a warning.", description="Gives member a warning.")
     @commands.has_permissions(moderate_members=True)
     async def hybrid_warn(self, ctx: Context, member: discord.Member, *, reason: str | None) -> discord.Message | None:
+        """Gives member a warning."""
+
         async with ctx.typing(ephemeral=True):
             return await self._warn(ctx, member, reason)
 
-    @warning.command(name="warnings", aliases=["show", "display"], help="Shows member's warnings.", with_app_command=True)
+    @warning.command(
+        name="warnings",
+        aliases=["show", "display"],
+        brief="Shows member's warnings.",
+        description="Shows member's warnings.",
+    )
     async def hybrid_warnings(self, ctx: Context, member: discord.Member = commands.Author) -> discord.Message | None:
+        """Shows all member's warnings."""
+
         async with ctx.typing(ephemeral=True):
             return await self._warnings(ctx, member)
 
-    @warning.command(name="remove", aliases=["delete"], help="Removes selected warnings.", with_app_command=True)
+    @warning.command(
+        name="remove",
+        aliases=["delete"],
+        brief="Removes selected warning.",
+        description="Removes selected warning.",
+    )
     @commands.has_permissions(moderate_members=True)
     async def hybrid_unwarn(self, ctx: Context, member: discord.Member, warning: str) -> discord.Message | None:
+        """Removes the warning by its ID."""
+        
         async with ctx.typing(ephemeral=True):
             if not warning.isdigit() and warning != "all":
                 return await ctx.reply("Please provide a valid ID.", user_mistake=True)

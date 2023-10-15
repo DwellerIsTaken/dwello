@@ -8,7 +8,7 @@ from discord.ext import commands
 
 from core import BaseCog, Context, Dwello, Embed  # noqa: F401
 
-from .customisation import CustomisationPaginator
+from .customisation import _config
 
 
 class Info(BaseCog):
@@ -20,10 +20,24 @@ class Info(BaseCog):
 
     @commands.hybrid_group(invoke_without_command=True, with_app_command=True)
     async def guild(self, ctx: Context) -> discord.Message | None:
+        """This group contains some guild commands."""
         return await ctx.send_help(ctx.command)
+    
+    @guild.command(
+        name="config",
+        aliases=["configure"],
+        brief="Customise your guild.",
+        description="Customise your guild.",
+        with_app_command=True,
+    )
+    async def config(self, ctx: Context):
+        """Same as `config` command."""
+        return await _config(ctx, "guild")
 
     @guild.command(name="info", help="Shows info on a guild.")
     async def info(self, ctx: Context) -> discord.Message | None:
+        """Shows some information about this guild."""
+
         guild = ctx.guild
 
         invite_link = None
@@ -80,14 +94,3 @@ class Info(BaseCog):
                 ),
             )
         return await ctx.reply(embed=embed)
-    
-    @commands.command(name="customisation", help="Customise your guild.")
-    async def customise_prefix(self, ctx: Context): # prefix cmd i mean
-        return await CustomisationPaginator.start(ctx)
-    
-    # part of guild group, but could belong in customisation.py
-    @guild.command(
-        name="customise", aliases=["customisation", "customize"], help="Customise your guild.", with_app_command=True,
-    )
-    async def customise(self, ctx: Context):
-        return await CustomisationPaginator.start(ctx)

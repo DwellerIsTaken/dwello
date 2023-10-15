@@ -116,13 +116,21 @@ class Scraping(BaseCog):
     def wiki_headers(self) -> dict[str, str]:
         return {"User-Agent": self.wiki_user_agent}
 
+    # apply for production rate of unsplash api (5k req/h)
     @commands.hybrid_command(
         name="image",
-        help="Returns an image.",
         aliases=["images"],
-        with_app_command=True,
+        brief="Returns the requested image.",
+        description="Returns the requested image.",
     )
-    async def image(self, ctx: Context, *, image: str) -> discord.Message | None:
+    async def image(self, ctx: Context, *, image: str = None) -> discord.Message | None:
+        """
+        Returns the requested image, otherwise - a random image.
+        This command might have some issues due to usage of [Unsplash API](<https://unsplash.com/developers>)
+        which only accepts a certain amount of requests per hour. Also, this API might be a temporary solution
+        for this application.
+        """
+
         url: URL = "https://api.unsplash.com/photos/random"
 
         headers = {
@@ -131,7 +139,7 @@ class Scraping(BaseCog):
 
         params = {
             "query": image,
-        }
+        } if image else None
 
         async with self.bot.http_session.get(url, headers=headers, params=params) as response:
             if response.status == 200:
@@ -152,11 +160,17 @@ class Scraping(BaseCog):
 
     @commands.hybrid_command(
         name="album",
-        help="Returns an album.",
         aliases=["albums"],
-        with_app_command=True,
+        brief="Returns the requested album.",
+        description="Returns the requested album.",
     )
     async def album(self, ctx: Context, *, album: str) -> discord.Message | None:
+        """
+        Returns an embed paginator containing multiple albums that closely match your input.
+        **Note**: This command uses 3rd party python library which isn't completely finished at the moment
+        and might cause some trouble in the future.
+        """ # cant find the lib link
+
         data: SearchResult = await self.spotify_client.search(query=album, types=[ObjectType.Album], limit=5)
 
         albums: list[dict[str, Any]] = data._data["albums"]["items"]
@@ -165,10 +179,7 @@ class Scraping(BaseCog):
                 f"Can't find any albums by the name of *{mk(album, as_needed=False)}*",
                 user_mistake=True,
             )
-
-        # loop if you want to make a paginator or dropdown
-
-        embeds: list[Embed] = []  # type
+        embeds: list[Embed] = []
         for album in albums:
             album: dict[str, Any]  # = albums[0]
 
@@ -209,11 +220,17 @@ class Scraping(BaseCog):
 
     @commands.hybrid_command(
         name="artist",
-        help="Returns an artist.",
         aliases=["artists"],
-        with_app_command=True,
+        brief="Returns the requested artist.",
+        description="Returns the requested artist.",
     )
     async def artist(self, ctx: Context, *, artist: str) -> discord.Message | None:
+        """
+        Returns an embed paginator containing multiple artists that closely match your input.
+        **Note**: This command uses 3rd party python library which isn't completely finished at the moment
+        and might cause some trouble in the future.
+        """
+
         data: SearchResult = await self.spotify_client.search(query=artist, types=[ObjectType.Artist], limit=5)
 
         artists: list[Artist] = data.artists.items
@@ -222,68 +239,77 @@ class Scraping(BaseCog):
                 f"Can't find any artists by the name of *{mk(artist, as_needed=False)}*",
                 user_mistake=True,
             )
-
-        artist: Artist = artists[0]
-
-        album_data: dict[str, Any] = await self.spotify_http_client.get_artist_albums(
-            id=artist.id, include_groups=["album"], market="US", limit=5
-        )
-
-        tracks_data: dict[str, Any] = await self.spotify_http_client.get_artist_top_tracks(id=artist.id, market="US")
-
-        albums = album_data["items"]
-
-        unique_albums = sorted(albums, key=lambda x: x["name"].split(" (")[0])
-        unique_albums = [
-            album
-            for i, album in enumerate(unique_albums)
-            if all(album["name"].split(" (")[0].lower() not in a["name"].lower() for a in unique_albums[:i])
-        ]
-
-        album_names = [re.sub(r"\([^()]+\)", "", album["name"]).strip().lower() for album in unique_albums[:3]]
-        album_names.sort(key=lambda x: len(x))
-
-        sorted_unique_albums = sorted(
-            unique_albums[:3],
-            key=lambda x: album_names.index(re.sub(r"\([^()]+\)", "", x["name"]).strip().lower()),
-        )
-        album_tuples = [
-            (capitalize_greek_numbers(name.title()), album["external_urls"]["spotify"])
-            for name, album in zip(album_names, sorted_unique_albums)
-        ]
-
-        tracks: list[dict[str, Any]] = tracks_data["tracks"]
-        top_tracks = sorted(tracks, key=lambda x: x["popularity"], reverse=True)
-
-        _description = f"**Followers**: {artist.followers.total:,}\n**Genres**: " + ", ".join(list(artist.genres[:2]))
-        embed = (
-            Embed(
-                title=artist.name,
-                url=artist.external_urls.spotify,
-                description=_description,
+        
+        # making too many requests here. maybe smh else?
+        embeds: list[Embed] = []
+        for artist in artists:
+            artist: Artist
+            album_data: dict[str, Any] = await self.spotify_http_client.get_artist_albums(
+                id=artist.id, include_groups=["album"], market="US", limit=5
             )
-            .add_field(
-                name="Top Albums",
-                value="\n".join(f"> [{name}]({url})" for name, url in album_tuples),
-            )
-            .add_field(
-                name="Top Tracks",
-                value="\n".join(f"> [{track['name']}]({track['external_urls']['spotify']})" for track in top_tracks[:3]),
-            )
-        )
-        image: Image = artist.images[1] if artist.images else None
-        if image:
-            embed.set_thumbnail(url=image.url)
 
-        return await ctx.reply(embed=embed)
+            tracks_data: dict[str, Any] = await self.spotify_http_client.get_artist_top_tracks(id=artist.id, market="US")
+
+            albums = album_data["items"]
+
+            unique_albums = sorted(albums, key=lambda x: x["name"].split(" (")[0])
+            unique_albums = [
+                album
+                for i, album in enumerate(unique_albums)
+                if all(album["name"].split(" (")[0].lower() not in a["name"].lower() for a in unique_albums[:i])
+            ]
+
+            album_names = [re.sub(r"\([^()]+\)", "", album["name"]).strip().lower() for album in unique_albums[:3]]
+            album_names.sort(key=lambda x: len(x))
+
+            sorted_unique_albums = sorted(
+                unique_albums[:3],
+                key=lambda x: album_names.index(re.sub(r"\([^()]+\)", "", x["name"]).strip().lower()),
+            )
+            album_tuples = [
+                (capitalize_greek_numbers(name.title()), album["external_urls"]["spotify"])
+                for name, album in zip(album_names, sorted_unique_albums)
+            ]
+
+            tracks: list[dict[str, Any]] = tracks_data["tracks"]
+            top_tracks = sorted(tracks, key=lambda x: x["popularity"], reverse=True)
+
+            _description = f"**Followers**: {artist.followers.total:,}\n**Genres**: " + ", ".join(list(artist.genres[:2]))
+            embed = (
+                Embed(
+                    title=artist.name,
+                    url=artist.external_urls.spotify,
+                    description=_description,
+                )
+                .add_field(
+                    name="Top Albums",
+                    value="\n".join(f"> [{name}]({url})" for name, url in album_tuples),
+                )
+                .add_field(
+                    name="Top Tracks",
+                    value="\n".join(f"> [{track['name']}]({track['external_urls']['spotify']})" for track in top_tracks[:3]),
+                )
+            )
+            image: Image = artist.images[1] if artist.images else None
+            if image:
+                embed.set_thumbnail(url=image.url)
+            embeds.append(embed)
+
+        return await DefaultPaginator.start(ctx, embeds)
 
     @commands.hybrid_command(
         name="playlist",
-        help="Returns a playlist.",
         aliases=["playlists"],
-        with_app_command=True,
+        brief="Returns the requested playlist.",
+        description="Returns the requested playlist.",
     )
     async def playlist(self, ctx: Context, *, playlist: str) -> discord.Message | None:
+        """
+        Returns an embed paginator containing multiple playlists that closely match your input.
+        **Note**: This command uses 3rd party python library which isn't completely finished at the moment
+        and might cause some trouble in the future.
+        """
+
         data: SearchResult = await self.spotify_client.search(query=playlist, types=[ObjectType.Playlist], limit=5)
 
         playlists: list[dict[str, Any]] = data._data["playlists"]["items"]
@@ -292,33 +318,45 @@ class Scraping(BaseCog):
                 f"Can't find any playlists by the name of *{mk(playlist, as_needed=False)}*",
                 user_mistake=True,
             )
+        
+        embeds: list[Embed] = []
+        for playlist in playlists:
+            name = playlist["name"]
+            url = playlist["external_urls"]["spotify"]
+            total_tracks = playlist["tracks"]["total"]
+            owner_name = playlist["owner"]["display_name"]
+            owner_url = playlist["owner"]["external_urls"]["spotify"]
+            image_url = playlist["images"][0]["url"] if playlist["images"] else None
+            description = playlist["description"] or None
 
-        playlist: dict[str, Any] = playlists[0]
-
-        name = playlist["name"]
-        url = playlist["external_urls"]["spotify"]
-        total_tracks = playlist["tracks"]["total"]
-        owner_name = playlist["owner"]["display_name"]
-        owner_url = playlist["owner"]["external_urls"]["spotify"]
-        image_url = playlist["images"][0]["url"] if playlist["images"] else None
-        description = playlist["description"] or None
-
-        embed = (
-            Embed(
-                title=name,
-                url=url,
-                description=description,
+            embed = (
+                Embed(
+                    title=name,
+                    url=url,
+                    description=description,
+                )
+                .add_field(name="Owner", value=f"[{owner_name}]({owner_url})")
+                .add_field(name="Total Tracks", value=total_tracks)
             )
-            .add_field(name="Owner", value=f"[{owner_name}]({owner_url})")
-            .add_field(name="Total Tracks", value=total_tracks)
-        )
-        if image_url:
-            embed.set_thumbnail(url=image_url)
+            if image_url:
+                embed.set_thumbnail(url=image_url)
+            embeds.append(embed)
 
-        return await ctx.reply(embed=embed)
+        return await DefaultPaginator.start(ctx, embeds)
 
-    @commands.hybrid_command(name="track", help="Returns a track.", aliases=["tracks"], with_app_command=True)
+    @commands.hybrid_command(
+        name="track",
+        aliases=["tracks"],
+        brief="Returns the requested track.",
+        description="Returns the requested track.",
+    )
     async def track(self, ctx: Context, *, track: str) -> discord.Message | None:
+        """
+        Returns an embed paginator containing multiple ptracks that closely match your input.
+        **Note**: This command uses 3rd party python library which isn't completely finished at the moment
+        and might cause some trouble in the future.
+        """
+
         data: SearchResult = await self.spotify_client.search(query=track, types=[ObjectType.Track], limit=5)
 
         tracks: list[Track] = data.tracks.items
@@ -384,8 +422,20 @@ class Scraping(BaseCog):
 
         raise commands.BadArgument(f"Couldn't find a game by the name *{mk(name)}*")
 
-    @commands.hybrid_command(name="game", help="Returns a game.", aliases=["games"], with_app_command=True)
+    @commands.hybrid_command(
+        name="game",
+        aliases=["games"],
+        brief="Returns the requested game.",
+        description="Returns the requested game.",
+    )
     async def game(self, ctx: Context, *, game: str) -> discord.Message | None:
+        """
+        This command searches and returns a game that matches your input.
+        Since it's powered by official [Steam API](<https://steamcommunity.com/dev>),
+        which is obviously shit at the moment, the responses may be limited.
+        We apologize for any inconvenience and hope to switch to a new API soon.
+        """
+
         game_id = await self.get_game_by_name(game)
 
         url: URL = f"https://store.steampowered.com/api/appdetails?appids={game_id}&l=en"
@@ -425,11 +475,19 @@ class Scraping(BaseCog):
 
     @commands.hybrid_command(
         name="actor",
-        help="Returns a person who's known in the movie industry.",
         aliases=["actors", "actress", "actresses"],
-        with_app_command=True,
-    )  # amybe people alias, but later if there are no other ppl aliases
+        brief="Displays a figure recognized in the movie industry.",
+        description="Displays a figure recognized in the movie industry.",
+    )
     async def movie_person(self, ctx: Context, *, person: str) -> discord.Message | None:
+        """
+        Reveals an individual with recognition in the film industry, encompassing roles beyond actors and actresses.
+        This command currently utilizes the [TMDB API](<https://developer.themoviedb.org/docs>) which, unfortunately,
+        lacks access to the requested person's birthdate. To address this limitation, we have integrated the 3rd party
+        [Wikipedia-API](<https://pypi.org/project/Wikipedia-API/>) library to provide a brief biography of the person.
+        Consequently, this command may require additional time to complete.
+        """
+
         pages: int = 1
         url: URL = (
             f"https://api.themoviedb.org/3/search/person?query={person}&include_adult=True&language=en-US&page={pages}"
@@ -474,11 +532,15 @@ class Scraping(BaseCog):
 
     @commands.command(
         name="movie",
-        help="Returns a movie by its title.",
+        brief="Returns the requested movie by title.",
         aliases=["film", "films", "movies"],
     )
     async def movie(self, ctx: Context, *, movie: str) -> discord.Message | None:
-        # Docs: https://developer.themoviedb.org/reference/intro/getting-started
+        """
+        Provides the requested movie while omitting TV shows to ensure a more precise response.
+        For TV shows, please utilize `show` command. **Note**: This command utilizes [TMDB API](<https://developer.themoviedb.org/docs>)
+        that might become unresponsive once the request threshold is reached.
+        """
 
         pages: int = 1
         url: URL = f"https://api.themoviedb.org/3/search/movie?query={movie}&include_adult=True&language=en-US&page={pages}"
@@ -515,10 +577,15 @@ class Scraping(BaseCog):
 
         return await ctx.reply(embed=embed)
 
-    @app_commands.command(name="movie", description="Returns a movie by its title.")
+    @app_commands.command(name="movie", description="Returns the requested movie by title.")
     async def _movie(self, interaction: Interaction, *, movie: str, year: int = None) -> discord.Message | None:
-        pages: int = 1
+        """
+        Provides the requested movie while omitting TV shows to ensure a more precise response.
+        For TV shows, please utilize `show` command. **Note**: This command utilizes [TMDB API](<https://developer.themoviedb.org/docs>)
+        that might become unresponsive once the request threshold is reached.
+        """
 
+        pages: int = 1
         url: URL = f"https://api.themoviedb.org/3/search/movie?query={movie}&include_adult=True&language=en-US&primary_release_year={year}&page={pages}"
 
         if not year:
@@ -536,7 +603,7 @@ class Scraping(BaseCog):
         except ValueError:
             return await interaction.response.send_message(
                 f"Couldn't find a movie by the name of {movie}.", ephemeral=True
-            )  # noqa: E501
+            )
 
         embed = Embed(
             title=movie["title"],
@@ -557,8 +624,14 @@ class Scraping(BaseCog):
 
         return await interaction.response.send_message(embed=embed)
 
-    @commands.command(name="show", help="Returns a TV show by its title.", aliases=["series", "shows"])
+    @commands.command(name="show", brief="Returns a TV show by its title.", aliases=["series", "shows"])
     async def show(self, ctx: Context, *, show: str) -> discord.Message | None:
+        """
+        Provides the requested tv-show while omitting movies to ensure a more precise response.
+        For movies, please utilize `movie` command. **Note**: This command utilizes [TMDB API](<https://developer.themoviedb.org/docs>)
+        that might become unresponsive once the request threshold is reached.
+        """
+
         pages: int = 1
         url: URL = f"https://api.themoviedb.org/3/search/tv?query={show}&include_adult=True&language=en-US&page={pages}"
         async with self.bot.http_session.get(url=url, headers=self.tmdb_headers) as response:
@@ -596,6 +669,12 @@ class Scraping(BaseCog):
 
     @app_commands.command(name="show", description="Returns a TV show by its title.")
     async def _show(self, interaction: Interaction, *, show: str, year: int = None) -> discord.Message | None:
+        """
+        Provides the requested tv-show while omitting movies to ensure a more precise response.
+        For movies, please utilize `movie` command. **Note**: This command utilizes [TMDB API](<https://developer.themoviedb.org/docs>)
+        that might become unresponsive once the request threshold is reached.
+        """
+
         pages: int = 1
 
         url = f"https://api.themoviedb.org/3/search/tv?query={show}&include_adult=True&language=en-US&primary_release_year={year}&page={pages}"
@@ -638,32 +717,41 @@ class Scraping(BaseCog):
 
     @commands.hybrid_command(
         name="weather",
-        help="Shows you the temparature in the city you've typed in.",
-        with_app_command=True,
+        brief="Shows the temparature in the requested location.",
+        description="Shows the temparature in the requested location.",
     )
     async def weather(self, ctx: Context, *, city: str) -> discord.Message | None:
-        if not city:
+        """
+        Displays the temperature in both Celsius and Fahrenheit for the location you specify,
+        which can be a country, city, or region.
+        This functionality relies on the [OpenWeatherMap API](<https://openweathermap.org/api>),
+        and it's important to note that it may approach the API's request limit.
+        """
+
+        if not city: # missing param error triggered, so this check is useless
             return await ctx.reply("Please provide a city or a contry.", mention_author=True)
 
-        args = city.lower()
+        _location = city.lower()
 
         async with self.bot.http_session.get(
-            f"http://api.openweathermap.org/data/2.5/weather?q={args}&APPID={WEATHER_KEY}&units=metric"
+            f"http://api.openweathermap.org/data/2.5/weather?q={_location}&APPID={WEATHER_KEY}&units=metric"
         ) as response:
             data = await response.json()
 
         if data["cod"] == "404":
+            # please don't use this... find a way for openweathermap to return a similair city maybe,
+            # or just use another api to get similair matches
             async with aiofiles.open("storage/datasets/countries.json") as file:
                 data: dict = json.loads(await file.read())
 
             matches = []
             for key, value in data.items():
-                if country_match := difflib.get_close_matches(args, [key]):
+                if country_match := difflib.get_close_matches(_location, [key]):
                     matches.append(country_match[0])
-                elif city_matches := difflib.get_close_matches(args, value):
+                elif city_matches := difflib.get_close_matches(_location, value):
                     matches.append(city_matches[0])
 
-            clean_matches = difflib.get_close_matches(args, matches, 5)
+            clean_matches = difflib.get_close_matches(_location, matches, 5)
 
             description = "Please check the spelling and try again."
             if clean_matches:
@@ -672,7 +760,7 @@ class Scraping(BaseCog):
                     description += f"\n{match}"
 
             matches_embed = Embed(
-                description=f"Sorry, but I couldn't recognise the city **{args.title()}**." f"\n{description}",
+                description=f"Sorry, but I couldn't recognise the city **{_location.title()}**." f"\n{description}",
                 color=cs.WARNING_COLOR,
             )
             return await ctx.reply(embed=matches_embed, mention_author=True)
@@ -713,14 +801,18 @@ class Scraping(BaseCog):
 
         return await ctx.reply(embed=weather_embed, ephemeral=False)
     
-    @commands.hybrid_command(name="urban", help="Searches urban dictionary.", with_app_command=True)
-    async def _urban(self, ctx: Context, *, word: str):
+    @commands.hybrid_command(
+        name="urban",
+        brief="Searches urban dictionary.",
+        description="Searches urban dictionary.",
+    )
+    async def _urban(self, ctx: Context, *, word: str = None):
         """Searches urban dictionary."""
 
-        url = 'http://api.urbandictionary.com/v0/define'
-        async with ctx.bot.http_session.get(url, params={'term': word}) as resp:
+        url = 'http://api.urbandictionary.com/v0/define' if word else "https://api.urbandictionary.com/v0/random"
+        async with ctx.bot.http_session.get(url, params={'term': word} if word else None) as resp:
             if resp.status != 200:
-                return await ctx.send(f'An error occurred: {resp.status} {resp.reason}')
+                return await ctx.send(f'An error occurred: {resp.status} {resp.reason}') # not a very good handler haha
 
             js = await resp.json()
             data = js.get('list', [])

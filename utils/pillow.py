@@ -41,8 +41,8 @@ def has_extension(filename: str) -> bool:
     
     return False
 
-def resize_gif(_bytes: bytes, _size: tuple[int, int], /, _buffer: BytesIO = BytesIO()) -> Image:
-    im = Image.open(BytesIO(_bytes))
+def resize_gif(_bytes: bytes | BytesIO, _size: tuple[int, int], /, _buffer: BytesIO = BytesIO()) -> Image:
+    im = Image.open(BytesIO(_bytes)) if isinstance(_bytes, bytes) else Image.open(_bytes)
 
     # Wrap on-the-fly thumbnail generator
     def thumbnails(frames):
@@ -54,21 +54,25 @@ def resize_gif(_bytes: bytes, _size: tuple[int, int], /, _buffer: BytesIO = Byte
     # Save output
     om = next(frames) # Handle first frame separately
     om.info = im.info # Copy sequence info
-    om.save(_buffer, save_all=True, append_images=list(frames), loop=0, format="GIF")
+    om.save(_buffer, save_all=True, append_images=list(frames), loop=0, disposal=2, format="GIF")
     return om
 
-def resize_discord_file(file: discord.File, size: tuple[int, int], _file_extension: str = ".png") -> discord.File:
+def resize_from_url(url: str, size: tuple[int, int], _file_extension: str = ".png") -> discord.File:
+    return resize_discord_file(download_pfp(url), size, _file_extension)
+
+def resize_discord_file(file: discord.File | BytesIO, size: tuple[int, int], _file_extension: str = ".png") -> discord.File:
     buffer = BytesIO()
+    _file = BytesIO(file.fp.read()) if isinstance(file, discord.File) else file
     try:
         if _file_extension == ".gif":
-            resize_gif(file.fp.read(), size, buffer)
+            resize_gif(_file, size, buffer)
         else:
-            image = Image.open(BytesIO(file.fp.read())).resize(size)
+            image = Image.open(_file).resize(size)
             image.save(buffer, format="JPEG" if (_ext:= _file_extension[1:].upper()) == "JPG" else _ext)
     except UnidentifiedImageError as e:
         raise e
     buffer.seek(0)
-    if file.filename:
+    if isinstance(file, discord.File) and file.filename:
         name = file.filename if has_extension(file.filename) else f'{file.filename}{_file_extension}'
     else:
         name = f'image{_file_extension}'

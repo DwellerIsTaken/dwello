@@ -8,7 +8,7 @@ import discord
 from discord.ext import commands
 
 from core import BaseCog, Dwello
-from utils import HandleHTTPException, SpamChecker
+from utils import HandleHTTPException, SpamChecker, Guild
 
 
 class AutoMod(BaseCog):
@@ -32,7 +32,6 @@ class AutoMod(BaseCog):
     async def ban_for_mention_spam(
         self,
         mention_count: int,
-        guild_id: int,
         message: discord.Message,
         member: discord.Member,
         multiple: bool = False,
@@ -53,26 +52,28 @@ class AutoMod(BaseCog):
         except AttributeError:
             return
 
-        with contextlib.suppress(AttributeError):
-            await self.check_raid(guild_id, message.author, message)
+        _guild = await Guild.get(message.guild.id, self.bot)
+        
+        if _guild.antispam:
+            with contextlib.suppress(AttributeError):
+                await self.check_raid(guild_id, message.author, message)
 
-        checker = self._spam_check[guild_id]
-        if checker.is_mention_spam(message):
-            return await self.ban_for_mention_spam(
-                checker.mention_count,
-                guild_id,
-                message,
-                message.author,
-                multiple=True,
-            )
+            checker = self._spam_check[guild_id]
+            if checker.is_mention_spam(message):
+                return await self.ban_for_mention_spam(
+                    checker.mention_count,
+                    message,
+                    message.author,
+                    multiple=True,
+                )
 
-        # auto-ban tracking for mention spams begin here
-        if len(message.mentions) <= 3:
-            return
+            # auto-ban tracking for mention spams begin here
+            if len(message.mentions) <= 3:
+                return
 
-        # check if it meets the thresholds required
-        mention_count = sum(not m.bot and m.id != message.author.id for m in message.mentions)
-        if mention_count < checker.mention_count:
-            return
+            # check if it meets the thresholds required
+            mention_count = sum(not m.bot and m.id != message.author.id for m in message.mentions)
+            if mention_count < checker.mention_count:
+                return
 
-        await self.ban_for_mention_spam(mention_count, guild_id, message, message.author)
+            await self.ban_for_mention_spam(mention_count, message, message.author)
