@@ -100,7 +100,7 @@ CREATE TABLE IF NOT EXISTS users(
     level BIGINT DEFAULT 1,
     messages BIGINT DEFAULT 0,
     total_xp BIGINT DEFAULT 0,
-    money BIGINT DEFAULT 0,
+    money DECIMAL(15,2) DEFAULT 0.00,
     worked BOOLEAN NOT NULL DEFAULT FALSE,
     command_count BIGINT DEFAULT 0
 );

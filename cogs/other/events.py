@@ -137,8 +137,11 @@ class Events(BaseCog):
         #with suppress(AttributeError):
         #await Guild.get(message.guild.id, self.bot) # for now
 
-        _guild = await Guild.get(message.guild.id, self.bot)
-
+        try:
+            _guild = await Guild.get(message.guild.id, self.bot)
+        except AttributeError:
+            _guild = None
+            
         if message.content == f"<@{self.bot.user.id}>" and not message.author.bot:
             prefix: str = str(self.bot.DEFAULT_PREFIXES[0])
             content: str = f"Hello there! I'm {self.bot.user.name}. Use `{prefix}help` for more."
@@ -151,7 +154,7 @@ class Events(BaseCog):
 
         # turns message link into an embed
         # should be customised
-        if _guild.turn_link_into_message:  # noqa: SIM102
+        if _guild and _guild.turn_link_into_message:  # noqa: SIM102
             if match:= re.compile(r"https?://(.+)?.?discord\.com/channels/\d+/\d+/\d+").search(message.content):
                 link = match.group()
                 guild_id, channel_id, message_id = extract_ids_from_discord_message_link(link)

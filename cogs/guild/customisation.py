@@ -265,14 +265,15 @@ class PageModal(Modal, title="Input Page"):
             return await interaction.response.send_message("Sorry, but the page number must be an integer.", ephemeral=True)
         
         except IndexError:
-            padding: int = len(str(len(self.view.embeds))) + 1
+            #padding: int = len(str(len(self.view.embeds))) + 1
+            #{'': >{padding - len(str(i))}}
             return await interaction.response.send_message(
                 embed=Embed(
                     title="Wrong Page",
                     description=(
                         "Sorry, but this page doesn't exist. Let me help you.\n\n" +
                         "\n".join([ # poor formatting
-                            f"**{i}.**{'': >{padding - len(str(i))}}{embed.title}"
+                            f"**{i}.**".ljust(7) + f"{embed.title}"
                             for i, embed in enumerate(self.view.embeds, 1)
                         ])
                     )

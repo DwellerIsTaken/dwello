@@ -11,7 +11,7 @@ from core import BaseCog, Context, Dwello, Embed
 
 from .shared import SharedEcoUtils
 
-
+# questionable
 class GuildEcoUtils:
     def __init__(self, bot: Dwello) -> None:
         self.bot = bot

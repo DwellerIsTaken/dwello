@@ -4,6 +4,7 @@ from typing import TYPE_CHECKING, Any, List, TypeVar
 
 import discord
 import contextlib
+from decimal import Decimal
 from typing_extensions import Self
 
 from constants import GUILD_CONFIG_DICT, USER_CONFIG_DICT
@@ -972,7 +973,7 @@ class User(BasicORM):
 
     _xp: int
     _level: int
-    _money: int
+    _money: Decimal
     _messages: int
     _total_xp: int
     _worked: bool
@@ -997,8 +998,8 @@ class User(BasicORM):
         return self._total_xp
     
     @property
-    def money(self) -> int:
-        return self._money
+    def money(self) -> float:
+        return float(self._money)
     
     @property
     def worked(self) -> bool:
@@ -1017,6 +1018,10 @@ class User(BasicORM):
         self.id = _id
         self.bot = _bot
 
+    @property
+    def balance(self) -> float:
+        return self.money
+    
     @property
     def current_xp(self) -> int:
         return self.xp
@@ -1040,7 +1045,7 @@ class User(BasicORM):
     def _attributes_from_record(self, record: Record) -> None:
         self._xp: int = record["xp"]
         self._level: int = record["level"]
-        self._money: int = record["money"]
+        self._money: Decimal  = record["money"]
         self._messages: int = record["messages"]
         self._total_xp: int = record["total_xp"]
         self._worked: bool = record["worked"]
@@ -1069,20 +1074,36 @@ class User(BasicORM):
     
     def get_config_option_by_type(self, _type: str) -> Any | None:
         return getattr(self, self._get_sql_name(_type), None)
+    
+    def check_balance(self, amount: int | float) -> bool:
+        return self.balance >= amount
 
     async def get_rank(self) -> int | None:
+        """Gets user's global rank based on their total xp."""
+
+        query = """
+            SELECT (SELECT COUNT(*) + 1
+            FROM users AS u2
+            WHERE u2.total_xp > u1.total_xp) AS rank
+            FROM users AS u1
+            WHERE id = $1
+            ON CONFLICT DO NOTHING
+        """
         async with self.bot.safe_connection() as conn:
-            # records: list[Record] = await conn.fetch("SELECT * FROM users ORDER BY total_xp DESC")
-            query = """
-                SELECT (SELECT COUNT(*) + 1
-                        FROM users AS u2
-                        WHERE u2.total_xp > u1.total_xp) AS rank
-                FROM users AS u1
-                WHERE id = $1
-                ON CONFLICT DO NOTHING
-            """
-            rank: int | None = await conn.fetchval(query, self.id)
-        return rank
+            return await conn.fetchval(query, self.id)
+        
+    async def increase_balance(self, message: discord.Message, balance: int | float, /, worked: bool = False) -> float:
+        assert not message.author.bot
+
+        _balance = float(balance)
+        async with self.bot.safe_connection() as conn:
+            q = "UPDATE users SET money = $1 WHERE id = $2"
+            if worked:
+                q = "UPDATE users SET money = $1, worked = TRUE WHERE id = $2"
+            await conn.execute(q, _balance, self.id)
+
+        self._money = Decimal(self.money + _balance)
+        return self.balance
 
     async def increase_xp(self, message: discord.Message, rate: int = 5) -> int:
         if message.author.bot or not message.guild:

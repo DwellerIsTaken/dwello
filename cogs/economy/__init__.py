@@ -2,14 +2,13 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
-from .bot_eco import Bot_Economy
-from .guild_eco import Guild_Economy
+from ._global import GlobalEconomy
 
 if TYPE_CHECKING:
     from core import Dwello
 
 
-class Economy(Bot_Economy, Guild_Economy, name="Economy"):
+class Economy(GlobalEconomy, name="Economy"):
     """
     💸
     Includes economy commands for both bot- and guild-side.

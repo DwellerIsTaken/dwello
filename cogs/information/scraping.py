@@ -435,7 +435,8 @@ class Scraping(BaseCog):
         which is obviously shit at the moment, the responses may be limited.
         We apologize for any inconvenience and hope to switch to a new API soon.
         """
-
+        #shitty API
+        # cant really paginate with that api
         game_id = await self.get_game_by_name(game)
 
         url: URL = f"https://store.steampowered.com/api/appdetails?appids={game_id}&l=en"
@@ -474,7 +475,7 @@ class Scraping(BaseCog):
         return await ctx.reply(embed=embed)
 
     @commands.hybrid_command(
-        name="actor",
+        name="actor", # maybe just use search or smh
         aliases=["actors", "actress", "actresses"],
         brief="Displays a figure recognized in the movie industry.",
         description="Displays a figure recognized in the movie industry.",
@@ -499,36 +500,42 @@ class Scraping(BaseCog):
             return await ctx.reply("Couldn't connect to the API.", user_mistake=True)
 
         try:
-            person = max(data["results"], key=lambda _person: _person["popularity"])
+            people = sorted(data["results"], key=lambda person: person["popularity"], reverse=True)[:5]
+            if len(people) == 0:
+                raise ValueError
 
         except ValueError:
             return await ctx.reply(f"Couldn't find a person by the name of {person}.", user_mistake=True)
+        
+        embeds: list[Embed] = []
+        for _person in people:
+            # its gonna be (a lot of) requests
+            page: wikipediaapi.WikipediaPage = self.wiki.page(_person["name"])
+            gender = "Male" if _person["gender"] == 2 else "Female"
+            top_movies = list(_person["known_for"])
 
-        page: wikipediaapi.WikipediaPage = self.wiki.page(person["name"])
-        gender = "Male" if person["gender"] == 2 else "Female"
-        top_movies = list(person["known_for"])
-
-        embed = (
-            Embed(
-                title=person["original_name"],
-                description=f"{page.summary[:500]}..." if len(page.summary) > 500 else "",
-                url=f"https://www.themoviedb.org/person/{person['id']}",
+            embed = (
+                Embed(
+                    title=_person["original_name"],
+                    description=f"{page.summary[:500]}..." if len(page.summary) > 500 else "",
+                    url=f"https://www.themoviedb.org/person/{_person['id']}",
+                )
+                .add_field(name="Gender", value=gender)
+                .add_field(name="Department", value=_person["known_for_department"])
             )
-            .add_field(name="Gender", value=gender)
-            .add_field(name="Department", value=person["known_for_department"])
-        )
 
-        if top_movies_desc := "".join(
-            f"\n• [{movie['title']}](https://www.themoviedb.org/movie/{movie['id']})" for movie in top_movies
-        ):
-            embed.add_field(name="Top Movies", value=top_movies_desc, inline=False)
+            if top_movies_desc := "".join(
+                f"\n• [{movie['title']}](https://www.themoviedb.org/movie/{movie['id']})" for movie in top_movies
+            ):
+                embed.add_field(name="Top Movies", value=top_movies_desc, inline=False)
 
-        if person["profile_path"]:
-            embed.set_thumbnail(url=f"https://image.tmdb.org/t/p/w500{person['profile_path']}")
+            if _person["profile_path"]:
+                embed.set_thumbnail(url=f"https://image.tmdb.org/t/p/w500{_person['profile_path']}")
 
-        embed.set_footer(text=f"Popularity: {person['popularity']}")
+            embed.set_footer(text=f"Popularity: {_person['popularity']}")
+            embeds.append(embed)
 
-        return await ctx.reply(embed=embed)
+        return await DefaultPaginator.start(ctx, embeds)
 
     @commands.command(
         name="movie",
@@ -551,31 +558,36 @@ class Scraping(BaseCog):
             return await ctx.reply("Couldn't connect to the API.", user_mistake=True)
 
         try:
-            movie = max(data["results"], key=lambda _movie: _movie["vote_count"])
+            movies = sorted(data["results"], key=lambda _movie: _movie["vote_count"], reverse=True)[:5]
+            if len(movies) == 0:
+                raise ValueError
 
         except ValueError:
             return await ctx.reply(f"Couldn't find a movie by the name of {movie}.", user_mistake=True)
-
-        embed = (
-            Embed(
-                title=movie["title"],
-                description=movie["overview"],
-                url=f"https://www.themoviedb.org/movie/{movie['id']}",
+        
+        embeds: list[Embed] = []
+        for _movie in movies:
+            embed = (
+                Embed(
+                    title=_movie["title"],
+                    description=_movie["overview"],
+                    url=f"https://www.themoviedb.org/movie/{_movie['id']}",
+                )
+                .add_field(
+                    name="Release Date",
+                    value=get_unix_timestamp(_movie["release_date"], "%Y-%m-%d", style="d"),
+                )
+                .add_field(name="Vote Average", value=f"{str(_movie['vote_average'])[:3]} / 10")
+                .add_field(name="Vote Count", value=_movie["vote_count"])
             )
-            .add_field(
-                name="Release Date",
-                value=get_unix_timestamp(movie["release_date"], "%Y-%m-%d", style="d"),
-            )
-            .add_field(name="Vote Average", value=f"{str(movie['vote_average'])[:3]} / 10")
-            .add_field(name="Vote Count", value=movie["vote_count"])
-        )
 
-        if movie["poster_path"]:
-            embed.set_thumbnail(url=f"https://image.tmdb.org/t/p/w500{movie['poster_path']}")
+            if _movie["poster_path"]:
+                embed.set_thumbnail(url=f"https://image.tmdb.org/t/p/w500{_movie['poster_path']}")
 
-        embed.set_footer(text=f"Popularity: {movie['popularity']}")
+            embed.set_footer(text=f"Popularity: {_movie['popularity']}")
+            embeds.append(embed)
 
-        return await ctx.reply(embed=embed)
+        return await DefaultPaginator.start(ctx, embeds)
 
     @app_commands.command(name="movie", description="Returns the requested movie by title.")
     async def _movie(self, interaction: Interaction, *, movie: str, year: int = None) -> discord.Message | None:
@@ -598,31 +610,39 @@ class Scraping(BaseCog):
             return await interaction.response.send_message("Couldn't connect to the API.", ephemeral=True)
 
         try:
-            movie = max(data["results"], key=lambda _movie: _movie["vote_count"])
+            movies = sorted(data["results"], key=lambda _movie: _movie["vote_count"], reverse=True)[:5]
+            if len(movies) == 0:
+                raise ValueError
 
         except ValueError:
             return await interaction.response.send_message(
                 f"Couldn't find a movie by the name of {movie}.", ephemeral=True
             )
 
-        embed = Embed(
-            title=movie["title"],
-            description=movie["overview"],
-            url=f"https://www.themoviedb.org/movie/{movie['id']}",
-        )
-        embed.add_field(
-            name="Release Date",
-            value=get_unix_timestamp(movie["release_date"], "%Y-%m-%d", style="d"),
-        ).add_field(name="Vote Average", value=f"{str(movie['vote_average'])[:3]} / 10").add_field(
-            name="Vote Count", value=movie["vote_count"]
-        )
+        embeds: list[Embed] = []
 
-        if movie["poster_path"]:
-            embed.set_thumbnail(url=f"https://image.tmdb.org/t/p/w500{movie['poster_path']}")
+        for _movie in movies:
+            embed = (
+                Embed(
+                    title=_movie["title"],
+                    description=_movie["overview"],
+                    url=f"https://www.themoviedb.org/movie/{_movie['id']}",
+                )
+                .add_field(
+                    name="Release Date",
+                    value=get_unix_timestamp(_movie["release_date"], "%Y-%m-%d", style="d"),
+                )
+                .add_field(name="Vote Average", value=f"{str(_movie['vote_average'])[:3]} / 10")
+                .add_field(name="Vote Count", value=_movie["vote_count"])
+            )
 
-        embed.set_footer(text=f"Popularity: {movie['popularity']}")
+            if _movie["poster_path"]:
+                embed.set_thumbnail(url=f"https://image.tmdb.org/t/p/w500{_movie['poster_path']}")
 
-        return await interaction.response.send_message(embed=embed)
+            embed.set_footer(text=f"Popularity: {_movie['popularity']}")
+            embeds.append(embed)
+
+        return await DefaultPaginator.start(interaction, embeds)
 
     @commands.command(name="show", brief="Returns a TV show by its title.", aliases=["series", "shows"])
     async def show(self, ctx: Context, *, show: str) -> discord.Message | None:
@@ -641,31 +661,37 @@ class Scraping(BaseCog):
             return await ctx.reply("Couldn't connect to the API.", user_mistake=True)
 
         try:
-            show = max(data["results"], key=lambda _show: _show["vote_count"])
-
+            shows = sorted(data["results"], key=lambda _show: _show["vote_count"], reverse=True)[:5]
+            if len(shows) == 0:
+                raise ValueError
+            
         except ValueError:
             return await ctx.reply(f"Couldn't find a show by the name of {show}.", user_mistake=True)
 
-        embed = (
-            Embed(
-                title=show["original_name"],
-                description=show["overview"],
-                url=f"https://www.themoviedb.org/tv/{show['id']}",
+        embeds: list[Embed] = []
+
+        for _show in shows:
+            embed = (
+                Embed(
+                    title=_show["original_name"],
+                    description=_show["overview"],
+                    url=f"https://www.themoviedb.org/tv/{_show['id']}",
+                )
+                .add_field(
+                    name="Release Date",
+                    value=get_unix_timestamp(_show["first_air_date"], "%Y-%m-%d", style="d"),
+                )
+                .add_field(name="Vote Average", value=f"{str(_show['vote_average'])[:3]} / 10")
+                .add_field(name="Vote Count", value=_show["vote_count"])
             )
-            .add_field(
-                name="Release Date",
-                value=get_unix_timestamp(show["first_air_date"], "%Y-%m-%d", style="d"),
-            )
-            .add_field(name="Vote Average", value=f"{str(show['vote_average'])[:3]} / 10")
-            .add_field(name="Vote Count", value=show["vote_count"])
-        )
 
-        if show["poster_path"]:
-            embed.set_thumbnail(url=f"https://image.tmdb.org/t/p/w500{show['poster_path']}")
+            if _show["poster_path"]:
+                embed.set_thumbnail(url=f"https://image.tmdb.org/t/p/w500{_show['poster_path']}")
 
-        embed.set_footer(text=f"Popularity: {show['popularity']}")
+            embed.set_footer(text=f"Popularity: {_show['popularity']}")
+            embeds.append(embed)
 
-        return await ctx.reply(embed=embed)
+        return await DefaultPaginator.start(ctx, embeds)
 
     @app_commands.command(name="show", description="Returns a TV show by its title.")
     async def _show(self, interaction: Interaction, *, show: str, year: int = None) -> discord.Message | None:
@@ -689,31 +715,37 @@ class Scraping(BaseCog):
             return await interaction.response.send_message("Couldn't connect to the API.", ephemeral=True)
 
         try:
-            show = max(data["results"], key=lambda _show: _show["vote_count"])
-
+            shows = sorted(data["results"], key=lambda _show: _show["vote_count"], reverse=True)[:5]
+            if len(shows) == 0:
+                raise ValueError
+            
         except ValueError:
             return await interaction.response.send_message(f"Couldn't find a show by the name of {show}.", ephemeral=True)
 
-        embed = (
-            Embed(
-                title=show["original_name"],
-                description=show["overview"],
-                url=f"https://www.themoviedb.org/tv/{show['id']}",
+        embeds: list[Embed] = []
+
+        for _show in shows:
+            embed = (
+                Embed(
+                    title=_show["original_name"],
+                    description=_show["overview"],
+                    url=f"https://www.themoviedb.org/tv/{_show['id']}",
+                )
+                .add_field(
+                    name="Release Date",
+                    value=get_unix_timestamp(_show["first_air_date"], "%Y-%m-%d", style="d"),
+                )
+                .add_field(name="Vote Average", value=f"{str(_show['vote_average'])[:3]} / 10")
+                .add_field(name="Vote Count", value=_show["vote_count"])
             )
-            .add_field(
-                name="Release Date",
-                value=get_unix_timestamp(show["first_air_date"], "%Y-%m-%d", style="d"),
-            )
-            .add_field(name="Vote Average", value=f"{str(show['vote_average'])[:3]} / 10")
-            .add_field(name="Vote Count", value=show["vote_count"])
-        )
 
-        if show["poster_path"]:
-            embed.set_thumbnail(url=f"https://image.tmdb.org/t/p/w500{show['poster_path']}")
+            if _show["poster_path"]:
+                embed.set_thumbnail(url=f"https://image.tmdb.org/t/p/w500{_show['poster_path']}")
 
-        embed.set_footer(text=f"Popularity: {show['popularity']}")
+            embed.set_footer(text=f"Popularity: {_show['popularity']}")
+            embeds.append(embed)
 
-        return await interaction.response.send_message(embed=embed)
+        return await DefaultPaginator.start(interaction, embeds)
 
     @commands.hybrid_command(
         name="weather",
