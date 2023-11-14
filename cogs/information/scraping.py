@@ -473,36 +473,36 @@ class Scraping(BaseCog):
         if len(data) == 0:
             return await ctx.reply(f"Couldn't find a game by the name: {game}", user_mistake=True)
         
-        def safe_get_key(dictionary, key) -> Any | None:
-            try:
-                return dictionary[key]
-            except KeyError:
-                return None
+        async with aiofiles.open("storage/datasets/igdb_covers.json", encoding='utf-8') as file:
+            cover_data: dict = json.loads(await file.read())
+
+        async with aiofiles.open("storage/datasets/igdb_companies.json", encoding='utf-8') as file:
+            company_data: dict = json.loads(await file.read())
+
+        async with aiofiles.open("storage/datasets/igdb_involved_companies.json", encoding='utf-8') as file:
+            involved_company_data: dict = json.loads(await file.read())
 
         embeds: list[Embed] = []
         for _game in data:
-            rating: float | None = safe_get_key(_game, "rating")
-            cover_id: int | None = safe_get_key(_game, "cover")
-            votes: int | None = safe_get_key(_game, "rating_count")
-            updated_at: int | None = safe_get_key(_game, "updated_at")
-            genres: list[int] | None = safe_get_key(_game, "genres")
-            first_released_at: int | None = safe_get_key(_game, "first_released_at")
-            involved_companies: list[int] | None = safe_get_key(_game, "involved_companies")
+            rating: float | None = _game.get("rating")
+            cover_id: int | None = _game.get("cover")
+            votes: int | None = _game.get("rating_count")
+            updated_at: int | None = _game.get("updated_at")
+            genres: list[int] | None = _game.get("genres")
+            first_released_at: int | None = _game.get("first_released_at")
+            involved_companies: list[int] | None = _game.get("involved_companies")
 
             cover_url: str | None = None
             if cover_id:
-                async with aiofiles.open("storage/datasets/igdb_covers.json", encoding='utf-8') as file:
-                    cover_data: dict = json.loads(await file.read())
-                    with contextlib.suppress(KeyError):
-                        cover_url = cover_data[f'{cover_id}']["url"]
+                with contextlib.suppress(KeyError):
+                    cover_url = cover_data[f'{cover_id}']["url"]
 
             company_list: list[dict[str, Any]] = []
             if involved_companies:
                 for company_id in involved_companies[:3]:
-                    async with aiofiles.open("storage/datasets/igdb_companies.json", encoding='utf-8') as file:
-                        company_data: dict = json.loads(await file.read())
-                        with contextlib.suppress(KeyError):
-                            company_list.append(company_data[f'{company_id}'])
+                    with contextlib.suppress(KeyError):
+                        v = company_data.get(f"{involved_company_data[f'{company_id}']['company']}")
+                        company_list.append(v)
             embed = Embed(
                 url=_game["url"],
                 title=_game["name"],
@@ -518,7 +518,7 @@ class Scraping(BaseCog):
             if genres:
                 genre_description: str = ""
                 for genre_id in genres[:3]:
-                    genre = safe_get_key(cs.IGDB_GENRES_DICT, genre_id)
+                    genre = cs.IGDB_GENRES_DICT.get(genre_id)
                     genre_description += f"\n• [{genre['name']}]({genre['url']})" if genre else ""
                 embed.add_field(name="Genres", value=genre_description)
             if company_list:
