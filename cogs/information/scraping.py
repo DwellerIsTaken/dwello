@@ -13,7 +13,6 @@ from aiospotify import Artist, Image, ObjectType, PartialAlbum, SearchResult, Sp
 from datetime import datetime
 from discord import app_commands
 from discord.ext import commands
-from typing_extensions import Self
 from yarl import URL
 
 import constants as cs
@@ -22,17 +21,29 @@ from utils import ENV, DefaultPaginator, capitalize_greek_numbers, get_unix_time
 
 if TYPE_CHECKING:
     from discord import Interaction
+    from aiohttp import ClientResponse, ClientSession
 
 mk = discord.utils.escape_markdown
 
 TMDB_KEY = ENV["TMDB_API_TOKEN"]
 STEAM_KEY = ENV["STEAM_API_KEY"]
+CLIENT_ID = ENV["TWITCH_CLIENT_ID"]
 WEATHER_KEY = ENV["OPENWEATHERMAP_KEY"]
+CLIENT_SECRET = ENV["TWITCH_CLIENT_SECRET"]
 SPOTIFY_CLIENT_ID = ENV["SPOTIFY_CLIENT_ID"]
 SPOTIFY_CLIENT_SECRET = ENV["SPOTIFY_CLIENT_SECRET"]
 UNSPLASH_DEMO_ACCESS_KEY = ENV["UNSPLASH_DEMO_ACCESS_KEY"]
 
-# create simple response handler class
+
+async def get_access_token(session: ClientSession):
+    body = {
+        "client_id": CLIENT_ID,
+        "client_secret": CLIENT_SECRET,
+        "grant_type": "client_credentials",
+    }
+    request: ClientResponse = await session.post("https://id.twitch.tv/oauth2/token", data=body)
+    keys = await request.json()
+    return keys["access_token"]
 
 
 # not sure what this is
@@ -54,7 +65,7 @@ class OptionSelectView(discord.ui.View):
         print(select.values)
         return await interaction.response.edit_message(embed=select.values[0], view=self)
 
-    def build_select(self: Self) -> None:
+    def build_select(self) -> None:
         self.category_select.options = []
 
         for label, embed in self.options:
@@ -66,11 +77,11 @@ class OptionSelectView(discord.ui.View):
         await interaction.response.defer()
         return False
 
-    async def on_timeout(self: Self) -> None:
+    async def on_timeout(self) -> None:
         self.clear_items()
         await self.message.edit(view=self)
 
-    async def start(self: Self) -> discord.Message | None:
+    async def start(self) -> discord.Message | None:
         self.build_select()
         self.message = await self.ctx.send(embed=self.main_embed, view=self)
 
@@ -78,6 +89,8 @@ class OptionSelectView(discord.ui.View):
 class Scraping(BaseCog):
     def __init__(self, bot: Dwello, *args: Any, **kwargs: Any) -> None:
         super().__init__(bot, *args, **kwargs)
+
+        self.access_token: str | None = None
 
         self.spotify_client: SpotifyClient = SpotifyClient(
             SPOTIFY_CLIENT_ID,
@@ -94,18 +107,25 @@ class Scraping(BaseCog):
             )
 
     @property
-    def tmdb_key(self: Self) -> str:
+    def tmdb_key(self) -> str:
         return TMDB_KEY
 
     @property
-    def tmdb_headers(self: Self) -> dict[str, str]:
+    def tmdb_headers(self) -> dict[str, str]:
         return {
             "accept": "application/json",
             "Authorization": f"Bearer {self.tmdb_key}",
         }
+    
+    @property
+    def game_headers(self) -> dict[str, Any]:
+        return {
+            "Client-ID": CLIENT_ID,
+            "Authorization": f"Bearer {self.access_token}",
+        }
 
     @property
-    def spotify_http_client(self: Self) -> http.HTTPClient:
+    def spotify_http_client(self) -> http.HTTPClient:
         return self.spotify_client.http
 
     @property
@@ -435,44 +455,81 @@ class Scraping(BaseCog):
         which is obviously shit at the moment, the responses may be limited.
         We apologize for any inconvenience and hope to switch to a new API soon.
         """
-        #shitty API
-        # cant really paginate with that api
-        game_id = await self.get_game_by_name(game)
+        
+        if self.access_token is None:
+            # access token expires, so refresh
+            self.access_token = await get_access_token(ctx.bot.http_session)
 
-        url: URL = f"https://store.steampowered.com/api/appdetails?appids={game_id}&l=en"
-        async with self.bot.http_session.get(url=url) as response:
-            data = await response.json()
+        conditions=f'fields *; search "{game}"; exclude tags, keywords; limit 5;'
+        async with self.bot.http_session.post(
+            url="https://api.igdb.com/v4/games",
+            headers=self.game_headers, data=conditions,
+        ) as response:
+            data: list[dict[str, Any]] = await response.json()
 
         if response.status != 200:
             return await ctx.reply("Couldn't connect to the API.", user_mistake=True)
+        
+        if len(data) == 0:
+            return await ctx.reply(f"Couldn't find a game by the name: {game}", user_mistake=True)
+        
+        def safe_get_key(dictionary, key) -> Any | None:
+            try:
+                return dictionary[key]
+            except KeyError:
+                return None
 
-        data = data[str(game_id)]["data"]
+        embeds: list[Embed] = []
+        for _game in data:
+            rating: float | None = safe_get_key(_game, "rating")
+            cover_id: int | None = safe_get_key(_game, "cover")
+            votes: int | None = safe_get_key(_game, "rating_count")
+            updated_at: int | None = safe_get_key(_game, "updated_at")
+            genres: list[int] | None = safe_get_key(_game, "genres")
+            first_released_at: int | None = safe_get_key(_game, "first_released_at")
+            involved_companies: list[int] | None = safe_get_key(_game, "involved_companies")
 
-        name = data["name"]
-        devs = data["developers"]
-        website = data["website"]
-        thumbnail = data["header_image"]
-        metaurl = data["metacritic"]["url"]
-        metascore = data["metacritic"]["score"]
-        short_description = data["short_description"]
-        price = data["price_overview"]["final_formatted"]
+            cover_url: str | None = None
+            if cover_id:
+                async with aiofiles.open("storage/datasets/igdb_covers.json", encoding='utf-8') as file:
+                    cover_data: dict = json.loads(await file.read())
+                    with contextlib.suppress(KeyError):
+                        cover_url = cover_data[f'{cover_id}']["url"]
 
-        embed = (
-            Embed(
-                title=name,
-                url=website,
-                description=short_description,
+            company_list: list[dict[str, Any]] = []
+            if involved_companies:
+                for company_id in involved_companies[:3]:
+                    async with aiofiles.open("storage/datasets/igdb_companies.json", encoding='utf-8') as file:
+                        company_data: dict = json.loads(await file.read())
+                        with contextlib.suppress(KeyError):
+                            company_list.append(company_data[f'{company_id}'])
+            embed = Embed(
+                url=_game["url"],
+                title=_game["name"],
+                description=_game["summary"],
             )
-            .set_thumbnail(url=thumbnail)
-            .add_field(name="Metascore", value=f"[{metascore}]({metaurl})")
-            .add_field(
-                name="Price",
-                value=f"[{price}](https://store.steampowered.com/app/{game_id})",
-            )
-            .add_field(name="Developed by", value=", ".join(devs[:3]), inline=False)
-        )
+            if rating and votes:
+                embed.add_field(name="IGBD rating", value=round(rating, 1))
+                embed.add_field(name="IGBD votes", value=votes)
+            if first_released_at:
+                embed.add_field(name="Released at", value=f"<t:{_game['first_release_date']}:d>")
+            if updated_at:
+                embed.add_field(name="Last update", value=f"<t:{_game['updated_at']}:d>")
+            if genres:
+                genre_description: str = ""
+                for genre_id in genres[:3]:
+                    genre = safe_get_key(cs.IGDB_GENRES_DICT, genre_id)
+                    genre_description += f"\n• [{genre['name']}]({genre['url']})" if genre else ""
+                embed.add_field(name="Genres", value=genre_description)
+            if company_list:
+                embed.add_field(
+                    name="Companies involved",
+                    value="".join(f"\n• [{company['name']}]({company['url']})" for company in company_list),
+                )
+            embed.set_thumbnail(url="https:"+cover_url if cover_url else None)
+            embeds.append(embed)
 
-        return await ctx.reply(embed=embed)
+        return await DefaultPaginator.start(ctx, embeds)
 
     @commands.hybrid_command(
         name="actor", # maybe just use search or smh

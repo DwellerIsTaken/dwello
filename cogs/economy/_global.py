@@ -15,6 +15,15 @@ class GlobalEconomy(BaseCog):
         super().__init__(bot, *args, **kwargs)
 
     @commands.hybrid_command(
+        name="balance",
+        brief="Your bank account balance.",
+        description="Your bank account balance.",
+    ) # probably have a command that shows all ur eco stats
+    async def balance(self, ctx: Context) -> discord.Message:
+        user = await User.get(ctx.author.id, ctx.bot)
+        return await ctx.reply(embed=Embed(description=f"Your current balance is: {user.balance}"))
+
+    @commands.hybrid_command(
         name="work",
         brief="A boring job with a basic income. Gives some of the bot's currency in return.",
         description="A boring job with a basic income. Gives some of the bot's currency in return.",

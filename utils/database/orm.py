@@ -1019,7 +1019,9 @@ class User(BasicORM):
         self.bot = _bot
 
     @property
-    def balance(self) -> float:
+    def balance(self) -> int | float:
+        if (s:= str(self.money).split('.')[-1]) == "00" or s == "0":
+            return int(self.money)
         return self.money
     
     @property
