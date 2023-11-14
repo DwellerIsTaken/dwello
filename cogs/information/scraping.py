@@ -2,15 +2,14 @@ from __future__ import annotations
 
 import contextlib
 import difflib
-import json
 import re
+from datetime import datetime
 from typing import TYPE_CHECKING, Any
 
 import aiofiles
 import discord
 import wikipediaapi
 from aiospotify import Artist, Image, ObjectType, PartialAlbum, SearchResult, SpotifyClient, Track, http
-from datetime import datetime
 from discord import app_commands
 from discord.ext import commands
 from yarl import URL
@@ -19,9 +18,17 @@ import constants as cs
 from core import BaseCog, Context, Dwello, Embed
 from utils import ENV, DefaultPaginator, capitalize_greek_numbers, get_unix_timestamp
 
+try:
+    import orjson as json
+
+except ImportError:
+    import logging
+    logging.warning("Failed to import orjson, using stdlib json instead.")
+    import json as json
+
 if TYPE_CHECKING:
-    from discord import Interaction
     from aiohttp import ClientResponse, ClientSession
+    from discord import Interaction
 
 mk = discord.utils.escape_markdown
 
@@ -163,7 +170,7 @@ class Scraping(BaseCog):
 
         async with self.bot.http_session.get(url, headers=headers, params=params) as response:
             if response.status == 200:
-                data = await response.json()
+                data = await response.json(loads=json.loads)
 
             elif response.status >= 400:
                 return await ctx.reply(
@@ -427,7 +434,7 @@ class Scraping(BaseCog):
     async def get_game_by_name(self, name: str) -> int:
         url: URL = "http://api.steampowered.com/ISteamApps/GetAppList/v2/"
         async with self.bot.http_session.get(url=url) as response:
-            data = await response.json()
+            data = await response.json(loads=json.loads)
 
         # await with ResponseHandler(response.status):
         # etc
@@ -455,7 +462,8 @@ class Scraping(BaseCog):
         which is obviously shit at the moment, the responses may be limited.
         We apologize for any inconvenience and hope to switch to a new API soon.
         """
-        
+    
+        await ctx.typing()
         if self.access_token is None:
             # access token expires, so refresh
             self.access_token = await get_access_token(ctx.bot.http_session)
@@ -465,7 +473,7 @@ class Scraping(BaseCog):
             url="https://api.igdb.com/v4/games",
             headers=self.game_headers, data=conditions,
         ) as response:
-            data: list[dict[str, Any]] = await response.json()
+            data: list[dict[str, Any]] = await response.json(loads=json.loads)
 
         if response.status != 200:
             return await ctx.reply("Couldn't connect to the API.", user_mistake=True)
@@ -473,13 +481,13 @@ class Scraping(BaseCog):
         if len(data) == 0:
             return await ctx.reply(f"Couldn't find a game by the name: {game}", user_mistake=True)
         
-        async with aiofiles.open("storage/datasets/igdb_covers.json", encoding='utf-8') as file:
+        async with aiofiles.open("storage/datasets/igdb_covers.json", "rb") as file:
             cover_data: dict = json.loads(await file.read())
 
-        async with aiofiles.open("storage/datasets/igdb_companies.json", encoding='utf-8') as file:
+        async with aiofiles.open("storage/datasets/igdb_companies.json", "rb") as file:
             company_data: dict = json.loads(await file.read())
 
-        async with aiofiles.open("storage/datasets/igdb_involved_companies.json", encoding='utf-8') as file:
+        async with aiofiles.open("storage/datasets/igdb_involved_companies.json", "rb") as file:
             involved_company_data: dict = json.loads(await file.read())
 
         embeds: list[Embed] = []
@@ -551,7 +559,7 @@ class Scraping(BaseCog):
             f"https://api.themoviedb.org/3/search/person?query={person}&include_adult=True&language=en-US&page={pages}"
         )
         async with self.bot.http_session.get(url=url, headers=self.tmdb_headers) as response:
-            data = await response.json()
+            data = await response.json(loads=json.loads)
 
         if response.status != 200:
             return await ctx.reply("Couldn't connect to the API.", user_mistake=True)
@@ -609,7 +617,7 @@ class Scraping(BaseCog):
         pages: int = 1
         url: URL = f"https://api.themoviedb.org/3/search/movie?query={movie}&include_adult=True&language=en-US&page={pages}"
         async with self.bot.http_session.get(url=url, headers=self.tmdb_headers) as response:
-            data = await response.json()
+            data = await response.json(loads=json.loads)
 
         if response.status != 200:
             return await ctx.reply("Couldn't connect to the API.", user_mistake=True)
@@ -661,7 +669,7 @@ class Scraping(BaseCog):
             url = f"https://api.themoviedb.org/3/search/movie?query={movie}&include_adult=True&language=en-US&page={pages}"
 
         async with self.bot.http_session.get(url=url, headers=self.tmdb_headers) as response:
-            data = await response.json()
+            data = await response.json(loads=json.loads)
 
         if response.status != 200:
             return await interaction.response.send_message("Couldn't connect to the API.", ephemeral=True)
@@ -712,7 +720,7 @@ class Scraping(BaseCog):
         pages: int = 1
         url: URL = f"https://api.themoviedb.org/3/search/tv?query={show}&include_adult=True&language=en-US&page={pages}"
         async with self.bot.http_session.get(url=url, headers=self.tmdb_headers) as response:
-            data = await response.json()
+            data = await response.json(loads=json.loads)
 
         if response.status != 200:
             return await ctx.reply("Couldn't connect to the API.", user_mistake=True)
@@ -766,7 +774,7 @@ class Scraping(BaseCog):
             url = f"https://api.themoviedb.org/3/search/tv?query={show}&include_adult=True&language=en-US&page={pages}"
 
         async with self.bot.http_session.get(url=url, headers=self.tmdb_headers) as response:
-            data = await response.json()
+            data = await response.json(loads=json.loads)
 
         if response.status != 200:
             return await interaction.response.send_message("Couldn't connect to the API.", ephemeral=True)
@@ -825,7 +833,7 @@ class Scraping(BaseCog):
         async with self.bot.http_session.get(
             f"http://api.openweathermap.org/data/2.5/weather?q={_location}&APPID={WEATHER_KEY}&units=metric"
         ) as response:
-            data = await response.json()
+            data = await response.json(loads=json.loads)
 
         if data["cod"] == "404":
             # please don't use this... find a way for openweathermap to return a similair city maybe,
