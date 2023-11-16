@@ -12,7 +12,7 @@ FOOTER = "https://hitoshi.org"
 # __SOCIAL MEDIA__
 WEBSITE = "https://hitoshi.org"
 GITHUB = "https://github.com/DwellerIsTaken/discordbot/"
-DISCORD = "https://discord.gg/8FKNF8pC9u"
+DISCORD = "https://discord.gg/c75yPz59yD"
 INVITE_LINK = "https://discord.com/api/oauth2/authorize?client_id=798268589906853908&permissions=50564649975543&scope=bot"  # TEMPORARY  # noqa: E501
 
 # __DOCS__
