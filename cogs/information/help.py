@@ -1220,12 +1220,17 @@ class ShowCodeButton(discord.ui.Button["SourceView"]):
             description = embed.description
             label = "Code"
 
+        split = description.split('```py')
+        new_desc = split[0] + "```py" + discord.utils.escape_markdown(split[1][:-3])
+        # after markdown the code will be incorrect if it contained the characters
+        # the code will be filled with backslashes, but oh well
+
         embed_ = Embed(
             colour=embed.colour,
             title=embed.title,
             type=embed.type,
             url=embed.url,
-            description=description[:4096],  # add ... where code ends?
+            description=new_desc[:4089]+"\n...```" if len(new_desc) > 4089 else new_desc+"```",
             timestamp=embed.timestamp,
         )
 
