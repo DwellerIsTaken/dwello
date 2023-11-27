@@ -528,7 +528,7 @@ class MyHelp(commands.HelpCommand):
         embed = Embed(
             title=f"`{self.context.clean_prefix}{group}`",
             description="**Description:**\n"
-            + (group.short_doc or "No help given...").replace("%PRE%", self.context.clean_prefix),
+            + (group.short_doc or group.description or "No help given...").replace("%PRE%", self.context.clean_prefix),
         )
         embed.add_field(
             name="Group usage:",
