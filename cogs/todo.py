@@ -17,7 +17,7 @@ if TYPE_CHECKING:
 
     from core import Context, Dwello
 
-Interaction = DiscordInteraction["Dwello"]
+    Interaction = DiscordInteraction["Dwello"]
 
 
 async def setup(bot: Dwello) -> None:
@@ -433,13 +433,14 @@ class Todo(commands.Cog):
     """
 
     def __init__(self, bot: Dwello) -> None:
-        self.bot: Dwello = bot
+        self.bot = bot
         self.db = bot.db
 
         self.select_emoji = "\N{CLIPBOARD}"
         self.select_brief = "Guild Customisation commands."
 
-    message_cache: Dict[int, discord.Message]
+        self.message_cache: Dict[int, discord.Message] = {}
+
 
     def cog_load(self) -> None:
         self.ctx_menu = app_commands.ContextMenu(name="Add Todo", callback=self.context_menu)
@@ -503,18 +504,15 @@ class Todo(commands.Cog):
         result = await self.bot.pool.fetchrow(query, id)
 
         if result is None:
-            return
+            return None
 
         todo = TodoItem(self, result)
         return todo
 
-    async def get_todos(self, user_id: int) -> List[Optional[TodoItem]]:
+    async def get_todos(self, user_id: int) -> List[TodoItem]:
         """Gets all of a users todos"""
         query = "SELECT * FROM todo WHERE user_id = $1"
         result = await self.bot.pool.fetch(query, user_id)
-
-        if not result:
-            return []
 
         return [TodoItem(self, i) for i in result]
 
@@ -522,7 +520,7 @@ class Todo(commands.Cog):
         modal = TodoAddModal(self, message)
         await interaction.response.send_modal(modal)
 
-    @commands.group(description="Commands for dealing with Todos'")
+    @commands.group(description="Commands for dealing with Todos")
     async def todo(self, ctx: Context):
         if not ctx.invoked_subcommand:
             await ctx.send_help(ctx.command)
@@ -534,7 +532,7 @@ class Todo(commands.Cog):
             todo = await self.add_todo(user_id=ctx.author.id, content=content, message=message)
         else:
             if content is None:
-                return await ctx.send(f"You forgot to enter the content... (`{ctx.prefix}todo add <content>`)")
+                return await ctx.send(f"You forgot to enter the content... (`{ctx.clean_prefix}todo add <content>`)")
             todo = await self.add_todo(user_id=ctx.author.id, content=content)
             
         embed = discord.Embed(title="Added todo!", description=content, color=todo.color)
@@ -573,7 +571,7 @@ class Todo(commands.Cog):
         view.interaction_check = interaction_check
         await ctx.send("Are you sure you want to clear all of your todos? This **cannot** be undone.", view=view)
 
-    @todo.command(description="Shows one of your Todos' by it's ID")
+    @todo.command(description="Shows one of your Todos by its ID")
     async def show(self, ctx: Context, id: int):
         todo = await self.get_todo(id)
         if todo is None or todo.user_id != ctx.author.id:
@@ -589,7 +587,7 @@ class Todo(commands.Cog):
         embed = todo.embed
         await ctx.send(embed=embed, view=view)
 
-    @todo.command()
+    @todo.command(description="Shows all of your Todos with a select menu")
     async def list(self, ctx: Context):
         todos = await self.get_todos(ctx.author.id)
         if not todos:
