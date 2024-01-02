@@ -215,13 +215,13 @@ class HelpView(discord.ui.View):
                 value = "See help for this command in an NSFW channel." if cmd.extras.get("nsfw", False) else None
                 if isinstance(cmd, app_commands.Command):
                     if not value:
-                        desc = cmd.description or "No help given..."
+                        desc = cmd.description or cmd.description or "No help given..."
                 else:
                     if cmd.hidden and not owner:
                         continue
                     if not value:
                         name = f"`{cmd.name}{f' {cmd.signature}`' if cmd.signature else '`'}"
-                        desc = cmd.brief or cmd.help or "No help given..."
+                        desc = cmd.short_doc or cmd.description or "No help given..."
                 if not value:
                     parent = f"\n> Parent: `{cmd.parent}`" if cmd.parent else ""
                     value = (f"> {desc} {parent}")[:1024]
@@ -415,7 +415,7 @@ class MyHelp(commands.HelpCommand):
         await view.start()
 
     async def send_command_help(self, command: commands.Command):
-        desc = " ".join((command.help or command.description or "No help given...").splitlines())
+        desc = " ".join((command.short_doc or command.description or "No help given...").splitlines())
         embed = Embed(
             title=f"`{self.context.clean_prefix}{command}`",
             description="**Description:**\n" + desc.replace("%PRE%", self.context.clean_prefix),
@@ -528,7 +528,7 @@ class MyHelp(commands.HelpCommand):
         embed = Embed(
             title=f"`{self.context.clean_prefix}{group}`",
             description="**Description:**\n"
-            + (group.help or group.description or "No help given...").replace("%PRE%", self.context.clean_prefix),
+            + (group.short_doc or group.description or "No help given...").replace("%PRE%", self.context.clean_prefix),
         )
         embed.add_field(
             name="Group usage:",
